@@ -1,0 +1,173 @@
+"""
+clients/gemini_client.py
+────────────────────────
+Wraps the Google Gemini Flash API for SpendMind.
+
+Gemini Flash is our PRIMARY model for behavioral psychology insights.
+It is chosen because:
+  • Strong reasoning about human emotion and behavior
+  • Good Hindi support
+  • Fast enough for real-time expense insights
+  • Generous free tier on Google AI Studio
+
+Day 9 task: test this file, time the response, save to gemini_test.json.
+"""
+
+import os
+import time
+import json
+from typing import Any, Optional
+
+from google import genai
+from dotenv import load_dotenv
+
+from ai_engine.utils.logger import get_logger
+
+load_dotenv()
+logger = get_logger(__name__)
+
+
+# ── Module-level client (created once, reused across calls) ──────────────────
+def _build_client() -> genai.Client:
+    """Configure the Gemini SDK and return a ready-to-use client."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise EnvironmentError(
+            "GEMINI_API_KEY not found in environment. "
+            "Copy .env.example to .env and add your key."
+        )
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    logger.info(f"Gemini client initialised with model: {model_name}")
+    return genai.Client(api_key=api_key)
+
+
+# Lazy singleton — client is created only on first actual call
+_client: Optional[genai.Client] = None
+
+
+def _get_client() -> genai.Client:
+    global _client
+    if _client is None:
+        _client = _build_client()
+    return _client
+
+
+# ── Public function ──────────────────────────────────────────────────────────
+
+def call_gemini(
+    system_prompt: str,
+    user_prompt: str,
+    max_retries: int = 3,
+    retry_delay: float = 2.0,
+) -> dict:
+    """
+    Send a prompt to Gemini Flash and return a structured response dict.
+
+    Args:
+        system_prompt: Defines the AI persona and output rules (e.g., "You are
+                       a warm behavioral finance coach for Indian students…")
+        user_prompt:   The actual expense data or question to analyze.
+        max_retries:   How many times to retry on transient failure.
+        retry_delay:   Seconds to wait between retries.
+
+    Returns:
+        {
+            "text":          str,   # Raw text response from Gemini
+            "model":         str,   # Model name used
+            "provider":      str,   # Always "gemini"
+            "latency_ms":    int,   # Round-trip time in milliseconds
+            "success":       bool,  # True if call succeeded
+            "error":         str | None  # Error message on failure, else None
+        }
+
+    Design note:
+        We combine system_prompt and user_prompt into one message because
+        Gemini's Python SDK uses a simpler single-turn API. The two-part
+        structure is preserved for compatibility with the router interface.
+    """
+    client = _get_client()
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+    # Combine system + user prompt (Gemini SDK style)
+    full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(f"Gemini call attempt {attempt}/{max_retries}")
+            start = time.time()
+
+            response = client.models.generate_content(
+                model=model_name,
+                contents=full_prompt,
+            )
+
+            latency_ms = int((time.time() - start) * 1000)
+            text = _extract_text(response)
+
+            logger.info(f"Gemini success — {latency_ms}ms — {len(text)} chars")
+
+            return {
+                "text":       text,
+                "model":      model_name,
+                "provider":   "gemini",
+                "latency_ms": latency_ms,
+                "success":    True,
+                "error":      None,
+            }
+
+        except Exception as e:
+            logger.warning(f"Gemini attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+
+    # All retries exhausted
+    logger.error("Gemini: all retries failed")
+    return {
+        "text":       "",
+        "model":      model_name,
+        "provider":   "gemini",
+        "latency_ms": 0,
+        "success":    False,
+        "error":      "All retries failed",
+    }
+
+
+def _extract_text(response: Any) -> str:
+    """Extract text from a google-genai GenerateContentResponse."""
+    return (getattr(response, "text", "") or "").strip()
+
+
+# ── Day 9 manual test ────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    """
+    Run this directly to test Gemini and save the response to gemini_test.json.
+    Command: python clients/gemini_client.py
+    """
+    SYSTEM = (
+        "You are a warm, non-judgmental behavioral finance coach for Indian "
+        "college students. Never shame the user. Always explain WHY they might "
+        "be spending, not just WHAT they spent. Keep your response to 2-3 sentences."
+    )
+
+    USER = (
+        "Expense: ₹350 on Swiggy at 11:30 PM on a Tuesday. "
+        "Mood: stressed. Category: food. Notes: had an exam tomorrow."
+    )
+
+    print("─" * 60)
+    print("Testing Gemini Flash…")
+    print("─" * 60)
+
+    result = call_gemini(SYSTEM, USER)
+
+    # Pretty print to terminal
+    print(f"Provider : {result['provider']}")
+    print(f"Model    : {result['model']}")
+    print(f"Latency  : {result['latency_ms']} ms")
+    print(f"Success  : {result['success']}")
+    print(f"\nResponse :\n{result['text']}")
+
+    # Save to file so you can study the raw structure
+    with open("gemini_test.json", "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+    print("\n✅ Saved to gemini_test.json")

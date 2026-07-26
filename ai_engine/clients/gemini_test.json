@@ -1,0 +1,8 @@
+{
+  "text": "It's completely understandable to reach for a comforting meal late at night, especially when you're feeling stressed with an exam tomorrow. Our brains often look for quick ways to cope with pressure or reward themselves after intense study, and food delivery offers that instant relief and convenience.",
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "latency_ms": 3733,
+  "success": true,
+  "error": null
+}

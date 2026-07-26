@@ -1,0 +1,49 @@
+"""
+Central configuration for SpendMind backend.
+All settings are loaded from environment variables (.env file).
+Never hardcode secrets here.
+"""
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
+class Settings:
+    # --- Firebase ---
+    FIREBASE_CREDENTIALS_PATH: str = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
+    FIREBASE_CREDENTIALS_JSON: str = os.getenv("FIREBASE_CREDENTIALS_JSON", "")  # raw JSON, for hosts like Render
+
+    # --- AI provider keys (used by services/ai_service.py) ---
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+
+     # --- Twilio (webhook verification / replies) ---
+    TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    TWILIO_WHATSAPP_NUMBER: str = os.getenv("TWILIO_WHATSAPP_NUMBER", "")
+
+    # --- App behavior ---
+    ENV: str = os.getenv("ENV", "development")  # development | production
+    CORS_ORIGINS: list = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
+
+  # --- Rate limiting ---
+    AI_CALLS_PER_HOUR: int = int(os.getenv("AI_CALLS_PER_HOUR", "30"))
+
+    # --- Cache TTLs (seconds) ---
+    WEEKLY_SUMMARY_TTL: int = 24 * 60 * 60       # 24 hours
+    PERSONALITY_TTL: int = 7 * 24 * 60 * 60      # 7 days
+
+    # --- Daily AI cost guardrail (INR) ---
+    DAILY_COST_ALERT_THRESHOLD: float = float(os.getenv("DAILY_COST_ALERT_THRESHOLD", "50"))
+
+    # --- Authentication (JWT & Google) ---
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "fallback-secret-key-for-dev-only")
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "placeholder-google-client-id")
+
+    
+settings = Settings()

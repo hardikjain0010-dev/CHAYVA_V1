@@ -1,0 +1,1 @@
+# SpendMind test suite
