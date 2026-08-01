@@ -1,27 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Flag, Sparkles, Flame, Compass, Trophy, Award } from "lucide-react";
-import { get } from "@/lib/api";
+import { useExpenses } from "@/lib/expense-context";
 import { PageTransition } from "@/lib/ui-helpers";
-
 export const Route = createFileRoute("/_authenticated/journey")({
   component: JourneyPage,
 });
-
+// Backend Expense type — uses `date` (not `spent_at` or `created_at`).
 type Expense = {
+  id: string;
   amount: number;
   category: string;
-  note: string | null;
+  notes: string | null;
   mood: string | null;
-  spent_at: string;
-  created_at: string;
+  date: string; // ISO string from backend
+  source: string;
 };
-
 function daysAgo(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
-
 function bucketLabel(days: number) {
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";
@@ -31,7 +29,6 @@ function bucketLabel(days: number) {
   if (days < 60) return "1 month ago";
   return `${Math.round(days / 30)} months ago`;
 }
-
 type Milestone = {
   icon: React.ComponentType<{ className?: string }>;
   when: string;
@@ -39,59 +36,40 @@ type Milestone = {
   desc: string;
   tone: "primary" | "accent" | "success";
 };
-
 function JourneyPage() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [insightCount, setInsightCount] = useState(0);
-
-  useEffect(() => {
-  loadExpenses();
-}, []);
-
-async function loadExpenses() {
-  try {
-    const rows = await get<Expense[]>("/expenses");
-    setExpenses(rows);
-
-    const count = await get<number>("/insights/count");
-    setInsightCount(count);
-  } catch (error) {
-    console.error(error);
-  }
-}
-
+  // ✅ Single source of truth — reads from shared ExpenseProvider context.
+  // No independent fetch, no local state, no non-existent /insights/count endpoint.
+  // Field mapping: backend returns `date` (not `spent_at` or `created_at`).
+  const { expenses, loading } = useExpenses();
 
   const milestones = useMemo<Milestone[]>(() => {
     if (expenses.length === 0) return [];
     const events: Milestone[] = [];
 
-    const first = expenses[0];
+    // Expenses from context are sorted newest-first; reverse to get chronological order.
+    const chronological = [...expenses].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    const first = chronological[0];
     events.push({
       icon: Flag,
-      when: bucketLabel(daysAgo(first.spent_at)),
+      when: bucketLabel(daysAgo(first.date)),
       title: "First Expense",
       desc: `You started your journey with ₹${first.amount.toFixed(2)} on ${first.category}.`,
       tone: "primary",
     });
 
-    if (insightCount > 0) {
-      events.push({
-        icon: Sparkles,
-        when: "Along the way",
-        title: "First AI Insight",
-        desc: `Chayva has reflected on your habits ${insightCount} time${insightCount === 1 ? "" : "s"}.`,
-        tone: "accent",
-      });
-    }
-
-    // Streak: max consecutive days with expenses
-    const days = Array.from(new Set(expenses.map((e) => e.spent_at))).sort();
+      // Streak: max consecutive days with expenses — using `date` field
+    const days = Array.from(
+      new Set(chronological.map((e) => e.date.slice(0, 10)))
+    ).sort();
     let maxStreak = 1;
     let cur = 1;
     for (let i = 1; i < days.length; i++) {
       const prev = new Date(days[i - 1]).getTime();
-      const now = new Date(days[i]).getTime();
-      if (now - prev === 86400000) {
+      const next = new Date(days[i]).getTime();
+      if (next - prev === 86400000) {
         cur++;
         maxStreak = Math.max(maxStreak, cur);
       } else cur = 1;
@@ -105,32 +83,40 @@ async function loadExpenses() {
         tone: "primary",
       });
     }
-
-    const firstMood = expenses.find((e) => e.mood);
+    const firstMood = chronological.find((e) => e.mood);
     if (firstMood) {
       events.push({
         icon: Compass,
-        when: bucketLabel(daysAgo(firstMood.spent_at)),
+        when: bucketLabel(daysAgo(firstMood.date)),
         title: "Tuned into your mood",
         desc: `You began noticing how you felt (${firstMood.mood}) while spending.`,
         tone: "accent",
       });
     }
+// Insight milestone: count of expenses is a proxy for engagement.
+    if (expenses.length >= 5) {
+      events.push({
+        icon: Sparkles,
+        when: "Along the way",
+        title: "Building Awareness",
+        desc: `Chayva has been analyzing your patterns across ${expenses.length} logged purchase${expenses.length === 1 ? "" : "s"}.`,
+        tone: "accent",
+      });
+    }
 
     const recentGood = expenses.filter(
-      (e) => daysAgo(e.spent_at) <= 14 && (e.mood === "happy" || e.mood === "neutral"),
+      (e) => daysAgo(e.date) <= 14 && (e.mood === "happy" || e.mood === "social"),
     );
     if (recentGood.length >= 3) {
       events.push({
         icon: Trophy,
-        when: "1 week ago",
+        when: "Recently",
         title: "Mindful Streak",
         desc: `${recentGood.length} calm, considered purchases in the last two weeks.`,
         tone: "success",
       });
     }
-
-    if (expenses.length >= 25) {
+     if (expenses.length >= 25) {
       events.push({
         icon: Award,
         when: "Milestone",
@@ -139,24 +125,20 @@ async function loadExpenses() {
         tone: "primary",
       });
     }
-
-    events.push({
+     events.push({
       icon: MapPin,
       when: "Today",
       title: "Where you are now",
       desc: "Better awareness of your spending patterns and emotional triggers.",
       tone: "accent",
     });
-
     return events;
-  }, [expenses, insightCount]);
-
+  }, [expenses]);
   const toneClass: Record<Milestone["tone"], string> = {
     primary: "bg-gradient-primary text-primary-foreground",
     accent: "bg-accent/20 text-accent border border-accent/30",
     success: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
   };
-
   return (
     <PageTransition>
       <div className="space-y-8">
@@ -175,8 +157,13 @@ async function loadExpenses() {
             financial behavior — how far you've come, and where you're headed.
           </p>
         </header>
-
-        {milestones.length === 0 ? (
+         {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="glass h-32 animate-pulse rounded-2xl" />
+            ))}
+          </div>
+        ) : milestones.length === 0 ? (
           <div className="glass rounded-2xl p-10 text-center text-muted-foreground">
             Log a few expenses and your journey will start writing itself here.
           </div>
@@ -207,7 +194,6 @@ async function loadExpenses() {
             ))}
           </section>
         )}
-
         <p className="text-center text-sm italic text-muted-foreground">
           Progress isn't measured by spending less — it's measured by understanding yourself better.
         </p>

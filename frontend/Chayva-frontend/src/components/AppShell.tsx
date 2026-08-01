@@ -2,10 +2,8 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { LayoutDashboard, ListOrdered, Plus, LogOut, Brain, Sun, Moon, CalendarDays, Dna, MoonStar, MapPin } from "lucide-react";
 import { useTheme } from "@/lib/theme";
-import { post } from "@/lib/api";
-import { clearToken } from "@/lib/auth";
+import { useUser } from "@/lib/user-context";
 import type { ReactNode } from "react";
-
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/expenses", label: "Expenses", icon: ListOrdered },
@@ -15,23 +13,21 @@ const NAV = [
   { to: "/reflect", label: "Reflect", icon: MoonStar },
   { to: "/journey", label: "Journey", icon: MapPin },
 ] as const;
-
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  async function signOut() {
-    try {
-      await post("/auth/logout", {});
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-    clearToken();
+  // ✅ Use UserContext.logout() which clears token AND sets user=null,
+  // triggering ExpenseProvider to clear its state — prevents cross-user data leakage.
+  const { logout } = useUser();
+  function signOut() {
+    // Logout is purely client-side: clear token + user state.
+    // No server call needed — JWTs are stateless. The old /auth/logout endpoint
+    // did not exist and caused a silent error before token was cleared.
+    logout();
     navigate({ to: "/auth", replace: true });
   }
-
-  return (
+   return (
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 md:px-6">
         <aside className="glass hidden w-60 shrink-0 flex-col rounded-2xl p-4 md:flex">
@@ -54,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                   }`}
                 >
-                  {active && (
+                     {active && (
                     <motion.span
                       layoutId="nav-active"
                       className="absolute inset-0 rounded-xl bg-gradient-primary shadow-[var(--shadow-glow)]"
@@ -82,8 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             Sign out
           </button>
         </aside>
-
-        {/* Mobile bottom nav */}
+         {/* Mobile bottom nav */}
         <div className="md:hidden fixed inset-x-0 bottom-0 z-20 glass-strong flex justify-around gap-1 overflow-x-auto py-2 px-1">
           {NAV.map(({ to, label, icon: Icon }) => {
             const active = pathname === to;
@@ -115,7 +110,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             Sign out
           </button>
         </div>
-
         <main className="flex-1 pb-24 md:pb-0">{children}</main>
       </div>
     </div>

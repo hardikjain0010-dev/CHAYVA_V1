@@ -1,12 +1,14 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth";
+import { UserProvider } from "@/lib/user-context";
+import { ExpenseProvider } from "@/lib/expense-context";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
 
   beforeLoad: async () => {
+    // Single auth check during navigation — if no valid token/user, redirect.
     const user = await getCurrentUser();
 
     if (!user) {
@@ -18,30 +20,17 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    async function checkUser() {
-      const user = await getCurrentUser();
-
-      if (!user) {
-        window.location.href = "/auth";
-        return;
-      }
-
-      setChecked(true);
-    }
-
-    checkUser();
-  }, []);
-
-  if (!checked) {
-    return null;
-  }
-
+  // UserProvider fetches /auth/me once and holds the user in context.
+  // ExpenseProvider fetches /expenses once and holds all expenses in context.
+  // All child pages read from these providers — no independent fetching.
+  // On logout: UserProvider sets user=null → ExpenseProvider clears expenses.
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <UserProvider>
+      <ExpenseProvider>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </ExpenseProvider>
+    </UserProvider>
   );
 }

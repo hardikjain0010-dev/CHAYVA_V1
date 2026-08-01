@@ -124,3 +124,16 @@ def get_current_user(user_id: str = Depends(get_current_user_id)):
         user = users[0]
         
     return UserOut(**user)
+@router.post(
+    "/logout",
+    summary="Logout (client-side token invalidation)",
+    description="JWT tokens are stateless — this endpoint exists as a clean extension point "
+                "and for clients that call it. The actual token invalidation happens client-side "
+                "by removing the token from localStorage.",
+)
+def logout():
+    # JWT is stateless: the server cannot invalidate a token without a deny-list.
+    # The client removes the token from localStorage — that is the logout mechanism.
+    # This endpoint is intentionally a no-op on the server side.
+    return {"message": "Logged out successfully"}
+

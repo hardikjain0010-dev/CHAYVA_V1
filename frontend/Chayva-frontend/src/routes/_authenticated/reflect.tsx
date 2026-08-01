@@ -49,7 +49,8 @@ if (todayRow) {
   setTriggers(todayRow.triggers ?? "");
   setTomorrow(todayRow.tomorrow ?? "");
 }
-const list = await get<Reflection[]>("/reflection");
+// ✅ Fixed: was "/reflection" (404) — correct path is "/reflections".
+const list = await get<Reflection[]>("/reflections");
     setPast(list ?? []);
 })();
 }, []);

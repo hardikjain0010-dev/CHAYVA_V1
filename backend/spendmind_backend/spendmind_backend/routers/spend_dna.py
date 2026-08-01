@@ -2,11 +2,13 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Request
 
 from services.firebase_service import db_client
 from services.ai_service import generate_spend_dna, detect_triggers
 from core.config import settings
 from core.limiter import limiter
+from core.security import get_current_user_id
 
 router = APIRouter(prefix="/insights", tags=["Spend DNA"])
 
@@ -18,12 +20,17 @@ EXPENSE_COLLECTION = "expenses"
     summary="Generate Spend DNA (viral share card data)",
     description="Builds a full month spending profile and returns the Spend DNA payload the "
                 "frontend renders as a Spotify-Wrapped-style shareable card: personality type, "
-                "top trigger, favorite category, most impulsive hour, and a narrative summary.",
+                "top trigger, favorite category, most impulsive hour, and a narrative summary."
+                 "top trigger, favorite category, most impulsive hour, and a narrative summary. "
+                "Requires Bearer token — user_id is derived from the token.",
 )
 @limiter.limit(f"{settings.AI_CALLS_PER_HOUR}/hour")
 def spend_dna(request: Request, user_id: str = Query(...)):
+def spend_dna(request: Request, authenticated_user_id: str = Depends(get_current_user_id)):
     cutoff = datetime.utcnow() - timedelta(days=30)
     all_expenses = db_client.query(EXPENSE_COLLECTION, user_id=user_id)
+    all_expenses = db_client.query(EXPENSE_COLLECTION, user_id=authenticated_user_id)
+
     expenses = []
     for e in all_expenses:
         try:

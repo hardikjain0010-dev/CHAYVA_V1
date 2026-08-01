@@ -29,7 +29,7 @@ class Settings:
     ENV: str = os.getenv("ENV", "development")  # development | production
     CORS_ORIGINS: list = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
 
-  # --- Rate limiting ---
+   # --- Rate limiting ---
     AI_CALLS_PER_HOUR: int = int(os.getenv("AI_CALLS_PER_HOUR", "30"))
 
     # --- Cache TTLs (seconds) ---
