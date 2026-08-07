@@ -97,10 +97,20 @@ class FirestoreClient:
 
         if not firebase_admin._apps:
             if settings.FIREBASE_CREDENTIALS_JSON:
-                cred_dict = json.loads(settings.FIREBASE_CREDENTIALS_JSON)
-                cred = credentials.Certificate(cred_dict)
-            else:
+                try:
+                    cred_dict = json.loads(settings.FIREBASE_CREDENTIALS_JSON)
+                    cred = credentials.Certificate(cred_dict)
+                except json.JSONDecodeError as e:
+                    raise RuntimeError(
+                        f"Failed to parse FIREBASE_CREDENTIALS_JSON as JSON: {e}. "
+                        "Ensure the environment variable contains valid JSON."
+                    ) from e
+            elif settings.FIREBASE_CREDENTIALS_PATH:
                 cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+            else:
+                raise RuntimeError(
+                    "No Firebase credentials provided. Set either FIREBASE_CREDENTIALS_JSON or FIREBASE_CREDENTIALS_PATH."
+                )
             firebase_admin.initialize_app(cred)
 
         self.db = firestore.client()
