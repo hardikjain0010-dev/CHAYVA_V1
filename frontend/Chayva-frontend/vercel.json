@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
+  "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
@@ -14,6 +14,11 @@
     },
     "VITE_GOOGLE_CLIENT_ID": {
       "description": "Google OAuth Client ID"
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_VERSION": "20"
     }
   }
 }
