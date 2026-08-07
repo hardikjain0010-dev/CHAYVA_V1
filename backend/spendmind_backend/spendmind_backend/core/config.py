@@ -30,7 +30,18 @@ class Settings:
 
     # --- App behavior ---
     ENV: str = os.getenv("ENV", "development")  # development | production
-    CORS_ORIGINS: list = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",")]
+    
+    @property
+    def CORS_ORIGINS(self) -> list:
+        """Get CORS origins, with automatic localhost support in development."""
+        cors_env = os.getenv("CORS_ORIGINS", "").strip()
+        if cors_env:
+            return [o.strip() for o in cors_env.split(",")]
+        
+        # Default: development gets localhost, production gets empty (requires explicit config)
+        if self.ENV == "development":
+            return ["http://localhost:5173", "http://127.0.0.1:5173"]
+        return []
 
    # --- Rate limiting ---
     AI_CALLS_PER_HOUR: int = int(os.getenv("AI_CALLS_PER_HOUR", "30"))
