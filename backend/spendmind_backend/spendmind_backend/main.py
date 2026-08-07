@@ -32,8 +32,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 register_exception_handlers(app)
 
-print(f"[DEBUG] CORS_ORIGINS: {settings.CORS_ORIGINS}")
-print(f"[DEBUG] CORS_ORIGINS type: {type(settings.CORS_ORIGINS)}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
