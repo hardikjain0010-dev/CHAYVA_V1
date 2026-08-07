@@ -7,6 +7,7 @@ back to a small file-backed local store. In production it fails fast instead
 of silently accepting temporary storage.
 """
 import json
+import os
 import uuid
 import threading
 from datetime import datetime
@@ -96,22 +97,53 @@ class FirestoreClient:
         from firebase_admin import credentials, firestore
 
         if not firebase_admin._apps:
-            if settings.FIREBASE_CREDENTIALS_JSON:
+            cred = None
+            
+            # Priority 1: Use FIREBASE_CREDENTIALS_JSON from environment (Render/production)
+            firebase_json = os.environ.get("FIREBASE_CREDENTIALS_JSON", "").strip()
+            if firebase_json:
                 try:
-                    cred_dict = json.loads(settings.FIREBASE_CREDENTIALS_JSON)
+                    cred_dict = json.loads(firebase_json)
+                    # Validate required fields
+                    required_fields = ["type", "project_id", "private_key_id", "private_key", "client_email"]
+                    missing_fields = [field for field in required_fields if field not in cred_dict]
+                    if missing_fields:
+                        raise ValueError(
+                            f"Firebase credentials JSON missing required fields: {', '.join(missing_fields)}"
+                        )
                     cred = credentials.Certificate(cred_dict)
                 except json.JSONDecodeError as e:
                     raise RuntimeError(
                         f"Failed to parse FIREBASE_CREDENTIALS_JSON as JSON: {e}. "
                         "Ensure the environment variable contains valid JSON."
                     ) from e
+                except ValueError as e:
+                    raise RuntimeError(
+                        f"Invalid Firebase credentials JSON: {e}"
+                    ) from e
+            
+            # Priority 2: Use FIREBASE_CREDENTIALS_PATH (local development)
             elif settings.FIREBASE_CREDENTIALS_PATH:
+                cred_path = Path(settings.FIREBASE_CREDENTIALS_PATH)
+                if not cred_path.exists():
+                    raise RuntimeError(
+                        f"FIREBASE_CREDENTIALS_PATH points to non-existent file: {cred_path}"
+                    )
                 cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+            
             else:
                 raise RuntimeError(
-                    "No Firebase credentials provided. Set either FIREBASE_CREDENTIALS_JSON or FIREBASE_CREDENTIALS_PATH."
+                    "No Firebase credentials provided. "
+                    "Set either FIREBASE_CREDENTIALS_JSON (environment variable) or "
+                    "FIREBASE_CREDENTIALS_PATH (file path)."
                 )
-            firebase_admin.initialize_app(cred)
+            
+            try:
+                firebase_admin.initialize_app(cred)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Firebase initialization failed: {e}"
+                ) from e
 
         self.db = firestore.client()
 
