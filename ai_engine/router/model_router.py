@@ -32,25 +32,22 @@ from ai_engine.clients.openrouter_client import call_openrouter
 load_dotenv()
 
 
-def _get_env_model(name: str, default: str) -> str:
-    value = os.getenv(name, default)
-    if value is None:
-        return default
+def _get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise EnvironmentError(f"{name} not found in environment.")
     value = str(value).strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
         value = value[1:-1].strip()
-    return value or default
+    if not value:
+        raise EnvironmentError(f"{name} not found in environment.")
+    return value
 
 
-GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-OPENROUTER_REASONING_MODEL_NAME = _get_env_model(
-    "OPENROUTER_REASONING_MODEL",
-    "openai/gpt-oss-120b:free",
-)
-OPENROUTER_BACKUP_MODEL_NAME = _get_env_model(
-    "OPENROUTER_BACKUP_MODEL",
-    "openai/gpt-oss-20b:free",
-)
+GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL")
+GROQ_MODEL_NAME = _get_required_env("GROQ_MODEL")
+OPENROUTER_REASONING_MODEL_NAME = _get_required_env("OPENROUTER_REASONING_MODEL")
+OPENROUTER_SUMMARY_MODEL_NAME = _get_required_env("OPENROUTER_SUMMARY_MODEL")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LAZY SINGLETON CLIENTS
@@ -115,18 +112,17 @@ def _get_openrouter():
 ROUTING_TABLE = {
     "insight": {"provider": "gemini", "model": GEMINI_MODEL_NAME, "temperature": 0.7},
     "summary": {"provider": "openrouter", "model": OPENROUTER_REASONING_MODEL_NAME, "temperature": 0.7},
-    "personality": {"provider": "openrouter", "model": OPENROUTER_REASONING_MODEL_NAME, "temperature": 0.3},
+    "personality": {"provider": "openrouter", "model": OPENROUTER_SUMMARY_MODEL_NAME, "temperature": 0.3},
     "hindi": {"provider": "gemini", "model": GEMINI_MODEL_NAME, "temperature": 0.7},
-    "reasoning": {"provider": "groq", "model": "llama-3.3-70b-versatile", "temperature": 0.2},
-    "fast": {"provider": "groq", "model": "llama-3.3-70b-versatile", "temperature": 0.4},
-    "backup": {"provider": "openrouter", "model": OPENROUTER_BACKUP_MODEL_NAME, "temperature": 0.5},
+    "reasoning": {"provider": "groq", "model": GROQ_MODEL_NAME, "temperature": 0.2},
+    "fast": {"provider": "groq", "model": GROQ_MODEL_NAME, "temperature": 0.4},
 }
 
 # Fallback chain per provider: if primary fails, try these in order
 FALLBACK_CHAIN = {
     "gemini": ["groq", "openrouter"],
     "groq": ["gemini", "openrouter"],
-    "openrouter": ["openrouter"],
+    "openrouter": [],
 }
 
 
@@ -163,7 +159,7 @@ def route_prompt(
         }
     """
     if task_type not in ROUTING_TABLE:
-        task_type = "backup"
+        raise ValueError(f"Unknown AI task_type: {task_type}")
 
     config = ROUTING_TABLE[task_type]
     provider = config["provider"]
@@ -182,39 +178,7 @@ def route_prompt(
         result["backup_model_used"] = False
         return _record_route_result(result)
 
-    if provider == "openrouter" and task_type in {"summary", "personality"}:
-        print(
-            f"[SpendMind Router] Primary OpenRouter model failed; retrying with backup OpenRouter model: {OPENROUTER_BACKUP_MODEL_NAME}"
-        )
-        backup_result = _call_provider(
-            provider="openrouter",
-            model=OPENROUTER_BACKUP_MODEL_NAME,
-            prompt=prompt,
-            temperature=config["temperature"],
-            system_override=system_override,
-        )
-        if backup_result["success"]:
-            backup_result["fallback_used"] = False
-            backup_result["backup_model_used"] = True
-            return _record_route_result(backup_result)
-
     # Primary failed — try fallback chain
-    fallback_providers = FALLBACK_CHAIN.get(provider, ["openrouter"])
-    for fallback_provider in fallback_providers[:max_retries]:
-        fallback_config = _get_fallback_config(fallback_provider)
-        result = _call_provider(
-            provider=fallback_provider,
-            model=fallback_config["model"],
-            prompt=prompt,
-            temperature=config["temperature"],  # keep original temperature intent
-            system_override=system_override
-        )
-        if result["success"]:
-            result["fallback_used"] = False
-            result["backup_model_used"] = fallback_provider == "openrouter"
-            print(f"[SpendMind Router] Fallback used: {provider} -> {fallback_provider}")
-            return _record_route_result(result)
-
     # All providers failed — return structured failure
     return _record_route_result({
         "success": False,
@@ -222,10 +186,10 @@ def route_prompt(
         "parsed": None,
         "provider": provider,
         "model": config["model"],
-        "latency_ms": 0,
+        "latency_ms": result.get("latency_ms", 0),
         "fallback_used": True,
         "backup_model_used": False,
-        "error": "All providers failed"
+        "error": result.get("error", "Provider failed")
     })
 
 
@@ -286,6 +250,7 @@ def _call_gemini(model: str, prompt: str, temperature: float) -> str:
     result = call_gemini(
         system_prompt="You are a helpful expense insight assistant.",
         user_prompt=prompt,
+        model=model,
         max_retries=1,
         retry_delay=0.0,
     )
@@ -299,6 +264,7 @@ def _call_groq(model: str, prompt: str, temperature: float, system_override: Opt
     result = call_groq(
         system_prompt=system_override or "You are a helpful expense insight assistant.",
         user_prompt=prompt,
+        model=model,
         max_retries=1,
         retry_delay=0.0,
     )
@@ -435,16 +401,6 @@ def _try_parse_json(text: str) -> Optional[dict | list]:
     return None
 
 
-def _get_fallback_config(provider: str) -> dict:
-    """Get model config for fallback provider."""
-    fallback_models = {
-        "groq": {"model": "llama-3.3-70b-versatile", "temperature": 0.5},
-        "gemini": {"model": GEMINI_MODEL_NAME, "temperature": 0.5},
-        "openrouter": {"model": OPENROUTER_BACKUP_MODEL_NAME, "temperature": 0.5},
-    }
-    return fallback_models.get(provider, fallback_models["openrouter"])
-
-
 def get_routing_info() -> dict:
     """Returns the current routing table (for debugging/logging)."""
     return ROUTING_TABLE
@@ -461,7 +417,7 @@ if __name__ == "__main__":
     )
 
     result = route_prompt(
-        task_type="backup",
+        task_type="insight",
         prompt=sample_user_prompt,
         system_override=sample_prompt,
     )

@@ -1,8 +1,5 @@
-from fastapi import APIRouter, HTTPException
 import uuid
-from typing import Optional
 from fastapi import APIRouter, HTTPException, status, Depends
-from datetime import datetime
 from models.expense_model import AuthVerifyRequest
 from core.security import verify_id_token
 from models.expense_model import (
@@ -60,16 +57,22 @@ def verify(payload: AuthVerifyRequest):
     return {"valid": True, "uid": uid}
 @router.post("/signin", response_model=TokenOut)
 def signin(payload: AuthSigninRequest):
+    print(f"[DEBUG] Signin attempt for email: {payload.email}")
     users = db_client.query("users", email=payload.email)
+    print(f"[DEBUG] Found users: {len(users) if users else 0}")
     if not users:
+        print(f"[DEBUG] No user found, raising 401")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
         
     user = users[0]
+    print(f"[DEBUG] User provider: {user.get('provider')}")
     
     if user.get("provider") != "password":
+        print(f"[DEBUG] Provider mismatch, raising 400")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please sign in with Google")
         
     if not verify_password(payload.password, user.get("password_hash", "")):
+        print(f"[DEBUG] Password verification failed, raising 401")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
         
     db_client.update("users", user["id"], {"last_login": now_iso()})
@@ -77,6 +80,7 @@ def signin(payload: AuthSigninRequest):
     user_out = UserOut(**user)
     token = create_access_token(data={"sub": user["uid"]})
     
+    print(f"[DEBUG] Signin successful for: {payload.email}")
     return {"access_token": token, "token_type": "bearer", "user": user_out}
 @router.post("/google", response_model=TokenOut)
 def google_signin(payload: AuthGoogleRequest):
@@ -88,11 +92,6 @@ def google_signin(payload: AuthGoogleRequest):
     
     if users:
         user = users[0]
-        if user.get("provider") != "google":
-            # Upgrade or reject? Reject for simplicity, or just log them in? 
-            # The prompt doesn't specify, but usually we reject or merge. We will reject if they have a password.
-            # But the prompt says "Both methods must produce the SAME JWT authentication flow." Let's update provider to google if they signed in with google, or just let them in.
-            pass # We'll allow it for now, just update last login
         db_client.update("users", user["id"], {"last_login": now_iso()})
     else:
         # Create user

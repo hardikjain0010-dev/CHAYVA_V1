@@ -52,13 +52,28 @@ GENERATION INSTRUCTIONS:
    Must be authentic — do NOT fabricate a win if the data doesn't support it.
    If no clear win exists: "You tracked your spending all week. That awareness is the first step."
 
+6. improvements: One specific behavioral improvement compared to earlier in the week (1 sentence).
+7. regressions: One pattern that worsened or repeated unhelpfully — warm tone, no shame (1 sentence).
+8. trigger_changes: How triggers shifted across the week (1 sentence).
+9. mood_changes: How moods around spending evolved (1 sentence).
+10. category_trends: Which categories rose or fell and why behaviorally (1 sentence).
+11. personality_changes: Whether spending personality signals shifted this week (1 sentence).
+12. coach_recommendation: One gentle, actionable coaching tip for next week (1 sentence).
+
 STRICT OUTPUT FORMAT — return ONLY this JSON, nothing else:
 {{
   "headline": "...",
   "top_insight": "...",
   "biggest_trigger": "...",
   "emotional_trend": "...",
-  "one_win": "..."
+  "one_win": "...",
+  "improvements": "...",
+  "regressions": "...",
+  "trigger_changes": "...",
+  "mood_changes": "...",
+  "category_trends": "...",
+  "personality_changes": "...",
+  "coach_recommendation": "..."
 }}
 
 RULES:
@@ -158,7 +173,14 @@ Return ONLY this JSON:
   "top_insight": "Start logging your expenses to unlock behavioral insights.",
   "biggest_trigger": "unknown",
   "emotional_trend": "No data available",
-  "one_win": "Ready to start tracking? Every expense tells a story."
+  "one_win": "Ready to start tracking? Every expense tells a story.",
+  "improvements": "Showing up to track is the first improvement.",
+  "regressions": "No regressions to report without expense data.",
+  "trigger_changes": "Triggers will appear once you log expenses.",
+  "mood_changes": "Mood patterns need expense context.",
+  "category_trends": "Category trends need logged purchases.",
+  "personality_changes": "Personality forms after consistent logging.",
+  "coach_recommendation": "Log one expense today with your mood attached."
 }}
 """
 
@@ -168,7 +190,11 @@ Return ONLY this JSON:
 # ─────────────────────────────────────────────────────────────────────────────
 
 WEEKLY_SUMMARY_VALIDATION = {
-    "required_fields": ["headline", "top_insight", "biggest_trigger", "emotional_trend", "one_win"],
+    "required_fields": [
+        "headline", "top_insight", "biggest_trigger", "emotional_trend", "one_win",
+        "improvements", "regressions", "trigger_changes", "mood_changes",
+        "category_trends", "personality_changes", "coach_recommendation",
+    ],
     "no_empty_strings": True,
     "no_null_values": True,
     "headline_max_chars": 120,

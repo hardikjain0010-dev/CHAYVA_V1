@@ -1,8 +1,8 @@
 /**
  * ExpenseContext — single source of truth for all expense data.
  *
- * This replaces the pattern of every page independently calling
- * `GET /expenses?user_id=...` and maintaining its own local useState.
+ * This replaces the pattern of every page independently fetching expenses
+ * and maintaining its own local useState.
  *
  * Architecture:
  *  - `ExpenseProvider` fetches expenses once when the user is available.
@@ -124,9 +124,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     dispatch({ type: "SET_LOADING" });
     try {
-        // The backend derives user_id from the JWT Authorization header.
-      // No need to pass user_id as a query param (but harmless if present for compat).
-      const data = await get<Expense[]>(`/expenses`);
+      const data = await get<Expense[]>("/expenses");
       dispatch({ type: "SET_EXPENSES", payload: data });
     } catch (err) {
       dispatch({
@@ -151,11 +149,8 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
   const addExpense = useCallback(
     async (data: ExpenseCreatePayload): Promise<Expense> => {
       if (!user) throw new Error("Not authenticated");
-      // The backend enforces user_id from the JWT, but we include it for
-      // the legacy code path and for explicit clarity.
       const expense = await post<Expense>("/expenses", {
         ...data,
-        user_id: user.uid,
         source: data.source ?? "manual",
       });
       dispatch({ type: "ADD_EXPENSE", payload: expense });

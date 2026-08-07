@@ -1,113 +1,47 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { Sprout, Moon, Coffee, Target, TrendingDown, TrendingUp } from "lucide-react";
+import { Coffee, Moon, Sprout, Target, TrendingDown, TrendingUp } from "lucide-react";
 import { useExpenses } from "@/lib/expense-context";
+import { useCoaching } from "@/lib/coaching-context";
 import { PageTransition } from "@/lib/ui-helpers";
+
 export const Route = createFileRoute("/_authenticated/week")({
   component: WeekPage,
 });
-function startOfWeek(offset = 0) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0 sun
-  const diff = (day === 0 ? -6 : 1) - day; // week starts Monday
-  d.setDate(d.getDate() + diff - offset * 7);
-  return d;
-}
-function pctChange(now: number, prev: number) {
-  if (prev === 0) return now === 0 ? 0 : 100;
-  return Math.round(((now - prev) / prev) * 100);
-}
+
 function WeekPage() {
-  // ✅ Single source of truth — reads from shared ExpenseProvider context.
-  // Field mapping: backend returns `date` (not `spent_at` or `created_at`).
-  // Late-night detection uses `date` field since `created_at` is not returned by the API.
-  const { expenses, loading } = useExpenses();
+  const { loading } = useExpenses();
+  const { snapshot, loading: dataLoading, error, refetch } = useCoaching();
+  const weekly = snapshot?.weekly;
 
   const metrics = useMemo(() => {
-    const thisStart = startOfWeek(0);
-    const lastStart = startOfWeek(1);
-    const inRange = (iso: string, from: Date, to: Date) => {
-      const d = new Date(iso);
-      return d >= from && d < to;
-    };
-    const now = new Date();
-    // `date` is the expense date (YYYY-MM-DD or full ISO). Use it for week filtering.
-    const thisWeek = expenses.filter((e) => inRange(e.date, thisStart, now));
-    const lastWeek = expenses.filter((e) => inRange(e.date, lastStart, thisStart));
-    const mindful = (arr: typeof expenses) => {
-      if (arr.length === 0) return 0;
-      // Moods logged in the app: happy, stressed, bored, lonely, tired, social
-      // "impulsive" and "regret" are not in the current mood list — treat stressed as non-mindful
-      const good = arr.filter(
-        (e) => e.mood !== "stressed" && e.mood !== "bored"
-      ).length;
-      return (good / arr.length) * 100;
-    };
-    const mindfulThis = mindful(thisWeek);
-    const mindfulLast = mindful(lastWeek);
-    const mindfulDelta = Math.round(mindfulThis - mindfulLast);
-     // Late-night: detect from `date` field time component (when available in ISO format).
-    // Falls back gracefully if date is YYYY-MM-DD only.
-    const lateNight = (arr: typeof expenses) =>
-      arr.filter((e) => {
-        try {
-          const h = new Date(e.date).getHours();
-          return h >= 22 || h < 5;
-        } catch {
-          return false;
-        }
-      }).length;
-    const lateThis = lateNight(thisWeek);
-    const lateLast = lateNight(lastWeek);
-    const lateDelta = pctChange(lateThis, lateLast);
-    const coffee = (arr: typeof expenses) =>
-      arr.filter(
-        (e) =>
-          e.category.toLowerCase().includes("food") &&
-          (e.notes ?? "").toLowerCase().includes("coffee"),
-      ).length ||
-      arr.filter((e) => (e.notes ?? "").toLowerCase().includes("coffee")).length;
-    const coffeeThis = coffee(thisWeek);
-    const coffeeLast = coffee(lastWeek);
-    // Budget check: days where daily total <= last-week avg per day
-    const dailyTotals = (arr: typeof expenses) => {
-      const m = new Map<string, number>();
-      // Use the first 10 chars (YYYY-MM-DD) as the day key
-      arr.forEach((e) => {
-        const day = e.date.slice(0, 10);
-        m.set(day, (m.get(day) ?? 0) + e.amount);
-      });
-      return m;
-    };
-     const lastMap = dailyTotals(lastWeek);
-    const lastAvg =
-      lastMap.size > 0
-        ? Array.from(lastMap.values()).reduce((s, v) => s + v, 0) / 7
-        : 0;
-    const thisMap = dailyTotals(thisWeek);
-    const daysWithin = Array.from(thisMap.values()).filter((v) => v <= lastAvg || lastAvg === 0)
-      .length;
-    const totalDays = Math.max(thisMap.size, 1);
     return {
-      mindfulDelta,
-      mindfulThis: Math.round(mindfulThis),
-      lateDelta,
-      lateThis,
-      lateLast,
-      coffeeThis,
-      coffeeLast,
-      daysWithin,
-      totalDays,
+      totalSpend: snapshot?.stats.weekly_spend ?? 0,
+      avgDailySpend: (snapshot?.stats.weekly_spend ?? 0) / 7,
+      topCategory: snapshot?.personality.favorite_category ?? "—",
+      topTrigger: weekly?.top_trigger ?? snapshot?.trigger.top_trigger ?? "—",
+      mindfulness: snapshot?.personality.mindfulness_score ?? snapshot?.spend_dna?.mindfulness_score ?? null,
     };
-    }, [expenses]);
-  if (loading) {
+  }, [snapshot, weekly]);
+
+  const sections = [
+    { title: "Behavior summary", value: weekly?.behavior_summary ?? weekly?.weekly_narrative },
+    { title: "Improvements", value: weekly?.improvements ?? weekly?.biggest_improvement },
+    { title: "Regressions", value: weekly?.regressions },
+    { title: "Trigger changes", value: weekly?.trigger_changes },
+    { title: "Mood changes", value: weekly?.mood_changes },
+    { title: "Category trends", value: weekly?.category_trends },
+    { title: "Personality changes", value: weekly?.personality_changes },
+    { title: "Coach recommendation", value: weekly?.coach_recommendation ?? weekly?.coach_advice },
+  ];
+
+  const isLoading = loading || dataLoading;
+
+  if (isLoading) {
     return (
       <PageTransition>
         <div className="space-y-6">
-          <header>
-            <h1 className="text-3xl font-semibold tracking-tight">This Week</h1>
-          </header>
+          <header><h1 className="text-3xl font-semibold tracking-tight">This Week</h1></header>
           <section className="grid gap-4 sm:grid-cols-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="glass h-32 animate-pulse rounded-2xl" />
@@ -117,76 +51,84 @@ function WeekPage() {
       </PageTransition>
     );
   }
+
   return (
     <PageTransition>
       <div className="space-y-6">
         <header>
           <h1 className="text-3xl font-semibold tracking-tight">This Week</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Here's how your spending habits evolved this week. Celebrate your progress, notice
-            recurring patterns, and discover small changes that can lead to healthier financial
-            decisions.
+            AI-first weekly coaching — what shifted, what improved, and what your coach recommends next.
           </p>
         </header>
+
+        {error ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{error}</span>
+              <button onClick={() => void refetch()} className="rounded-lg border border-destructive/30 px-3 py-1">Retry</button>
+            </div>
+          </div>
+        ) : null}
+
+        <section className="glass rounded-2xl p-6">
+          <p className="text-xs uppercase tracking-[0.2em] text-accent">Weekly narrative</p>
+          <h2 className="mt-2 text-2xl font-semibold">{weekly?.weekly_narrative ?? "Your weekly read will appear after a few logged days."}</h2>
+          <p className="mt-3 text-base leading-relaxed text-foreground/85">{weekly?.spending_pattern ?? weekly?.behavior_changes}</p>
+          <div className="mt-4 flex flex-wrap gap-2 text-sm text-muted-foreground">
+            <span className="rounded-full border border-foreground/10 bg-background/40 px-3 py-1">Top category: {metrics.topCategory}</span>
+            <span className="rounded-full border border-foreground/10 bg-background/40 px-3 py-1">Top trigger: {metrics.topTrigger}</span>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2">
+          {sections.map((section) => (
+            <div key={section.title} className="glass rounded-2xl p-6">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.15em] text-accent">{section.title}</h3>
+              <p className="mt-3 text-base leading-relaxed text-foreground/85">{section.value ?? "—"}</p>
+            </div>
+          ))}
+        </section>
+
         <section className="grid gap-4 sm:grid-cols-2">
           <MetricCard
             icon={Sprout}
             emoji="🌱"
             title="Mindfulness"
-            value={
-              metrics.mindfulDelta === 0
-                ? `You stayed as mindful as last week`
-                : metrics.mindfulDelta > 0
-                  ? `You became ${metrics.mindfulDelta}% more mindful than last week.`
-                  : `You were ${Math.abs(metrics.mindfulDelta)}% less mindful than last week.`
-            }
-            sub={`${metrics.mindfulThis}% of purchases logged as calm this week`}
-            positive={metrics.mindfulDelta >= 0}
+            value={metrics.mindfulness != null ? `${metrics.mindfulness}/100 mindfulness score this week.` : weekly?.mood_changes ?? "—"}
+            sub="From your live coaching snapshot"
+            positive
+          />
+          <MetricCard
+            icon={Target}
+            emoji="💸"
+            title="Spend snapshot"
+            value={`You spent ₹${metrics.totalSpend.toFixed(2)} this week.`}
+            sub={`Average ₹${metrics.avgDailySpend.toFixed(2)} per day`}
+            positive={metrics.totalSpend <= metrics.avgDailySpend * 7 + 1000}
           />
           <MetricCard
             icon={Moon}
             emoji="🌙"
-            title="Late-night spending"
-            value={
-              metrics.lateLast === 0 && metrics.lateThis === 0
-                ? `No late-night spending — nice.`
-                : metrics.lateDelta <= 0
-                  ? `Late-night spending decreased by ${Math.abs(metrics.lateDelta)}%.`
-                  : `Late-night spending increased by ${metrics.lateDelta}%.`
-            }
-            sub={`${metrics.lateThis} late-night purchases this week`}
-            positive={metrics.lateDelta <= 0}
+            title="One win"
+            value={weekly?.one_win ?? "—"}
+            sub="Generated by summarize.py"
+            positive
           />
           <MetricCard
             icon={Coffee}
-            emoji="☕"
-            title="Coffee purchases"
-            value={
-              metrics.coffeeThis === metrics.coffeeLast
-                ? `Coffee runs stayed at ${metrics.coffeeThis}.`
-                : metrics.coffeeThis < metrics.coffeeLast
-                  ? `Coffee purchases dropped from ${metrics.coffeeLast} to ${metrics.coffeeThis}.`
-                  : `Coffee purchases rose from ${metrics.coffeeLast} to ${metrics.coffeeThis}.`
-            }
-            sub="Add a note like 'coffee' when saving to track this"
-            positive={metrics.coffeeThis <= metrics.coffeeLast}
-          />
-           <MetricCard
-            icon={Target}
-            emoji="🎯"
-            title="Budget days"
-            value={`You stayed within your budget on ${metrics.daysWithin} of ${metrics.totalDays} days.`}
-            sub="Compared to last week's daily average"
-            positive={metrics.daysWithin >= Math.ceil(metrics.totalDays / 2)}
+            emoji="✨"
+            title="Coach recommendation"
+            value={weekly?.coach_recommendation ?? weekly?.coach_advice ?? "—"}
+            sub="Your next gentle behavioral nudge"
+            positive
           />
         </section>
-        <p className="text-center text-sm text-muted-foreground">
-          Small shifts, big change. Keep noticing. 💜
-        </p>
       </div>
     </PageTransition>
   );
 }
+
 function MetricCard({
   icon: Icon,
   emoji,
@@ -210,11 +152,7 @@ function MetricCard({
           <h3 className="font-semibold">{title}</h3>
         </div>
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-foreground/5">
-          {positive ? (
-            <TrendingDown className="h-4 w-4 text-accent" />
-          ) : (
-            <TrendingUp className="h-4 w-4 text-destructive" />
-          )}
+          {positive ? <TrendingDown className="h-4 w-4 text-accent" /> : <TrendingUp className="h-4 w-4 text-destructive" />}
           <Icon className="hidden" />
         </span>
       </div>

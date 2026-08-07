@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Moon, Check } from "lucide-react";
-import { get, post, put } from "@/lib/api";
+import { get, post } from "@/lib/api";
 import { PageTransition } from "@/lib/ui-helpers";
+import { useUser } from "@/lib/user-context";
+import { useCoaching } from "@/lib/coaching-context";
 
 export const Route = createFileRoute("/_authenticated/reflect")({
   component: ReflectPage,
@@ -19,65 +21,94 @@ const MOODS = [
 ];
 
 type Reflection = {
-  day: string;
-  mood: string | null;
-  day_rating: number | null;
-  triggers: string | null;
-  tomorrow: string | null;
+  id?: string;
+  day?: string;
+  mood?: string | null;
+  day_rating?: number | null;
+  triggers?: string | null;
+  tomorrow?: string | null;
+  timestamp?: string;
 };
 
 function ReflectPage() {
-  
+  const { user } = useUser();
+  const { snapshot, refetch: refetchCoaching } = useCoaching();
   const today = new Date().toISOString().slice(0, 10);
   const [mood, setMood] = useState("okay");
   const [rating, setRating] = useState(3);
   const [triggers, setTriggers] = useState("");
   const [tomorrow, setTomorrow] = useState("");
- const [saving, setSaving] = useState(false);
-const [saved, setSaved] = useState(false);
-
-const [past, setPast] = useState<Reflection[]>([]); 
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [past, setPast] = useState<Reflection[]>([]);
 
   useEffect(() => {
-    (async () => {
-  
-const todayRow = await get<Reflection>("/mood/today");
+    if (!user?.uid) return;
 
-if (todayRow) {
-  setMood(todayRow.mood ?? "okay");
-  setRating(todayRow.day_rating ?? 3);
-  setTriggers(todayRow.triggers ?? "");
-  setTomorrow(todayRow.tomorrow ?? "");
-}
-// ✅ Fixed: was "/reflection" (404) — correct path is "/reflections".
-const list = await get<Reflection[]>("/reflections");
-    setPast(list ?? []);
-})();
-}, []);
+    const loadReflections = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const list = await get<Reflection[]>("/moods");
+        const sorted = [...(list ?? [])].sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""));
+        setPast(sorted);
+
+        const todayRow = sorted.find((entry) => (entry.day ?? entry.timestamp?.slice(0, 10)) === today);
+        if (todayRow) {
+          setMood(todayRow.mood ?? "okay");
+          setRating(todayRow.day_rating ?? 3);
+          setTriggers(todayRow.triggers ?? "");
+          setTomorrow(todayRow.tomorrow ?? "");
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof Error ? err.message : "Unable to load reflections.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadReflections();
+  }, [today, user?.uid]);
 
   async function save() {
+    if (!user?.uid) {
+      toast.error("Please sign in first.");
+      return;
+    }
+
     setSaving(true);
-    try{
-    
-    await put("/reflections",{
-        day: today,
+    setError(null);
+    try {
+      await post("/mood", {
         mood,
+        day: today,
         day_rating: rating,
         triggers: triggers || null,
         tomorrow: tomorrow || null,
-  
-    });
-   
-  
-    setSaved(true);
-    toast.success("Reflection saved");
-    setTimeout(() => setSaved(false), 2200);
-  } catch {
-        toast.error("Failed to save reflection");
+        timestamp: new Date().toISOString(),
+      });
+
+      const list = await get<Reflection[]>("/moods");
+      const sorted = [...(list ?? [])].sort((a, b) => (b.timestamp ?? "").localeCompare(a.timestamp ?? ""));
+      setPast(sorted);
+
+      setSaved(true);
+      await refetchCoaching();
+      toast.success("Reflection saved");
+      setTimeout(() => setSaved(false), 2200);
+      setTriggers("");
+      setTomorrow("");
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Failed to save reflection");
+      toast.error("Failed to save reflection");
     } finally {
-        setSaving(false);
+      setSaving(false);
     }
-}
+  }
 
   return (
     <PageTransition>
@@ -93,12 +124,18 @@ const list = await get<Reflection[]>("/reflections");
             </div>
           </div>
           <p className="mt-4 max-w-2xl text-base text-muted-foreground">
-            A quiet minute to notice how emotions shaped today's spending — and to set one gentle
-            intention for tomorrow.
+            A quiet minute to notice how emotions shaped today's spending — and to set one gentle intention for tomorrow.
           </p>
         </header>
 
         <section className="glass relative space-y-6 rounded-3xl p-6 md:p-8">
+          {snapshot?.reflection.summary ?? snapshot?.reflection.insight ? (
+            <div className="rounded-2xl border border-foreground/10 bg-foreground/5 p-4 text-sm text-muted-foreground">
+              <div className="text-xs uppercase tracking-[0.2em] text-accent">AI reflection summary</div>
+              <p className="mt-2 text-foreground/85">{snapshot.reflection.summary ?? snapshot.reflection.insight}</p>
+            </div>
+          ) : null}
+
           <div>
             <label className="text-sm font-medium">How was your day?</label>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -204,34 +241,38 @@ const list = await get<Reflection[]>("/reflections");
             </AnimatePresence>
           </motion.button>
 
+          {error ? <p className="text-sm text-muted-foreground">{error}</p> : null}
+
           <p className="text-center text-sm italic text-muted-foreground">
             Every reflection brings you one step closer to mindful spending.
           </p>
         </section>
 
-        {past.length > 0 && (
+        {loading ? (
+          <div className="glass rounded-2xl p-6 text-sm text-muted-foreground">Loading reflections…</div>
+        ) : past.length > 0 ? (
           <section className="glass rounded-2xl p-6">
             <h2 className="mb-4 text-lg font-semibold">Recent reflections</h2>
             <ul className="space-y-3">
               {past.map((r, i) => (
                 <motion.li
-                  key={r.day}
+                  key={r.id ?? `${r.day ?? "entry"}-${i}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
                   className="rounded-xl border border-foreground/10 bg-foreground/5 p-4"
                 >
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{r.day}</span>
+                    <span>{r.day ?? r.timestamp?.slice(0, 10)}</span>
                     <span>{r.mood}</span>
                   </div>
-                  {r.triggers && <p className="mt-2 text-sm">💭 {r.triggers}</p>}
-                  {r.tomorrow && <p className="mt-1 text-sm">🌱 {r.tomorrow}</p>}
+                  {r.triggers ? <p className="mt-2 text-sm">💭 {r.triggers}</p> : null}
+                  {r.tomorrow ? <p className="mt-1 text-sm">🌱 {r.tomorrow}</p> : null}
                 </motion.li>
               ))}
             </ul>
           </section>
-        )}
+        ) : null}
       </div>
     </PageTransition>
   );

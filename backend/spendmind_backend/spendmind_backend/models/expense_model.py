@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Optional, Literal
 from pydantic import BaseModel, Field
-MoodType = Literal["stressed", "bored", "happy", "lonely", "tired", "social"]
+MoodType = Literal["stressed", "bored", "happy", "lonely", "tired", "social", "great", "good", "okay", "low"]
 class ExpenseCreate(BaseModel):
-    user_id: str = Field(..., description="Firebase UID of the user")
+    user_id: Optional[str] = Field(None, description="Legacy client field; backend derives the user from JWT")
     amount: float = Field(..., gt=0, description="Amount spent, in INR")
     category: str = Field(..., description="e.g. food, shopping, transport")
     date: Optional[str] = Field(None, description="ISO date string; defaults to now")
@@ -24,11 +24,15 @@ class ExpenseWithInsight(BaseModel):
     expense: ExpenseOut
     insight: dict
 class MoodLog(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     mood: MoodType
     timestamp: Optional[str] = None
+    day: Optional[str] = None
+    day_rating: Optional[int] = Field(None, ge=1, le=5)
+    triggers: Optional[str] = None
+    tomorrow: Optional[str] = None
 class SMSImportRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     sms_text: str
 class SMSImportPreview(BaseModel):
     amount: Optional[float]
@@ -41,7 +45,7 @@ class SMSImportPreview(BaseModel):
     confidence: float
     duplicate: bool = False
 class SMSImportConfirm(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     amount: float
     category: str
     merchant: Optional[str] = None

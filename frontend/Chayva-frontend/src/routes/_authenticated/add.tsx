@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-import { post } from "@/lib/api";
-import { getCurrentUser } from "@/lib/auth";
+import { useExpenses } from "@/lib/expense-context";
 import { PageTransition } from "@/lib/ui-helpers";
 
 export const Route = createFileRoute("/_authenticated/add")({
@@ -35,17 +34,9 @@ const MOODS = [
   { value: "social", emoji: "🥳" },
 ];
 
-const MOOD_FEEDBACK: Record<string, string> = {
-  happy: "A joyful purchase — enjoy it fully. ✨",
-  stressed: "Notice the stress. Would resting help more than spending?",
-  bored: "Boredom spending is common. Awareness is the first step.",
-  lonely: "Sometimes connection matters more than purchases.",
-  tired: "Fatigue can affect financial decisions. Take care of yourself.",
-  social: "Social moments are valuable—spend intentionally.",
-};
-
 function AddExpensePage() {
   const navigate = useNavigate();
+  const { addExpense } = useExpenses();
 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("Food");
@@ -57,6 +48,7 @@ function AddExpensePage() {
 
   const [loading, setLoading] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
+  const [savedAnalysis, setSavedAnalysis] = useState<Record<string, unknown> | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,15 +63,7 @@ function AddExpensePage() {
     setLoading(true);
 
     try {
-      const user = await getCurrentUser();
-
-if (!user) {
-  toast.error("Please sign in first.");
-  setLoading(false);
-  return;
-}
-      await post("/expenses", {
-        user_id: user.uid,
+      const expense = await addExpense({
         amount: value,
         category,
         notes: note,
@@ -88,17 +72,21 @@ if (!user) {
         source: "manual",
       });
 
-      toast.success("Expense saved!");
+      const insightPayload = expense.insight && typeof expense.insight === "object" ? expense.insight : null;
+      const insightText =
+        insightPayload && typeof insightPayload === "object" && "insight" in insightPayload
+          ? String((insightPayload as Record<string, unknown>).insight)
+          : null;
 
-      setSavedFeedback(
-        MOOD_FEEDBACK[mood] ?? "Expense saved successfully."
-      );
+      setSavedAnalysis(insightPayload);
+      setSavedFeedback(insightText ?? "Expense saved. AI insight will appear after the backend coach processes this transaction.");
+      toast.success("Expense saved — your backend coach is analyzing it.");
 
       setTimeout(() => {
         navigate({
           to: "/expenses",
         });
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error(error);
       toast.error("Failed to save expense.");
@@ -265,6 +253,31 @@ if (!user) {
                 <p className="mt-2 text-sm text-muted-foreground">
                   {savedFeedback}
                 </p>
+                {savedAnalysis ? (
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Behavior: {String((savedAnalysis as Record<string, unknown>).behavior ?? "forming")}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Emotion: {String((savedAnalysis as Record<string, unknown>).emotion ?? mood)}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Trigger: {String((savedAnalysis as Record<string, unknown>).detected_trigger ?? "forming")}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Type: {String((savedAnalysis as Record<string, unknown>).spending_type ?? "forming")}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Pattern: {String((savedAnalysis as Record<string, unknown>).pattern_tag ?? "neutral")}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Confidence: {String((savedAnalysis as Record<string, unknown>).confidence ?? "—")}
+                    </span>
+                    <span className="basis-full rounded-2xl border border-foreground/10 bg-background/40 px-3 py-2">
+                      Suggestion: {String((savedAnalysis as Record<string, unknown>).suggestion ?? "No suggestion returned.")}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </motion.div>
           )}

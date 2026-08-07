@@ -4,10 +4,13 @@ All settings are loaded from environment variables (.env file).
 Never hardcode secrets here.
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-
-load_dotenv()
+# Explicitly load .env from backend directory
+backend_dir = Path(__file__).resolve().parent.parent.parent.parent
+env_file = backend_dir / ".env"
+load_dotenv(env_file)
 
 
 class Settings:

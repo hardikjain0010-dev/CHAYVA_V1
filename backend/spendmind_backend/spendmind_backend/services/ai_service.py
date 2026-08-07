@@ -25,6 +25,8 @@ from ai_engine import (  # noqa: E402
     generate_weekly_summary as engine_generate_weekly_summary,
     predict_nudge as engine_predict_nudge,
 )
+from ai_engine.router.model_router import route_prompt  # noqa: E402
+from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT  # noqa: E402
 
 
 def analyze_expense(expense: dict) -> dict:
@@ -37,7 +39,7 @@ def analyze_expense(expense: dict) -> dict:
         time_of_day=adapted["time_of_day"],
         last_5_expenses=expense.get("last_5_expenses") or expense.get("recent_expenses") or [],
     )
-    return _without_meta(result)
+    return _enrich_expense_insight(_without_meta(result), adapted)
 
 
 def generate_weekly_summary(expenses: list[dict]) -> dict:
@@ -69,6 +71,34 @@ def predict_nudge(
     return result.get("message")
 
 
+def build_nudge_payload(message: Optional[str], triggers: list[dict]) -> dict:
+    top_trigger = triggers[0] if triggers else {}
+    trigger_name = top_trigger.get("trigger") or "No active trigger"
+    behavior = top_trigger.get("behavior") or "Your coach is watching for the next clear spending cue."
+    frequency = str(top_trigger.get("frequency") or "").lower()
+
+    risk_level = "low"
+    if message:
+        risk_level = "medium"
+        if frequency in {"daily", "often", "frequent", "very often", "most days"}:
+            risk_level = "high"
+        elif trigger_name not in {"Insufficient data", "Keep logging", "Almost there", "No active trigger"}:
+            risk_level = "medium"
+
+    confidence = 0.75 if message else 0.35
+    if triggers and trigger_name not in {"Insufficient data", "Keep logging", "Almost there"}:
+        confidence = min(0.92, confidence + 0.1)
+
+    return {
+        "prediction": message or "No urgent spending risk is active right now.",
+        "upcoming_risk": trigger_name,
+        "suggested_action": message or "Keep a short pause between emotion and purchase.",
+        "trigger_behavior": behavior,
+        "risk_level": risk_level,
+        "confidence": round(confidence, 2),
+    }
+
+
 def parse_whatsapp_message(text: str) -> dict:
     amount = _extract_amount(text)
     return {
@@ -93,6 +123,59 @@ def voice_to_expense(audio_file_path: str) -> dict:
     return parsed
 
 
+def generate_reflection_summary(mood_entry: dict, recent_expenses: list[dict]) -> str:
+    """Generate an AI reflection summary from the latest mood log and recent spending."""
+    mood = mood_entry.get("mood") or "neutral"
+    triggers = mood_entry.get("triggers") or ""
+    tomorrow = mood_entry.get("tomorrow") or ""
+    rating = mood_entry.get("day_rating")
+
+    expense_lines = []
+    for expense in (recent_expenses or [])[:5]:
+        insight = expense.get("insight") or {}
+        expense_lines.append(
+            f"- ₹{expense.get('amount', 0)} {expense.get('category', 'other')} "
+            f"({expense.get('mood') or 'no mood'}): "
+            f"{insight.get('insight') or insight.get('pattern_tag') or 'logged expense'}"
+        )
+    expense_context = "\n".join(expense_lines) if expense_lines else "No recent expenses logged."
+
+    prompt = f"""{MASTER_SYSTEM_PROMPT.strip()}
+
+TASK: REFLECTION SUMMARY
+
+Write a warm 2-sentence reflection summary connecting today's mood/reflection to recent spending behavior.
+
+TODAY'S REFLECTION:
+- Mood: {mood}
+- Day rating: {rating}/5
+- Spending triggers named: {triggers or 'not specified'}
+- Tomorrow intention: {tomorrow or 'not specified'}
+
+RECENT EXPENSES:
+{expense_context}
+
+Return ONLY plain text — no JSON, no markdown."""
+    result = route_prompt(task_type="fast", prompt=prompt)
+    if result.get("success") and result.get("parsed"):
+        parsed = result["parsed"]
+        if isinstance(parsed, str) and parsed.strip():
+            return parsed.strip()
+        if isinstance(parsed, dict):
+            for key in ("summary", "insight", "reflection", "message"):
+                if parsed.get(key):
+                    return str(parsed[key]).strip()
+
+    parts = []
+    if triggers:
+        parts.append(f"You named {triggers} as a spending cue today.")
+    if tomorrow:
+        parts.append(f"Tomorrow's intention — {tomorrow} — is now part of your coaching context.")
+    if mood:
+        parts.append(f"Your mood today was {mood}, which helps Chayva read the emotional layer behind your spending.")
+    return " ".join(parts) or "Your reflection is now shaping how your coach reads your spending patterns."
+
+
 def generate_spend_dna(user_month_data: dict) -> dict:
     profile = _adapt_spending_profile(user_month_data.get("profile", {}))
     personality = classify_personality(profile)
@@ -104,15 +187,110 @@ def generate_spend_dna(user_month_data: dict) -> dict:
         if category_totals
         else "general"
     )
+    most_impulsive_hour = user_month_data.get("most_impulsive_hour", "late evening")
+
+    strengths = personality.get("traits", [])[:2] or [
+        f"You are getting clearer about {favorite_category.lower()} spending.",
+        "Your behavior is becoming legible to the coach.",
+    ]
+    growth_areas = []
+    if top_trigger and top_trigger not in {"no clear pattern yet", "Insufficient data", "Keep logging", "Almost there"}:
+        growth_areas.append(f"Watch for {top_trigger.lower()} around {most_impulsive_hour}.")
+    if not growth_areas:
+        growth_areas.append("Add mood and note context to sharpen trigger detection.")
+
+    risk_level = "low"
+    if top_trigger and top_trigger not in {"no clear pattern yet", "Insufficient data", "Keep logging", "Almost there"}:
+        risk_level = "medium"
+    impulse_ratio = profile.get("impulse_count", 0) / max(profile.get("total_expenses", 1), 1)
+    if impulse_ratio >= 0.35:
+        risk_level = "high"
+
+    coach_advice = (
+        growth_areas[0]
+        if growth_areas
+        else "Keep logging with mood context so your coach can stay one step ahead."
+    )
 
     return {
         "personality_type": personality.get("type"),
+        "confidence": round(min(0.95, 0.55 + min(0.25, max(0, len(triggers)) * 0.05)), 2),
+        "traits": personality.get("traits", []),
+        "strengths": strengths,
+        "growth_areas": growth_areas,
         "top_emotion_trigger": top_trigger,
         "favorite_category": favorite_category,
-        "most_impulsive_hour": user_month_data.get("most_impulsive_hour", "late evening"),
-        "biggest_behavioral_win": "You tracked your spending consistently enough to reveal patterns.",
+        "most_impulsive_hour": most_impulsive_hour,
+        "most_active_time": most_impulsive_hour,
+        "biggest_behavioral_win": weekly_win if (weekly_win := user_month_data.get("biggest_win")) else personality.get("description"),
         "monthly_narrative": personality.get("description"),
+        "behavior_narrative": personality.get("description"),
+        "dominant_trigger": top_trigger,
+        "behavior_pattern": top_trigger,
+        "mindfulness_score": user_month_data.get("mindfulness_score", 100),
+        "risk_level": risk_level,
+        "coach_advice": coach_advice,
+        "behavior_evolution": user_month_data.get("behavior_evolution"),
     }
+
+
+def _enrich_expense_insight(insight: dict, expense: dict) -> dict:
+    pattern = insight.get("pattern_tag") or "neutral"
+    mood = expense.get("mood") or "neutral"
+    category = expense.get("category") or "this category"
+    trigger = _trigger_from_pattern(pattern, mood)
+
+    return {
+        **insight,
+        "behavior": _label_from_pattern(pattern),
+        "emotion": mood,
+        "detected_trigger": trigger,
+        "spending_type": _spending_type(pattern),
+        "suggestion": _suggestion_from_pattern(pattern, category),
+    }
+
+
+def _label_from_pattern(pattern: str) -> str:
+    labels = {
+        "comfort_spending": "Comfort spending",
+        "reward_seeking": "Reward seeking",
+        "social_pressure": "Social influence",
+        "impulse_buying": "Impulse purchase",
+        "boredom_spending": "Boredom spending",
+        "habit_loop": "Habit loop",
+        "neutral": "Intentional spend",
+    }
+    return labels.get(pattern, "Intentional spend")
+
+
+def _trigger_from_pattern(pattern: str, mood: str) -> str:
+    if pattern == "neutral":
+        return "No strong trigger detected"
+    if mood and mood != "neutral":
+        return f"{mood.title()} mood cue"
+    return _label_from_pattern(pattern)
+
+
+def _spending_type(pattern: str) -> str:
+    if pattern in {"impulse_buying", "boredom_spending"}:
+        return "impulsive"
+    if pattern in {"comfort_spending", "reward_seeking", "social_pressure"}:
+        return "emotional"
+    if pattern == "habit_loop":
+        return "habitual"
+    return "planned"
+
+
+def _suggestion_from_pattern(pattern: str, category: str) -> str:
+    suggestions = {
+        "comfort_spending": "Name the feeling first, then decide whether the purchase still serves you.",
+        "reward_seeking": "Enjoy the reward, and pair it with one intentional boundary.",
+        "social_pressure": "Check whether this spend reflects your wish or the room's momentum.",
+        "impulse_buying": "Give this purchase a short pause before repeating it.",
+        "boredom_spending": "Try one non-spending reset before another similar purchase.",
+        "habit_loop": f"Notice what usually happens right before {category} spending.",
+    }
+    return suggestions.get(pattern, "Keep logging the context so your coach can sharpen the next read.")
 
 
 def _adapt_expenses(expenses: list[dict]) -> list[dict]:

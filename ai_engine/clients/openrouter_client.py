@@ -19,14 +19,23 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
-def _get_env_model(name: str, default: str) -> str:
-    value = os.getenv(name, default)
-    if value is None:
-        return default
+def _get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise EnvironmentError(f"{name} not found in environment.")
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        value = value[1:-1].strip()
+    if not value:
+        raise EnvironmentError(f"{name} not found in environment.")
+    return value
+
+
+def _clean_model(value: str) -> str:
     value = str(value).strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
         value = value[1:-1].strip()
-    return value or default
+    return value
 
 
 # ── Lazy singleton ────────────────────────────────────────────────────────────
@@ -36,11 +45,7 @@ _client: Optional[OpenAI] = None
 def _get_client() -> OpenAI:
     global _client
     if _client is None:
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        if not api_key:
-            raise EnvironmentError(
-                "OPENROUTER_API_KEY not found. Add it to your .env file."
-            )
+        api_key = _get_required_env("OPENROUTER_API_KEY")
 
         _client = OpenAI(
             api_key=api_key,
@@ -144,7 +149,7 @@ def call_openrouter(
     Args:
         system_prompt: Persona and rules.
         user_prompt:   The expense data or question.
-        model:         Override model string. Defaults to OPENROUTER_REASONING_MODEL from .env.
+        model:         Model string selected by the router, or OPENROUTER_REASONING_MODEL.
         max_retries:   Retry attempts.
         retry_delay:   Seconds between retries.
 
@@ -158,11 +163,7 @@ def call_openrouter(
             "error":         str | None
         }
     """
-    model_name = (
-        model
-        or _get_env_model("OPENROUTER_REASONING_MODEL", "openai/gpt-oss-120b:free")
-        or _get_env_model("OPENROUTER_MODEL", "")
-    )
+    model_name = _clean_model(model) if model else _get_required_env("OPENROUTER_REASONING_MODEL")
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -245,10 +246,7 @@ if __name__ == "__main__":
         "Mood: stressed. Category: food. Notes: had an exam tomorrow."
     )
 
-    model_name = (
-        _get_env_model("OPENROUTER_REASONING_MODEL", "openai/gpt-oss-120b:free")
-        or _get_env_model("OPENROUTER_MODEL", "")
-    )
+    model_name = _get_required_env("OPENROUTER_REASONING_MODEL")
 
     print("─" * 60)
     print(f"Testing OpenRouter with: {model_name}")

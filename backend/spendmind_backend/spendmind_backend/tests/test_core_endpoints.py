@@ -6,14 +6,20 @@ Run with: pytest -v
 """
 import sys
 import os
+import uuid
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi.testclient import TestClient
+from core.security import create_access_token, verify_access_token
+from services.firebase_service import db_client
 from main import app
 
 client = TestClient(app)
 
 TEST_USER = "test-user-001"
+OTHER_USER = "test-user-002"
+AUTH_HEADERS = {"Authorization": f"Bearer {create_access_token({'sub': TEST_USER})}"}
+OTHER_AUTH_HEADERS = {"Authorization": f"Bearer {create_access_token({'sub': OTHER_USER})}"}
 
 
 def test_health_check():
@@ -30,7 +36,7 @@ def test_create_expense():
         "mood": "stressed",
         "notes": "midnight Swiggy order",
     }
-    resp = client.post("/expenses", json=payload)
+    resp = client.post("/expenses", json=payload, headers=AUTH_HEADERS)
     assert resp.status_code == 200
     data = resp.json()
     assert data["amount"] == 250
@@ -42,54 +48,66 @@ def test_create_expense():
 def test_get_expense():
     create_resp = client.post("/expenses", json={
         "user_id": TEST_USER, "amount": 100, "category": "transport",
-    })
+    }, headers=AUTH_HEADERS)
     expense_id = create_resp.json()["id"]
 
-    get_resp = client.get(f"/expenses/{expense_id}")
+    get_resp = client.get(f"/expenses/{expense_id}", headers=AUTH_HEADERS)
     assert get_resp.status_code == 200
     assert get_resp.json()["id"] == expense_id
 
 
+def test_get_expense_rejects_other_user():
+    create_resp = client.post(
+        "/expenses",
+        json={"user_id": OTHER_USER, "amount": 100, "category": "transport"},
+        headers=AUTH_HEADERS,
+    )
+    expense_id = create_resp.json()["id"]
+
+    get_resp = client.get(f"/expenses/{expense_id}", headers=OTHER_AUTH_HEADERS)
+    assert get_resp.status_code == 404
+
+
 def test_get_expense_not_found():
-    resp = client.get("/expenses/does-not-exist")
+    resp = client.get("/expenses/does-not-exist", headers=AUTH_HEADERS)
     assert resp.status_code == 404
     assert resp.json()["error"] is True
 
 
 def test_list_expenses_filters():
-    client.post("/expenses", json={"user_id": TEST_USER, "amount": 50, "category": "shopping"})
-    resp = client.get("/expenses", params={"user_id": TEST_USER, "category": "shopping"})
+    client.post("/expenses", json={"user_id": TEST_USER, "amount": 50, "category": "shopping"}, headers=AUTH_HEADERS)
+    resp = client.get("/expenses", params={"category": "shopping"}, headers=AUTH_HEADERS)
     assert resp.status_code == 200
     results = resp.json()
     assert all(r["category"] == "shopping" for r in results)
 
 
 def test_delete_expense():
-    create_resp = client.post("/expenses", json={"user_id": TEST_USER, "amount": 30, "category": "misc"})
+    create_resp = client.post("/expenses", json={"user_id": TEST_USER, "amount": 30, "category": "misc"}, headers=AUTH_HEADERS)
     expense_id = create_resp.json()["id"]
-    del_resp = client.delete(f"/expenses/{expense_id}")
+    del_resp = client.delete(f"/expenses/{expense_id}", headers=AUTH_HEADERS)
     assert del_resp.status_code == 200
-    get_resp = client.get(f"/expenses/{expense_id}")
+    get_resp = client.get(f"/expenses/{expense_id}", headers=AUTH_HEADERS)
     assert get_resp.status_code == 404
 
 
 def test_analytics_summary():
-    client.post("/expenses", json={"user_id": TEST_USER, "amount": 400, "category": "food"})
-    resp = client.get("/analytics/summary", params={"user_id": TEST_USER})
+    client.post("/expenses", json={"user_id": TEST_USER, "amount": 400, "category": "food"}, headers=AUTH_HEADERS)
+    resp = client.get("/analytics/summary", headers=AUTH_HEADERS)
     assert resp.status_code == 200
     data = resp.json()
     assert "total_this_week" in data
 
 
 def test_analytics_weekly():
-    resp = client.get("/analytics/weekly", params={"user_id": TEST_USER})
+    resp = client.get("/analytics/weekly", headers=AUTH_HEADERS)
     assert resp.status_code == 200
     assert "by_category" in resp.json()
 
 
 def test_sms_import_preview():
     sms_text = "Rs.500.00 debited from a/c **1234 on 05-07-26 to VPA swiggy@upi"
-    resp = client.post("/sms/import", json={"user_id": TEST_USER, "sms_text": sms_text})
+    resp = client.post("/sms/import", json={"user_id": TEST_USER, "sms_text": sms_text}, headers=AUTH_HEADERS)
     assert resp.status_code == 200
     data = resp.json()
     assert data["amount"] == 500.0
@@ -98,7 +116,7 @@ def test_sms_import_preview():
 
 def test_sms_import_reversed_transaction_rejected():
     sms_text = "Rs.500.00 debited but transaction was reversed and refunded"
-    resp = client.post("/sms/import", json={"user_id": TEST_USER, "sms_text": sms_text})
+    resp = client.post("/sms/import", json={"user_id": TEST_USER, "sms_text": sms_text}, headers=AUTH_HEADERS)
     assert resp.status_code == 422
 
 
@@ -106,12 +124,12 @@ def test_sms_import_confirm_and_duplicate_detection():
     confirm_payload = {
         "user_id": TEST_USER, "amount": 199, "category": "food", "merchant": "zomato",
     }
-    resp1 = client.post("/sms/import/confirm", json=confirm_payload)
+    resp1 = client.post("/sms/import/confirm", json=confirm_payload, headers=AUTH_HEADERS)
     assert resp1.status_code == 200
 
     # exact same payload again (same date auto-generated might differ, but
     # this still demonstrates the duplicate-check code path runs cleanly)
-    resp2 = client.post("/sms/import/confirm", json=confirm_payload)
+    resp2 = client.post("/sms/import/confirm", json=confirm_payload, headers=AUTH_HEADERS)
     assert resp2.status_code in (200, 409)
 
 
@@ -126,14 +144,72 @@ def test_auth_verify_missing_token():
     assert resp.status_code == 401
 
 
+def test_auth_google_creates_user_and_returns_jwt(monkeypatch):
+    email = f"google-new-{uuid.uuid4()}@example.com"
+
+    monkeypatch.setattr(
+        "routers.auth.verify_google_token",
+        lambda credential: {
+            "sub": "google-sub-new",
+            "email": email,
+            "email_verified": True,
+            "name": "Google New",
+            "picture": "https://example.com/new.png",
+        },
+    )
+
+    resp = client.post("/auth/google", json={"credential": "google-id-token"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    user = data["user"]
+    assert user["email"] == email
+    assert user["provider"] == "google"
+    assert user["display_name"] == "Google New"
+    assert verify_access_token(data["access_token"]) == user["uid"]
+    assert db_client.query("users", email=email)
+
+
+def test_auth_google_logs_in_returning_user_with_same_jwt_flow(monkeypatch):
+    email = f"google-returning-{uuid.uuid4()}@example.com"
+
+    monkeypatch.setattr(
+        "routers.auth.verify_google_token",
+        lambda credential: {
+            "sub": "google-sub-returning",
+            "email": email,
+            "email_verified": True,
+            "name": "Google Returning",
+            "picture": "https://example.com/returning.png",
+        },
+    )
+
+    first_resp = client.post("/auth/google", json={"credential": "first-token"})
+    second_resp = client.post("/auth/google", json={"credential": "second-token"})
+
+    assert first_resp.status_code == 200
+    assert second_resp.status_code == 200
+    first = first_resp.json()
+    second = second_resp.json()
+    assert second["user"]["uid"] == first["user"]["uid"]
+    assert verify_access_token(second["access_token"]) == first["user"]["uid"]
+
+    me_resp = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {second['access_token']}"},
+    )
+    assert me_resp.status_code == 200
+    assert me_resp.json()["email"] == email
+
+
 def test_nudges_current_returns_shape():
-    resp = client.get("/nudges/current", params={"user_id": TEST_USER})
+    resp = client.get("/nudges/current", headers=AUTH_HEADERS)
     assert resp.status_code == 200
     assert "nudge" in resp.json()
 
 
 def test_insights_personality_shape():
-    resp = client.get("/insights/personality", params={"user_id": TEST_USER})
+    resp = client.get("/insights/personality", headers=AUTH_HEADERS)
     assert resp.status_code == 200
     data = resp.json()
     assert "type" in data
@@ -141,7 +217,7 @@ def test_insights_personality_shape():
 
 
 def test_spend_dna_shape():
-    resp = client.get("/insights/spend-dna", params={"user_id": TEST_USER})
+    resp = client.get("/insights/spend-dna", headers=AUTH_HEADERS)
     assert resp.status_code == 200
     data = resp.json()
     assert "personality_type" in data

@@ -29,6 +29,13 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
+def _get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise EnvironmentError(f"{name} not found in environment.")
+    return value.strip()
+
+
 # ── Lazy singleton ────────────────────────────────────────────────────────────
 _client: Optional[Groq] = None
 
@@ -36,11 +43,7 @@ _client: Optional[Groq] = None
 def _get_client() -> Groq:
     global _client
     if _client is None:
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            raise EnvironmentError(
-                "GROQ_API_KEY not found. Add it to your .env file."
-            )
+        api_key = _get_required_env("GROQ_API_KEY")
         _client = Groq(api_key=api_key)
         logger.info("Groq client initialised")
     return _client
@@ -51,6 +54,7 @@ def _get_client() -> Groq:
 def call_groq(
     system_prompt: str,
     user_prompt: str,
+    model: Optional[str] = None,
     max_retries: int = 3,
     retry_delay: float = 2.0,
 ) -> dict:
@@ -79,7 +83,7 @@ def call_groq(
         combined prompt approach.
     """
     client = _get_client()
-    model_name = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+    model_name = (model or _get_required_env("GROQ_MODEL")).strip()
 
     messages = [
         {"role": "system",  "content": system_prompt},

@@ -2,16 +2,15 @@
 Wraps all Firestore access behind a small interface so the rest of the app
 never touches firebase_admin directly.
 
-If no Firebase credentials are configured (FIREBASE_CREDENTIALS_PATH /
-FIREBASE_CREDENTIALS_JSON both empty), this module transparently falls back
-to an in-memory store. That means the whole API is runnable and testable
-out of the box with zero external setup -- swap in real credentials later
-and nothing else in the codebase needs to change.
+If no Firebase credentials are configured in development, this module falls
+back to a small file-backed local store. In production it fails fast instead
+of silently accepting temporary storage.
 """
 import json
 import uuid
 import threading
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 
 from core.config import settings
@@ -20,19 +19,40 @@ _lock = threading.Lock()
 
 
 class _InMemoryDB:
-    """Very small Firestore-like emulator: collections of dict documents."""
+    """Very small Firestore-like emulator with durable JSON persistence."""
 
     def __init__(self):
         self._data: dict[str, dict[str, dict]] = {}
+        self._storage_path = Path(__file__).resolve().parent / ".local_db.json"
+        self._load()
 
     def _collection(self, name: str) -> dict:
         return self._data.setdefault(name, {})
+
+    def _load(self) -> None:
+        if not self._storage_path.exists():
+            return
+        try:
+            with self._storage_path.open("r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+                if isinstance(payload, dict):
+                    self._data = payload
+        except Exception:
+            self._data = {}
+
+    def _persist(self) -> None:
+        try:
+            with self._storage_path.open("w", encoding="utf-8") as handle:
+                json.dump(self._data, handle, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
 
     def add(self, collection: str, doc: dict, doc_id: Optional[str] = None) -> str:
         with _lock:
             doc_id = doc_id or str(uuid.uuid4())
             col = self._collection(collection)
             col[doc_id] = {**doc, "id": doc_id}
+            self._persist()
             return doc_id
 
     def get(self, collection: str, doc_id: str) -> Optional[dict]:
@@ -44,12 +64,16 @@ class _InMemoryDB:
             if doc_id not in col:
                 return None
             col[doc_id].update(updates)
+            self._persist()
             return col[doc_id]
 
     def delete(self, collection: str, doc_id: str) -> bool:
         with _lock:
             col = self._collection(collection)
-            return col.pop(doc_id, None) is not None
+            removed = col.pop(doc_id, None)
+            if removed is not None:
+                self._persist()
+            return removed is not None
 
     def query(self, collection: str, **filters) -> list[dict]:
         col = self._collection(collection)
@@ -132,8 +156,14 @@ def _build_client():
         try:
             return FirestoreClient()
         except Exception as e:
+            if settings.ENV == "production":
+                raise RuntimeError(f"Firestore initialization failed in production: {e}") from e
             print(f"[firebase_service] Falling back to in-memory DB — Firestore init failed: {e}")
             return _InMemoryDB()
+    if settings.ENV == "production":
+        raise RuntimeError(
+            "Firebase credentials are required in production. Set FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON."
+        )
     print("[firebase_service] No Firebase credentials configured — using in-memory DB (dev mode).")
     return _InMemoryDB()
 

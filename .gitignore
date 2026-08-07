@@ -218,5 +218,34 @@ __marimo__/
 .streamlit/secrets.toml
 .env
 
+# Firebase service account keys (NEVER commit these)
+firebase-key.json
+firebaseKey.json
+firebase-*.json
 
+# Virtual environments (additional patterns)
+.venv*/
+.python*/
+.python*/
 
+# Python installers
+*.exe
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+.local_db.json
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -74,7 +74,14 @@ GRACEFUL_DEFAULTS = {
         "top_insight": "Your spending patterns are still forming. Keep logging to reveal deeper trends.",
         "biggest_trigger": "Not enough data yet to pinpoint triggers.",
         "emotional_trend": "Neutral",
-        "one_win": "You showed up and tracked your expenses. That awareness is everything."
+        "one_win": "You showed up and tracked your expenses. That awareness is everything.",
+        "improvements": "You kept tracking expenses consistently this week.",
+        "regressions": "No clear regressions detected yet — keep logging for sharper reads.",
+        "trigger_changes": "Trigger patterns are still forming.",
+        "mood_changes": "Mood patterns are still forming.",
+        "category_trends": "Category trends will appear after more logged expenses.",
+        "personality_changes": "Your personality profile is still taking shape.",
+        "coach_recommendation": "Keep adding mood and note context with each expense."
     },
     "personality": {
         "type": "Comfort Spender",

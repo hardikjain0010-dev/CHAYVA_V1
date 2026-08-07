@@ -86,15 +86,31 @@ def verify_id_token(token: str) -> str:
 
 
 def verify_google_token(credential: str) -> dict[str, Any]:
+    if not credential:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing Google credential",
+        )
+
+    if settings.ENV == "production" and settings.GOOGLE_CLIENT_ID == "placeholder-google-client-id":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google Sign-In is not configured",
+        )
+
     try:
         token_info = id_token.verify_oauth2_token(
             credential,
             requests.Request(),
             settings.GOOGLE_CLIENT_ID,
         )
+        if token_info.get("aud") != settings.GOOGLE_CLIENT_ID:
+            raise ValueError("Google token audience does not match this app")
+        if token_info.get("iss") not in {"accounts.google.com", "https://accounts.google.com"}:
+            raise ValueError("Google token issuer is invalid")
         return token_info
     except ValueError as exc:
-        if settings.GOOGLE_CLIENT_ID == "placeholder-google-client-id" or settings.ENV == "development":
+        if settings.ENV == "development" and settings.GOOGLE_CLIENT_ID == "placeholder-google-client-id":
             try:
                 from jose import jwt as jose_jwt
                 token_info = jose_jwt.get_unverified_claims(credential)

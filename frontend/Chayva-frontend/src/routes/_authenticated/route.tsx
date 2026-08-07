@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth";
-import { UserProvider } from "@/lib/user-context";
 import { ExpenseProvider } from "@/lib/expense-context";
+import { CoachingProvider } from "@/lib/coaching-context";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -25,12 +25,12 @@ function AuthenticatedLayout() {
   // All child pages read from these providers — no independent fetching.
   // On logout: UserProvider sets user=null → ExpenseProvider clears expenses.
   return (
-    <UserProvider>
-      <ExpenseProvider>
+    <ExpenseProvider>
+      <CoachingProvider>
         <AppShell>
           <Outlet />
         </AppShell>
-      </ExpenseProvider>
-    </UserProvider>
+      </CoachingProvider>
+    </ExpenseProvider>
   );
 }

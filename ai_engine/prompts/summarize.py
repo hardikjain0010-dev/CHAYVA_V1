@@ -74,7 +74,11 @@ def _repair_weekly_summary(parsed: dict) -> dict:
     Fills missing fields with graceful defaults.
     """
     defaults = GRACEFUL_DEFAULTS["weekly_summary"]
-    required = ["headline", "top_insight", "biggest_trigger", "emotional_trend", "one_win"]
+    required = [
+        "headline", "top_insight", "biggest_trigger", "emotional_trend", "one_win",
+        "improvements", "regressions", "trigger_changes", "mood_changes",
+        "category_trends", "personality_changes", "coach_recommendation",
+    ]
 
     forbidden = ["overspent", "wasted", "bad habit", "irresponsible", "stop spending", "cut down"]
 

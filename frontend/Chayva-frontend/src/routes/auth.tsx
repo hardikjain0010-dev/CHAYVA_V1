@@ -8,9 +8,9 @@ import {
   type AuthResponse,
   clearToken,
   extractAccessToken,
-  getCurrentUser,
   setToken,
 } from "@/lib/auth";
+import { useUser } from "@/lib/user-context";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { mode: initialMode } = Route.useSearch();
   const navigate = useNavigate();
+  const { user, refreshUser } = useUser();
 
   const [mode, setMode] = useState<"signin" | "signup">(
     initialMode ?? "signin"
@@ -32,14 +33,10 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function checkSession() {
-      const user = await getCurrentUser();
-      if (user) {
-        navigate({ to: "/dashboard" });
-      }
+    if (user) {
+      navigate({ to: "/dashboard" });
     }
-    checkSession();
-  }, [navigate]);
+  }, [navigate, user]);
 
    useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -122,7 +119,7 @@ function AuthPage() {
   ) {
     const token = extractAccessToken(response);
     setToken(token);
-    const user = await getCurrentUser();
+    const user = await refreshUser();
     if (!user) {
       clearToken();
       throw new Error("Could not verify your session. Please sign in again.");

@@ -28,15 +28,17 @@ logger = get_logger(__name__)
 
 
 # ── Module-level client (created once, reused across calls) ──────────────────
+def _get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise EnvironmentError(f"{name} not found in environment.")
+    return value.strip()
+
+
 def _build_client() -> genai.Client:
     """Configure the Gemini SDK and return a ready-to-use client."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise EnvironmentError(
-            "GEMINI_API_KEY not found in environment. "
-            "Copy .env.example to .env and add your key."
-        )
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    api_key = _get_required_env("GEMINI_API_KEY")
+    model_name = _get_required_env("GEMINI_MODEL")
     logger.info(f"Gemini client initialised with model: {model_name}")
     return genai.Client(api_key=api_key)
 
@@ -57,6 +59,7 @@ def _get_client() -> genai.Client:
 def call_gemini(
     system_prompt: str,
     user_prompt: str,
+    model: Optional[str] = None,
     max_retries: int = 3,
     retry_delay: float = 2.0,
 ) -> dict:
@@ -86,7 +89,7 @@ def call_gemini(
         structure is preserved for compatibility with the router interface.
     """
     client = _get_client()
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model_name = (model or _get_required_env("GEMINI_MODEL")).strip()
 
     # Combine system + user prompt (Gemini SDK style)
     full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"

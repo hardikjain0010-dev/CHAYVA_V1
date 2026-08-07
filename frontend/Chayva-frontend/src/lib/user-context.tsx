@@ -28,7 +28,7 @@ type UserState = {
 };
 type UserContextValue = UserState & {
   /** Call after login to refresh the stored user without a full page reload. */
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
   /**
    * Call on logout to clear the token and stored user.
    * Setting user to null triggers ExpenseProvider to clear its state,
@@ -55,6 +55,7 @@ const fetchUser = useCallback(async () => {
       const user = await getCurrentUser();
       // getCurrentUser() returns null if no token — not an error, just unauthenticated.
       setState({ user, loading: false, error: null });
+      return user;
     } catch (err) {
           // Token was invalid or expired — clear it and treat as unauthenticated.
       clearToken();
@@ -63,6 +64,7 @@ const fetchUser = useCallback(async () => {
         loading: false,
         error: err instanceof Error ? err.message : "Authentication failed",
       });
+      return null;
     }
   }, []);
  // On mount: check if there is a stored token and validate it.
