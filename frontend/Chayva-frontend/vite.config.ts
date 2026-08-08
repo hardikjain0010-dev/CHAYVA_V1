@@ -9,7 +9,7 @@ export default defineConfig({
     tanstackStart(),
     react(),
     tailwindcss(),
-  
+
   ],
   resolve: {
     tsconfigPaths: true,
