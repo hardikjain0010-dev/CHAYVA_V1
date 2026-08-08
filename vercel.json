@@ -1,0 +1,25 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": null,
+  "rootDirectory": "frontend/Chayva-frontend",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_BASE_URL": {
+      "description": "Backend API URL (e.g., https://your-backend.onrender.com)"
+    },
+    "VITE_GOOGLE_CLIENT_ID": {
+      "description": "Google OAuth Client ID"
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_VERSION": "20"
+    }
+  }
+}
