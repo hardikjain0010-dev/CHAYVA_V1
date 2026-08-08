@@ -1,17 +1,8 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": null,
-  "rootDirectory": "frontend/Chayva-frontend",
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "build": {
-    "env": {
-      "NODE_VERSION": "20"
-    }
-  }
+  ]
 }
