@@ -6,6 +6,7 @@ Model: Gemini Flash (temperature=0.7 for narrative warmth)
 
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT
 from ai_engine.prompts.insight_context import format_history_for_prompt
+from ai_engine.prompts.profile_context import build_personal_context, format_personal_context_for_prompt
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PROMPT TEMPLATE
@@ -18,7 +19,7 @@ WEEKLY_SUMMARY_PROMPT_TEMPLATE = """
 
 TASK: 7-DAY BEHAVIORAL SPENDING SUMMARY
 
-You are generating a warm, psychologically-aware weekly spending recap for a college student.
+You are generating a warm, psychologically-aware weekly spending recap for the user.
 This is NOT a financial report. It is an emotional and behavioral mirror.
 
 WEEK'S EXPENSE DATA:
@@ -33,6 +34,9 @@ SUMMARY STATS:
 
 COMPUTED BEHAVIORAL EVIDENCE:
 {behavioral_evidence}
+
+RELEVANT USER-PROVIDED CONTEXT:
+{personal_context_block}
 
 GENERATION INSTRUCTIONS:
 1. headline: A single warm sentence capturing the emotional theme of the week (not financial).
@@ -91,7 +95,7 @@ RULES:
 """
 
 
-def build_weekly_summary_prompt(expenses: list) -> tuple[str, dict]:
+def build_weekly_summary_prompt(expenses: list, user_profile: dict | None = None) -> tuple[str, dict]:
     """
     Build the weekly summary prompt from a list of expense dicts.
 
@@ -108,6 +112,8 @@ def build_weekly_summary_prompt(expenses: list) -> tuple[str, dict]:
     stats = _compute_weekly_stats(expenses)
     expenses_formatted = _format_expenses_for_prompt(expenses)
     behavioral_evidence = format_history_for_prompt(expenses)
+    personal_context = build_personal_context(user_profile, task="weekly_summary")
+    personal_context_block = format_personal_context_for_prompt(personal_context)
 
     prompt = WEEKLY_SUMMARY_PROMPT_TEMPLATE.format(
         master_system=MASTER_SYSTEM_PROMPT.strip(),
@@ -117,7 +123,8 @@ def build_weekly_summary_prompt(expenses: list) -> tuple[str, dict]:
         top_category=stats["top_category"],
         top_mood=stats["top_mood"],
         peak_days=stats["peak_days"],
-        behavioral_evidence=behavioral_evidence
+        behavioral_evidence=behavioral_evidence,
+        personal_context_block=personal_context_block,
     )
 
     return prompt, stats

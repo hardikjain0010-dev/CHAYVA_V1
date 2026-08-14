@@ -28,7 +28,7 @@ PERSONALITY_FORMING_RESPONSE = {
 }
 
 
-def classify_personality(spending_profile: dict) -> dict:
+def classify_personality(spending_profile: dict, user_profile: dict | None = None) -> dict:
     """
     Classify user's spending personality from their aggregated spending profile.
 
@@ -62,7 +62,7 @@ def classify_personality(spending_profile: dict) -> dict:
         return response
 
     # Build prompt
-    prompt = build_personality_prompt(spending_profile)
+    prompt = build_personality_prompt(spending_profile, user_profile=user_profile)
 
     # Route to model (Gemini Flash, temperature=0.3 for consistent classification)
     result = route_prompt(task_type="personality", prompt=prompt)

@@ -6,6 +6,7 @@ Model: Gemini Flash (temperature=0.3 for consistent classification)
 """
 
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT
+from ai_engine.prompts.profile_context import build_personal_context, format_personal_context_for_prompt
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PERSONALITY TYPE DEFINITIONS (ground truth for classification)
@@ -83,6 +84,9 @@ You must choose EXACTLY ONE of these four personality types — no custom types 
 SPENDING PROFILE DATA:
 {spending_profile_formatted}
 
+RELEVANT USER-PROVIDED CONTEXT:
+{personal_context_block}
+
 PERSONALITY TYPE DEFINITIONS:
 
 1. COMFORT SPENDER
@@ -139,7 +143,7 @@ RULES:
 """
 
 
-def build_personality_prompt(spending_profile: dict) -> str:
+def build_personality_prompt(spending_profile: dict, user_profile: dict | None = None) -> str:
     """
     Build personality classification prompt from a spending profile dict.
 
@@ -159,10 +163,13 @@ def build_personality_prompt(spending_profile: dict) -> str:
         Formatted prompt string
     """
     profile_formatted = _format_spending_profile(spending_profile)
+    personal_context = build_personal_context(user_profile, task="personality")
+    personal_context_block = format_personal_context_for_prompt(personal_context)
 
     return PERSONALITY_PROMPT_TEMPLATE.format(
         master_system=MASTER_SYSTEM_PROMPT.strip(),
-        spending_profile_formatted=profile_formatted
+        spending_profile_formatted=profile_formatted,
+        personal_context_block=personal_context_block,
     )
 
 

@@ -17,6 +17,7 @@ from services.cache_service import get_or_set
 from core.config import settings
 from core.limiter import limiter
 from core.security import get_current_user_id
+from routers.profile import load_profile_for_user
 
 router = APIRouter(tags=["Insights & Analytics"])
 
@@ -469,6 +470,7 @@ def insights_weekly(
     user_id = authenticated_user_id
 
     def compute():
+        user_profile = load_profile_for_user(user_id)
         expenses = _within_days(_user_expenses(user_id), 7)
         mood_entries = _within_days_moods(_user_moods(user_id), 7)
         reflection_context = []
@@ -483,7 +485,7 @@ def insights_weekly(
                 "date": entry.get("timestamp") or entry.get("day") or datetime.utcnow().isoformat(),
                 "time_of_day": "evening",
             })
-        summary = generate_weekly_summary(expenses + reflection_context)
+        summary = generate_weekly_summary(expenses + reflection_context, user_profile=user_profile)
         db_client.add("weekly_summaries", {"user_id": user_id, **summary}, doc_id=f"{user_id}_latest")
         return summary
 
@@ -511,7 +513,7 @@ def insights_personality(
         expenses = _within_days(_user_expenses(user_id), 30)
         mood_entries = _within_days_moods(_user_moods(user_id), 30)
         profile = _profile_from_expenses(expenses, mood_entries)
-        result = classify_personality(profile)
+        result = classify_personality(profile, user_profile=load_profile_for_user(user_id))
         db_client.add("personality_cache", {"user_id": user_id, **result}, doc_id=f"{user_id}_latest")
         return result
 
@@ -571,6 +573,7 @@ def coaching_snapshot(
     user_id = authenticated_user_id
 
     def compute():
+        user_profile = load_profile_for_user(user_id)
         expenses = _user_expenses(user_id)
         expenses.sort(key=lambda item: item.get("date", ""), reverse=True)
         moods = _user_moods(user_id)
@@ -591,10 +594,10 @@ def coaching_snapshot(
             })
 
         profile = _profile_from_expenses(recent_30, mood_30)
-        raw_personality = classify_personality(profile)
+        raw_personality = classify_personality(profile, user_profile=user_profile)
         personality = _evolve_personality(len(expenses), raw_personality, profile)
         triggers = detect_triggers(recent_30)
-        weekly = generate_weekly_summary(recent_7 + reflection_context)
+        weekly = generate_weekly_summary(recent_7 + reflection_context, user_profile=user_profile)
         nudge_message = predict_nudge(user_id, datetime.utcnow(), triggers)
         nudge_payload = build_nudge_payload(nudge_message, triggers)
         mindfulness = _mindfulness_score(recent_30, mood_30)
@@ -622,6 +625,7 @@ def coaching_snapshot(
             "mindfulness_score": mindfulness,
             "behavior_evolution": behavior_evolution,
             "biggest_win": weekly.get("one_win"),
+            "user_profile": user_profile,
         })
 
         dominant_mood = max(profile["mood_frequencies"], key=profile["mood_frequencies"].get) if profile.get("mood_frequencies") else None

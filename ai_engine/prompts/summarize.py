@@ -11,7 +11,7 @@ from ai_engine.prompts.summary_prompt import build_weekly_summary_prompt, valida
 from ai_engine.prompts.base import GRACEFUL_DEFAULTS
 
 
-def generate_weekly_summary(expenses: list) -> dict:
+def generate_weekly_summary(expenses: list, user_profile: dict | None = None) -> dict:
     """
     Generate a 7-day behavioral spending summary.
 
@@ -35,7 +35,7 @@ def generate_weekly_summary(expenses: list) -> dict:
         return default
 
     # Build prompt
-    prompt, stats = build_weekly_summary_prompt(expenses)
+    prompt, stats = build_weekly_summary_prompt(expenses, user_profile=user_profile)
 
     # Route to model (Gemini Flash for narrative generation)
     result = route_prompt(task_type="summary", prompt=prompt)

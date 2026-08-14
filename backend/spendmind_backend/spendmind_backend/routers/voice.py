@@ -9,6 +9,7 @@ from services.cache_service import delete as delete_cache
 from core.config import settings
 from core.limiter import limiter
 from core.security import get_current_user_id
+from routers.profile import load_profile_for_user
 
 router = APIRouter(prefix="/voice", tags=["Voice Logging"])
 
@@ -52,7 +53,7 @@ async def voice_transcribe(
     recent = db_client.query(EXPENSE_COLLECTION, user_id=expense_doc["user_id"])
     recent.sort(key=lambda r: r.get("date", ""), reverse=True)
     expense_doc["recent_expenses"] = recent[:30]
-    insight = analyze_expense(expense_doc) or {}
+    insight = analyze_expense(expense_doc, user_profile=load_profile_for_user(authenticated_user_id)) or {}
     expense_doc["insight"] = insight
     apply_classification_fields(expense_doc, insight)
     expense_doc.pop("recent_expenses", None)

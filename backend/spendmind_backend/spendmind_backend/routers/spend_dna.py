@@ -8,6 +8,7 @@ from services.ai_service import generate_spend_dna, detect_triggers
 from core.config import settings
 from core.limiter import limiter
 from core.security import get_current_user_id
+from routers.profile import load_profile_for_user
 
 router = APIRouter(prefix="/insights", tags=["Spend DNA"])
 
@@ -112,6 +113,7 @@ def spend_dna(
         "triggers": detect_triggers(expenses),
         "most_impulsive_hour": most_impulsive_hour or "late evening",
         "mindfulness_score": mindfulness_score,
+        "user_profile": load_profile_for_user(authenticated_user_id),
     }
 
     return generate_spend_dna(month_data)

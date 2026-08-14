@@ -6,6 +6,7 @@ Model: Gemini Flash (temperature=0.7)
 
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT
 from ai_engine.prompts.insight_context import build_evidence_bundle, format_evidence_for_prompt
+from ai_engine.prompts.profile_context import build_personal_context, format_personal_context_for_prompt
 
 INSIGHT_PROMPT_TEMPLATE = """
 {master_system}
@@ -20,6 +21,9 @@ Do NOT diagnose the user. Do NOT shame. Do NOT call necessary expenses bad spend
 
 COMPUTED EVIDENCE (facts — cite these, do not invent others):
 {evidence_block}
+
+RELEVANT USER-PROVIDED CONTEXT:
+{personal_context_block}
 
 EXPENSE CLASSIFICATION VS BEHAVIOR:
 - Expense classification answers what kind of spend this is: essential, routine, discretionary, or uncertain.
@@ -40,6 +44,8 @@ EVIDENCE HIERARCHY:
 - For routine_or_necessary spending, prefer neutral interpretation unless there is explicit contradictory evidence.
 - If behavioral significance is low or unknown, keep interpretation minimal and uncertainty-forward.
 - If behavioral significance is high, name the repeated evidence that makes it worth reflecting on.
+- Profile context may personalize wording, but it must never override computed evidence or create a motive by itself.
+- If you use a profile fact, phrase it as something the user mentioned, not as a conclusion about them.
 
 TIME PERIOD GUIDANCE (use actual time period from evidence — never assume Night):
 - Morning: commute, breakfast, routine, planned essentials
@@ -92,6 +98,7 @@ def build_insight_prompt(
     last_5_expenses: list,
     date: str | None = None,
     classification_override: dict | None = None,
+    user_profile: dict | None = None,
 ) -> str:
     evidence = build_evidence_bundle(
         amount=amount,
@@ -113,10 +120,13 @@ def build_insight_prompt(
         evidence["time_period"] = legacy_map.get(time_of_day.lower(), evidence["time_period"])
 
     evidence_block = format_evidence_for_prompt(evidence)
+    personal_context = build_personal_context(user_profile, evidence=evidence, task="expense_analysis")
+    personal_context_block = format_personal_context_for_prompt(personal_context)
 
     return INSIGHT_PROMPT_TEMPLATE.format(
         master_system=MASTER_SYSTEM_PROMPT.strip(),
         evidence_block=evidence_block,
+        personal_context_block=personal_context_block,
     )
 
 

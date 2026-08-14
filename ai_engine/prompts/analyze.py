@@ -21,6 +21,7 @@ def analyze_expense(
     last_5_expenses: Optional[list] = None,
     date: Optional[str] = None,
     classification_override: Optional[dict] = None,
+    user_profile: Optional[dict] = None,
 ) -> dict:
     """
     Analyze a single expense for behavioral and emotional patterns.
@@ -57,6 +58,7 @@ def analyze_expense(
         last_5_expenses=last_5,
         date=date,
         classification_override=classification_override,
+        user_profile=user_profile,
     )
 
     result = route_prompt(task_type="insight", prompt=prompt)

@@ -28,9 +28,10 @@ from ai_engine import (  # noqa: E402
 from ai_engine.router.model_router import route_prompt  # noqa: E402
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT  # noqa: E402
 from ai_engine.prompts.insight_context import build_evidence_bundle, has_recorded_time  # noqa: E402
+from ai_engine.prompts.profile_context import build_personal_context  # noqa: E402
 
 
-def analyze_expense(expense: dict) -> dict:
+def analyze_expense(expense: dict, user_profile: dict | None = None) -> dict:
     adapted = _adapt_expense(expense)
     recent = expense.get("last_5_expenses") or expense.get("recent_expenses") or []
     adapted_recent = [_adapt_expense(item) for item in recent]
@@ -43,8 +44,9 @@ def analyze_expense(expense: dict) -> dict:
         last_5_expenses=adapted_recent,
         date=adapted.get("date"),
         classification_override=adapted.get("classification_override"),
+        user_profile=user_profile,
     )
-    return _enrich_expense_insight(_without_meta(result), adapted, adapted_recent)
+    return _enrich_expense_insight(_without_meta(result), adapted, adapted_recent, user_profile)
 
 
 def apply_classification_fields(expense_doc: dict, insight: dict | None) -> dict:
@@ -60,13 +62,13 @@ def apply_classification_fields(expense_doc: dict, insight: dict | None) -> dict
     return expense_doc
 
 
-def generate_weekly_summary(expenses: list[dict]) -> dict:
-    result = engine_generate_weekly_summary(_adapt_expenses(expenses))
+def generate_weekly_summary(expenses: list[dict], user_profile: dict | None = None) -> dict:
+    result = engine_generate_weekly_summary(_adapt_expenses(expenses), user_profile=user_profile)
     return _without_meta(result)
 
 
-def classify_personality(profile: dict) -> dict:
-    result = engine_classify_personality(_adapt_spending_profile(profile))
+def classify_personality(profile: dict, user_profile: dict | None = None) -> dict:
+    result = engine_classify_personality(_adapt_spending_profile(profile), user_profile=user_profile)
     return _without_meta(result)
 
 
@@ -196,7 +198,8 @@ Return ONLY plain text — no JSON, no markdown."""
 
 def generate_spend_dna(user_month_data: dict) -> dict:
     profile = _adapt_spending_profile(user_month_data.get("profile", {}))
-    personality = classify_personality(profile)
+    user_profile = user_month_data.get("user_profile")
+    personality = classify_personality(profile, user_profile=user_profile)
     triggers = user_month_data.get("triggers", [])
     top_trigger = triggers[0].get("trigger") if triggers else "no clear pattern yet"
     category_totals = profile.get("category_totals", {})
@@ -252,7 +255,12 @@ def generate_spend_dna(user_month_data: dict) -> dict:
     }
 
 
-def _enrich_expense_insight(insight: dict, expense: dict, recent_expenses: list[dict] | None = None) -> dict:
+def _enrich_expense_insight(
+    insight: dict,
+    expense: dict,
+    recent_expenses: list[dict] | None = None,
+    user_profile: dict | None = None,
+) -> dict:
     evidence = build_evidence_bundle(
         amount=expense.get("amount"),
         category=expense.get("category"),
@@ -270,8 +278,9 @@ def _enrich_expense_insight(insight: dict, expense: dict, recent_expenses: list[
     expense_classification = evidence.get("expense_classification", {})
     behavioral_significance = evidence.get("behavioral_significance", {})
     trigger = _trigger_from_context(pattern, mood, insight.get("observation", ""), time_period, spending_nature)
+    personal_context = build_personal_context(user_profile, evidence=evidence, task="expense_analysis")
 
-    return {
+    enriched = {
         **insight,
         "behavior": _label_from_pattern(pattern),
         "emotion": mood if mood else "not specified",
@@ -291,6 +300,9 @@ def _enrich_expense_insight(insight: dict, expense: dict, recent_expenses: list[
             "same_category_mood": evidence.get("same_category_mood_count", 0),
         },
     }
+    if personal_context.get("relevant_context"):
+        enriched["personal_context"] = personal_context
+    return enriched
 
 
 def _time_period_label(time_of_day: str | None) -> str:

@@ -6,6 +6,7 @@ from services.firebase_service import db_client, now_iso
 from services.ai_service import analyze_expense, apply_classification_fields
 from services.cache_service import delete as delete_cache
 from core.security import get_current_user_id
+from routers.profile import load_profile_for_user
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
@@ -33,7 +34,7 @@ def create_expense(
         recent = db_client.query(COLLECTION, user_id=doc["user_id"])
         recent.sort(key=lambda r: r.get("date", ""), reverse=True)
         doc["recent_expenses"] = recent[:30]
-        insight = analyze_expense(doc)
+        insight = analyze_expense(doc, user_profile=load_profile_for_user(authenticated_user_id))
     except Exception:
         insight = None
 

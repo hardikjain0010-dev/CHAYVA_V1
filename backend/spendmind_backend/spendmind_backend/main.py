@@ -15,7 +15,7 @@ from core.config import settings
 from core.exceptions import register_exception_handlers
 from core.limiter import limiter
 
-from routers import expense, mood, insights, auth, sms, webhook, voice, spend_dna
+from routers import expense, mood, insights, auth, sms, webhook, voice, spend_dna, profile
 
 app = FastAPI(
     title="SpendMind API",
@@ -49,6 +49,7 @@ app.include_router(sms.router)
 app.include_router(webhook.router)
 app.include_router(voice.router)
 app.include_router(spend_dna.router)
+app.include_router(profile.router)
 
 
 @app.get("/", tags=["Health"], summary="Health check")

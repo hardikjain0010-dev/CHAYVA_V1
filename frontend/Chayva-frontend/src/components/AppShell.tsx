@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { LayoutDashboard, ListOrdered, Plus, LogOut, Brain, Sun, Moon, CalendarDays, Dna, MoonStar, MapPin } from "lucide-react";
+import { LayoutDashboard, ListOrdered, Plus, LogOut, Brain, Sun, Moon, CalendarDays, Dna, MoonStar, MapPin, UserRound } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { useUser } from "@/lib/user-context";
 import type { ReactNode } from "react";
@@ -12,6 +12,7 @@ const NAV = [
   { to: "/dna", label: "Spend DNA", icon: Dna },
   { to: "/reflect", label: "Reflect", icon: MoonStar },
   { to: "/journey", label: "Journey", icon: MapPin },
+  { to: "/profile", label: "Profile", icon: UserRound },
 ] as const;
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();

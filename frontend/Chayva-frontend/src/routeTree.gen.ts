@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dna'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedJourneyRouteImport } from './routes/_authenticated/journey'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedReflectRouteImport } from './routes/_authenticated/reflect'
 import { Route as AuthenticatedWeekRouteImport } from './routes/_authenticated/week'
 
@@ -59,6 +60,11 @@ const AuthenticatedJourneyRoute = AuthenticatedJourneyRouteImport.update({
   path: '/journey',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedReflectRoute = AuthenticatedReflectRouteImport.update({
   id: '/reflect',
   path: '/reflect',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/dna': typeof AuthenticatedDnaRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/journey': typeof AuthenticatedJourneyRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/reflect': typeof AuthenticatedReflectRoute
   '/week': typeof AuthenticatedWeekRoute
 }
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/dna': typeof AuthenticatedDnaRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/journey': typeof AuthenticatedJourneyRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/reflect': typeof AuthenticatedReflectRoute
   '/week': typeof AuthenticatedWeekRoute
 }
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated/dna': typeof AuthenticatedDnaRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/journey': typeof AuthenticatedJourneyRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reflect': typeof AuthenticatedReflectRoute
   '/_authenticated/week': typeof AuthenticatedWeekRoute
 }
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/dna'
     | '/expenses'
     | '/journey'
+    | '/profile'
     | '/reflect'
     | '/week'
   fileRoutesByTo: FileRoutesByTo
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/dna'
     | '/expenses'
     | '/journey'
+    | '/profile'
     | '/reflect'
     | '/week'
   id:
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dna'
     | '/_authenticated/expenses'
     | '/_authenticated/journey'
+    | '/_authenticated/profile'
     | '/_authenticated/reflect'
     | '/_authenticated/week'
   fileRoutesById: FileRoutesById
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJourneyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reflect': {
       id: '/_authenticated/reflect'
       path: '/reflect'
@@ -229,6 +248,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDnaRoute: typeof AuthenticatedDnaRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedJourneyRoute: typeof AuthenticatedJourneyRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReflectRoute: typeof AuthenticatedReflectRoute
   AuthenticatedWeekRoute: typeof AuthenticatedWeekRoute
 }
@@ -239,6 +259,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDnaRoute: AuthenticatedDnaRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedJourneyRoute: AuthenticatedJourneyRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReflectRoute: AuthenticatedReflectRoute,
   AuthenticatedWeekRoute: AuthenticatedWeekRoute,
 }

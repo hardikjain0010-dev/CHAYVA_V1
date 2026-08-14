@@ -7,6 +7,7 @@ from services.firebase_service import db_client
 from services.ai_service import generate_weekly_summary, detect_triggers
 from services.pdf_service import weekly_report_data, generate_weekly_pdf
 from core.security import get_current_user_id
+from routers.profile import load_profile_for_user
 
 router = APIRouter(prefix="/report", tags=["PDF Reports"])
 
@@ -35,7 +36,7 @@ def _week_expenses(user_id: str) -> list[dict]:
 def report_weekly(authenticated_user_id: str = Depends(get_current_user_id)):
     user_id = authenticated_user_id
     expenses = _week_expenses(user_id)
-    summary = generate_weekly_summary(expenses)
+    summary = generate_weekly_summary(expenses, user_profile=load_profile_for_user(user_id))
     triggers = detect_triggers(expenses)
 
     data = weekly_report_data(user_id, expenses, summary, triggers)
