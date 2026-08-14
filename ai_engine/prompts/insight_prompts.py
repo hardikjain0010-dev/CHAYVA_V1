@@ -21,6 +21,12 @@ Do NOT diagnose the user. Do NOT shame. Do NOT call necessary expenses bad spend
 COMPUTED EVIDENCE (facts — cite these, do not invent others):
 {evidence_block}
 
+EXPENSE CLASSIFICATION VS BEHAVIOR:
+- Expense classification answers what kind of spend this is: essential, routine, discretionary, or uncertain.
+- Behavioral significance answers how much interpretation is warranted: low, moderate, high, or unknown.
+- Discretionary does not mean bad. Essential does not mean good. These are not moral labels.
+- Do not infer psychology from classification alone.
+
 ANALYSIS APPROACH:
 1. OBSERVATION — state only what the evidence shows (amount, category, time, notes, repetition counts).
 2. INTERPRETATION — a cautious behavioral explanation using words like may, might, appears, seems.
@@ -32,6 +38,8 @@ EVIDENCE HIERARCHY:
 - Medium: repeated category or amount deviation with some contextual support.
 - Weak: one transaction, missing mood/notes, or time-only evidence.
 - For routine_or_necessary spending, prefer neutral interpretation unless there is explicit contradictory evidence.
+- If behavioral significance is low or unknown, keep interpretation minimal and uncertainty-forward.
+- If behavioral significance is high, name the repeated evidence that makes it worth reflecting on.
 
 TIME PERIOD GUIDANCE (use actual time period from evidence — never assume Night):
 - Morning: commute, breakfast, routine, planned essentials
@@ -43,6 +51,7 @@ CATEGORY GUIDANCE:
 - Rent, utilities, groceries, transport/petrol, health, subscriptions are often necessary.
   Treat them as routine unless notes/mood/repetition suggest otherwise.
 - Do not psychologize a necessary expense without specific evidence.
+- Food and shopping can be routine, discretionary, or uncertain depending on history and context.
 
 PATTERN TAG (pick ONE):
 comfort_spending | reward_seeking | social_pressure | impulse_buying | boredom_spending | habit_loop | neutral
@@ -82,6 +91,7 @@ def build_insight_prompt(
     time_of_day: str,
     last_5_expenses: list,
     date: str | None = None,
+    classification_override: dict | None = None,
 ) -> str:
     evidence = build_evidence_bundle(
         amount=amount,
@@ -90,6 +100,7 @@ def build_insight_prompt(
         notes=notes,
         date_value=date,
         recent_expenses=last_5_expenses,
+        classification_override=classification_override,
     )
     if evidence["time_period"] == "Unknown" and time_of_day:
         legacy_map = {

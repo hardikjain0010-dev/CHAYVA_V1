@@ -3,7 +3,7 @@ import tempfile
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Request
 
-from services.ai_service import voice_to_expense, analyze_expense
+from services.ai_service import voice_to_expense, analyze_expense, apply_classification_fields
 from services.firebase_service import db_client, now_iso
 from services.cache_service import delete as delete_cache
 from core.config import settings
@@ -49,8 +49,13 @@ async def voice_transcribe(
         "date": now_iso(),
         "source": "voice",
     }
+    recent = db_client.query(EXPENSE_COLLECTION, user_id=expense_doc["user_id"])
+    recent.sort(key=lambda r: r.get("date", ""), reverse=True)
+    expense_doc["recent_expenses"] = recent[:30]
     insight = analyze_expense(expense_doc) or {}
     expense_doc["insight"] = insight
+    apply_classification_fields(expense_doc, insight)
+    expense_doc.pop("recent_expenses", None)
     expense_id = db_client.add(EXPENSE_COLLECTION, expense_doc)
     _invalidate_user_ai(authenticated_user_id)
 

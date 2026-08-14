@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Response
 
 from services.firebase_service import db_client, now_iso
-from services.ai_service import parse_whatsapp_message, analyze_expense, get_whatsapp_reply
+from services.ai_service import parse_whatsapp_message, analyze_expense, get_whatsapp_reply, apply_classification_fields
 
 router = APIRouter(prefix="/webhook", tags=["WhatsApp Webhook"])
 
@@ -46,8 +46,13 @@ async def whatsapp_webhook(request: Request):
             "source": "whatsapp",
         }
 
+        recent = db_client.query(EXPENSE_COLLECTION, user_id=expense_doc["user_id"])
+        recent.sort(key=lambda r: r.get("date", ""), reverse=True)
+        expense_doc["recent_expenses"] = recent[:30]
         insight = analyze_expense(expense_doc) or {}
         expense_doc["insight"] = insight
+        apply_classification_fields(expense_doc, insight)
+        expense_doc.pop("recent_expenses", None)
         expense_id = db_client.add(EXPENSE_COLLECTION, expense_doc)
 
         reply = get_whatsapp_reply(expense_doc, insight)

@@ -123,3 +123,124 @@ def test_reactive_mood_claim_requires_same_category_mood_history():
     assert evidence["same_category_mood_count"] == 0
     assert insight["pattern_tag"] == "neutral"
     assert "bored" not in insight["interpretation"].lower()
+
+
+def _classification_for(amount, category, notes="", mood="", recent=None, date="2026-08-10T14:00:00", override=None):
+    evidence = build_evidence_bundle(
+        amount=amount,
+        category=category,
+        mood=mood,
+        notes=notes,
+        date_value=date,
+        recent_expenses=recent or [],
+        classification_override=override,
+    )
+    return evidence["expense_classification"], evidence["behavioral_significance"], deterministic_insight_from_evidence(evidence)
+
+
+def test_task2_necessary_and_routine_expenses_stay_low_significance():
+    regular_lunch_history = [
+        {"amount": 80, "category": "food", "notes": "college lunch", "date": "2026-08-07T13:00:00"},
+        {"amount": 90, "category": "food", "notes": "college lunch", "date": "2026-08-08T13:10:00"},
+        {"amount": 85, "category": "food", "notes": "college lunch", "date": "2026-08-09T13:05:00"},
+    ]
+    cases = [
+        (15000, "rent", "monthly rent", [], "essential"),
+        (1200, "petrol", "weekly fuel", [], "essential"),
+        (1800, "groceries", "weekly groceries", [], "routine"),
+        (40, "commute", "bus commute", [], "routine"),
+        (700, "medical", "doctor medicine", [], "essential"),
+        (3000, "education", "tuition fees", [], "essential"),
+        (85, "food", "college lunch", regular_lunch_history, "routine"),
+    ]
+
+    for amount, category, notes, recent, expected in cases:
+        classification, significance, insight = _classification_for(
+            amount, category, notes, recent=recent, date="2026-08-10T23:00:00"
+        )
+        assert classification["classification"] == expected
+        assert significance["level"] == "low"
+        assert insight["pattern_tag"] == "neutral"
+        assert "normal life spending" in insight["interpretation"]
+
+
+def test_task2_discretionary_does_not_mean_problematic_without_evidence():
+    cases = [
+        (1500, "shopping", "online sale"),
+        (500, "entertainment", "movie"),
+        (450, "food", "zomato delivery"),
+        (900, "dining", "social dinner with friends"),
+        (499, "entertainment", "netflix subscription"),
+    ]
+
+    for amount, category, notes in cases:
+        classification, significance, insight = _classification_for(amount, category, notes)
+        assert classification["classification"] == "discretionary"
+        assert significance["level"] == "low"
+        assert insight["pattern_tag"] == "neutral"
+
+
+def test_task2_first_ever_ambiguous_expense_remains_uncertain():
+    classification, significance, insight = _classification_for(500, "food")
+
+    assert classification["classification"] == "uncertain"
+    assert classification["confidence_label"] == "low"
+    assert significance["level"] == "unknown"
+    assert insight["pattern_tag"] == "neutral"
+
+
+def test_task2_history_can_raise_behavioral_significance_independently():
+    repeated_late_stress_delivery = [
+        {"amount": 420, "category": "food", "mood": "stressed", "notes": "delivery", "date": "2026-08-04T23:00:00"},
+        {"amount": 460, "category": "food", "mood": "stressed", "notes": "zomato", "date": "2026-08-06T23:10:00"},
+        {"amount": 440, "category": "food", "mood": "stressed", "notes": "delivery", "date": "2026-08-08T22:45:00"},
+    ]
+
+    classification, significance, insight = _classification_for(
+        450,
+        "food",
+        "delivery after stressful day",
+        mood="stressed",
+        recent=repeated_late_stress_delivery,
+        date="2026-08-10T23:15:00",
+    )
+
+    assert classification["classification"] == "discretionary"
+    assert significance["level"] == "high"
+    assert insight["pattern_tag"] == "habit_loop"
+
+
+def test_task2_amount_deviation_is_significant_without_moralizing_happy_spend():
+    recent = [
+        {"amount": 500, "category": "shopping", "date": "2026-08-01T15:00:00"},
+        {"amount": 650, "category": "shopping", "date": "2026-08-03T14:00:00"},
+        {"amount": 550, "category": "shopping", "date": "2026-08-05T18:00:00"},
+    ]
+
+    classification, significance, insight = _classification_for(
+        2200, "shopping", "planned purchase", mood="happy", recent=recent
+    )
+
+    assert classification["classification"] == "discretionary"
+    assert significance["level"] == "moderate"
+    assert insight["pattern_tag"] == "impulse_buying"
+
+
+def test_task2_user_classification_override_is_validated_and_propagated():
+    classification, significance, _ = _classification_for(
+        500,
+        "food",
+        override={"classification": "essential", "reason": "meal plan"},
+    )
+
+    assert classification["classification"] == "essential"
+    assert classification["source"] == "user_override"
+    assert classification["user_override"] is True
+    assert significance["level"] == "low"
+
+    invalid, _, _ = _classification_for(
+        500,
+        "food",
+        override={"classification": "bad_spend"},
+    )
+    assert invalid["classification"] == "uncertain"

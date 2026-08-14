@@ -42,8 +42,22 @@ def analyze_expense(expense: dict) -> dict:
         time_of_day=adapted["time_of_day"],
         last_5_expenses=adapted_recent,
         date=adapted.get("date"),
+        classification_override=adapted.get("classification_override"),
     )
     return _enrich_expense_insight(_without_meta(result), adapted, adapted_recent)
+
+
+def apply_classification_fields(expense_doc: dict, insight: dict | None) -> dict:
+    """Store deterministic classification fields alongside the expense document."""
+    if not isinstance(insight, dict):
+        return expense_doc
+    classification = insight.get("expense_classification")
+    significance = insight.get("behavioral_significance")
+    if isinstance(classification, dict):
+        expense_doc["expense_classification"] = classification
+    if isinstance(significance, dict):
+        expense_doc["behavioral_significance"] = significance
+    return expense_doc
 
 
 def generate_weekly_summary(expenses: list[dict]) -> dict:
@@ -246,12 +260,15 @@ def _enrich_expense_insight(insight: dict, expense: dict, recent_expenses: list[
         notes=expense.get("notes"),
         date_value=expense.get("date"),
         recent_expenses=recent_expenses or [],
+        classification_override=expense.get("classification_override"),
     )
     pattern = insight.get("pattern_tag") or "neutral"
     mood = expense.get("mood") or "neutral"
     category = expense.get("category") or "this category"
     time_period = _time_period_label(expense.get("time_of_day"))
     spending_nature = evidence.get("spending_nature", {}).get("label", "unclear")
+    expense_classification = evidence.get("expense_classification", {})
+    behavioral_significance = evidence.get("behavioral_significance", {})
     trigger = _trigger_from_context(pattern, mood, insight.get("observation", ""), time_period, spending_nature)
 
     return {
@@ -263,6 +280,8 @@ def _enrich_expense_insight(insight: dict, expense: dict, recent_expenses: list[
         "suggestion": insight.get("reflection") or _suggestion_from_pattern(pattern, category),
         "time_period": time_period,
         "spending_nature": spending_nature,
+        "expense_classification": expense_classification,
+        "behavioral_significance": behavioral_significance,
         "evidence_strength": evidence.get("evidence_strength"),
         "history_counts": {
             "same_category": evidence.get("same_category_recent_count", 0),

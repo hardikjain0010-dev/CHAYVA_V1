@@ -40,6 +40,13 @@ function currentLocalDateTime() {
   return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
+function nestedString(value: Record<string, unknown> | null, key: string, child: string) {
+  const nested = value?.[key];
+  if (!nested || typeof nested !== "object") return null;
+  const childValue = (nested as Record<string, unknown>)[child];
+  return childValue == null ? null : String(childValue);
+}
+
 function AddExpensePage() {
   const navigate = useNavigate();
   const { addExpense } = useExpenses();
@@ -260,6 +267,15 @@ function AddExpensePage() {
                       {String(
                         (savedAnalysis as Record<string, unknown>).spending_type ?? "forming",
                       )}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Classification:{" "}
+                      {nestedString(savedAnalysis, "expense_classification", "classification") ??
+                        "forming"}
+                    </span>
+                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
+                      Significance:{" "}
+                      {nestedString(savedAnalysis, "behavioral_significance", "level") ?? "forming"}
                     </span>
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
                       Pattern:{" "}

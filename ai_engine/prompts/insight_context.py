@@ -15,7 +15,18 @@ from typing import Any, Optional
 NECESSARY_CATEGORIES = {
     "rent", "utilities", "groceries", "transport", "health",
     "subscriptions", "education", "tuition", "college", "petrol", "fuel",
-    "gas", "medicine", "medical", "fees",
+    "gas", "medicine", "medical", "fees", "commute",
+}
+ESSENTIAL_PRIOR_CATEGORIES = {
+    "rent", "utilities", "health", "medicine", "medical", "education",
+    "tuition", "college", "fees",
+}
+ROUTINE_PRIOR_CATEGORIES = {
+    "groceries", "transport", "commute", "petrol", "fuel", "gas", "subscriptions",
+}
+AMBIGUOUS_CATEGORIES = {"food", "other", "travel", "shopping"}
+DISCRETIONARY_PRIOR_CATEGORIES = {
+    "shopping", "entertainment", "dining", "delivery", "snacks",
 }
 
 TIME_PERIODS = ("Morning", "Afternoon", "Evening", "Night")
@@ -24,6 +35,19 @@ POSITIVE_MOODS = {"happy", "great", "good", "social"}
 DISCRETIONARY_CATEGORIES = {
     "food", "shopping", "entertainment", "travel", "snacks", "dining",
     "delivery", "other",
+}
+RECURRING_KEYWORDS = {
+    "monthly", "weekly", "daily", "rent", "fees", "bill", "emi",
+    "subscription", "pass", "recharge",
+}
+ESSENTIAL_NOTE_KEYWORDS = {
+    "medicine", "doctor", "hospital", "tuition", "fees", "rent", "bill",
+    "electricity", "water", "gas", "petrol", "fuel",
+}
+DISCRETIONARY_NOTE_KEYWORDS = {
+    "swiggy", "zomato", "delivery", "movie", "friends", "outing",
+    "treat", "treated", "online", "random", "sale", "party", "netflix",
+    "prime", "spotify", "streaming",
 }
 
 
@@ -70,6 +94,14 @@ def format_exact_time(dt: Optional[datetime], has_time: bool = True) -> str:
 def is_necessary_category(category: str) -> bool:
     normalized = (category or "").strip().lower()
     return normalized in NECESSARY_CATEGORIES or normalized in {"petrol", "gas", "fuel"}
+
+
+def _confidence_label(score: float) -> str:
+    if score >= 0.75:
+        return "high"
+    if score >= 0.5:
+        return "medium"
+    return "low"
 
 
 def _normalize_expense(expense: dict) -> dict:
@@ -258,6 +290,7 @@ def build_evidence_bundle(
     notes: str,
     date_value: Any,
     recent_expenses: Optional[list[dict]] = None,
+    classification_override: Any = None,
 ) -> dict[str, Any]:
     """Build factual evidence from current expense + recent history. No inference."""
     dt = parse_expense_datetime(date_value)
@@ -307,7 +340,26 @@ def build_evidence_bundle(
     overall_baseline = _amount_baseline(float(amount or 0), recent)
     category_baseline = _amount_baseline(float(amount or 0), recent, category)
     evidence_count = max(len(same_category), len(same_category_period), len(same_mood))
-    spending_nature = _classify_spending_nature(category, notes, same_category, category_baseline)
+    classification = classify_expense(
+        amount=float(amount or 0),
+        category=category,
+        notes=notes,
+        mood=mood,
+        same_category=same_category,
+        same_category_period=same_category_period,
+        same_category_mood=same_category_mood,
+        category_baseline=category_baseline,
+        classification_override=classification_override,
+    )
+    behavioral_significance = classify_behavioral_significance(
+        classification=classification,
+        category_baseline=category_baseline,
+        same_category=same_category,
+        same_category_period=same_category_period,
+        same_category_mood=same_category_mood,
+        mood=mood,
+    )
+    spending_nature = _legacy_spending_nature(classification, behavioral_significance)
 
     return {
         "amount": round(float(amount or 0), 2),
@@ -329,6 +381,8 @@ def build_evidence_bundle(
         "week_same_category_count": week_same_category,
         "overall_amount_baseline": overall_baseline,
         "category_amount_baseline": category_baseline,
+        "expense_classification": classification,
+        "behavioral_significance": behavioral_significance,
         "spending_nature": spending_nature,
         "evidence_strength": _confidence_from_count(evidence_count),
         "history": history,
@@ -337,35 +391,199 @@ def build_evidence_bundle(
     }
 
 
-def _classify_spending_nature(
+def classify_expense(
+    amount: float,
     category: str,
     notes: str,
+    mood: str,
     same_category: list[dict],
+    same_category_period: list[dict],
+    same_category_mood: list[dict],
     category_baseline: dict[str, Any],
+    classification_override: Any = None,
 ) -> dict[str, Any]:
-    category_is_necessary = is_necessary_category(category)
-    lower_notes = (notes or "").lower()
-    recurring_note = any(word in lower_notes for word in ["monthly", "rent", "fees", "bill", "emi", "subscription"])
-    evidence_count = len(same_category)
+    """Classify the expense type without making psychological claims."""
+    override = _normalize_classification_override(classification_override)
+    if override:
+        return override
 
-    if category_is_necessary or recurring_note:
-        label = "routine_or_necessary"
-        reason = "category or notes indicate a regular obligation"
-    elif evidence_count >= 3 and category_baseline.get("deviation") == "near baseline":
-        label = "routine_discretionary"
-        reason = "similar category appears repeatedly near the user's baseline"
-    elif _category_key(category) in DISCRETIONARY_CATEGORIES:
-        label = "discretionary_behavioral"
-        reason = "category is discretionary, so history and mood decide whether it is behaviorally interesting"
+    normalized = _category_key(category)
+    lower_notes = (notes or "").lower()
+    note_tokens = set(lower_notes.replace(",", " ").replace(".", " ").split())
+    recurring_note = bool(note_tokens & RECURRING_KEYWORDS)
+    essential_note = bool(note_tokens & ESSENTIAL_NOTE_KEYWORDS)
+    discretionary_note = bool(note_tokens & DISCRETIONARY_NOTE_KEYWORDS)
+    evidence_count = len(same_category)
+    repeated_near_baseline = evidence_count >= 3 and category_baseline.get("deviation") == "near baseline"
+    repeated_same_context = len(same_category_period) >= 3 or len(same_category_mood) >= 3
+
+    signals: list[str] = []
+    if normalized in ESSENTIAL_PRIOR_CATEGORIES:
+        signals.append(f"category prior: {normalized} is usually essential")
+    if normalized in ROUTINE_PRIOR_CATEGORIES:
+        signals.append(f"category prior: {normalized} is usually routine")
+    if normalized in DISCRETIONARY_PRIOR_CATEGORIES:
+        signals.append(f"category prior: {normalized} is usually discretionary")
+    if normalized in AMBIGUOUS_CATEGORIES:
+        signals.append(f"category prior: {normalized} is ambiguous")
+    if recurring_note:
+        signals.append("notes indicate a recurring obligation or regular cadence")
+    if essential_note:
+        signals.append("notes contain essential-spend language")
+    if discretionary_note:
+        signals.append("notes contain discretionary-context language")
+    if repeated_near_baseline:
+        signals.append(f"{evidence_count} similar expenses are near the user's category baseline")
+    if repeated_same_context:
+        signals.append("similar expenses repeat in the same context")
+    if category_baseline.get("deviation") == "above baseline":
+        signals.append("amount is above the user's category baseline")
+
+    if normalized in ESSENTIAL_PRIOR_CATEGORIES or essential_note:
+        classification = "essential"
+        confidence = 0.86 if (recurring_note or evidence_count) else 0.76
+        reason = "category or notes point to a necessary obligation"
+    elif discretionary_note and normalized not in ROUTINE_PRIOR_CATEGORIES:
+        classification = "discretionary"
+        confidence = 0.68 if evidence_count else 0.58
+        reason = "notes point to an optional or experience-oriented context"
+    elif normalized in ROUTINE_PRIOR_CATEGORIES or recurring_note:
+        classification = "routine"
+        confidence = 0.78 if (recurring_note or evidence_count) else 0.68
+        reason = "category, notes, or history point to regular life spending"
+    elif repeated_near_baseline:
+        classification = "routine"
+        confidence = 0.66
+        reason = "history shows a repeated expense near the user's normal baseline"
+    elif normalized in DISCRETIONARY_PRIOR_CATEGORIES:
+        classification = "discretionary"
+        confidence = 0.62
+        reason = "category leans discretionary, but history still matters"
+    elif normalized in {"food", "other"} and not same_category:
+        classification = "uncertain"
+        confidence = 0.34
+        reason = "this category is ambiguous and there is not enough user history yet"
+    elif normalized in DISCRETIONARY_CATEGORIES:
+        classification = "discretionary"
+        confidence = 0.52
+        reason = "category leans discretionary, but evidence is still limited"
     else:
-        label = "unclear"
-        reason = "not enough category evidence to classify confidently"
+        classification = "uncertain"
+        confidence = 0.35
+        reason = "available signals do not support a confident classification"
 
     return {
-        "label": label,
+        "classification": classification,
+        "confidence": round(confidence, 2),
+        "confidence_label": _confidence_label(confidence),
         "reason": reason,
+        "signals": signals or ["insufficient evidence"],
         "evidence_count": evidence_count,
-        "confidence": _confidence_from_count(evidence_count if evidence_count else int(category_is_necessary or recurring_note)),
+        "source": "deterministic",
+        "user_override": False,
+    }
+
+
+def _normalize_classification_override(value: Any) -> dict[str, Any] | None:
+    if not value:
+        return None
+    if isinstance(value, str):
+        requested = value.strip().lower()
+        reason = "user corrected this expense classification"
+    elif isinstance(value, dict):
+        requested = str(value.get("classification") or value.get("type") or "").strip().lower()
+        reason = str(value.get("reason") or "user corrected this expense classification")
+    else:
+        return None
+    if requested not in {"essential", "routine", "discretionary", "uncertain"}:
+        return None
+    return {
+        "classification": requested,
+        "confidence": 1.0,
+        "confidence_label": "high",
+        "reason": reason,
+        "signals": ["user override"],
+        "evidence_count": 0,
+        "source": "user_override",
+        "user_override": True,
+    }
+
+
+def classify_behavioral_significance(
+    classification: dict[str, Any],
+    category_baseline: dict[str, Any],
+    same_category: list[dict],
+    same_category_period: list[dict],
+    same_category_mood: list[dict],
+    mood: str,
+) -> dict[str, Any]:
+    """Estimate how much behavioral interpretation is warranted."""
+    signals: list[str] = []
+    repeated_context = len(same_category_period) >= 3
+    repeated_mood = len(same_category_mood) >= 3
+    repeated_category = len(same_category) >= 3
+    above_baseline = category_baseline.get("deviation") == "above baseline"
+    reactive_mood = (mood or "").strip().lower() in REACTIVE_MOODS
+
+    if repeated_context:
+        signals.append("repeated category + time context")
+    if repeated_mood:
+        signals.append("repeated category + mood context")
+    if above_baseline:
+        signals.append("amount above category baseline")
+    if repeated_category:
+        signals.append("category recurrence")
+    if reactive_mood:
+        signals.append("current mood is reactive, but mood alone is not enough")
+
+    expense_type = classification.get("classification")
+    repeated_mood_significant = repeated_mood and reactive_mood
+
+    if expense_type in {"essential", "routine"} and not (repeated_mood_significant or above_baseline):
+        level = "low"
+        confidence = 0.72
+        reason = "the expense looks regular or necessary and lacks anomaly evidence"
+    elif repeated_context and repeated_mood_significant:
+        level = "high"
+        confidence = 0.82
+        reason = "the same category repeats with both timing and reactive mood evidence"
+    elif repeated_context or repeated_mood_significant or above_baseline:
+        level = "moderate"
+        confidence = 0.66
+        reason = "there is some evidence worth reflecting on, but not enough for a strong claim"
+    elif expense_type == "uncertain":
+        level = "unknown"
+        confidence = 0.32
+        reason = "classification and behavioral evidence are both thin"
+    else:
+        level = "low"
+        confidence = 0.48
+        reason = "this may be discretionary, but there is little behavioral evidence yet"
+
+    return {
+        "level": level,
+        "confidence": round(confidence, 2),
+        "confidence_label": _confidence_label(confidence),
+        "reason": reason,
+        "signals": signals or ["no strong behavioral signal"],
+    }
+
+
+def _legacy_spending_nature(classification: dict[str, Any], significance: dict[str, Any]) -> dict[str, Any]:
+    expense_type = classification.get("classification")
+    if expense_type == "essential":
+        label = "routine_or_necessary"
+    elif expense_type == "routine":
+        label = "routine_or_necessary" if significance.get("level") == "low" else "routine_discretionary"
+    elif expense_type == "discretionary":
+        label = "discretionary_behavioral"
+    else:
+        label = "unclear"
+    return {
+        "label": label,
+        "reason": classification.get("reason", ""),
+        "evidence_count": classification.get("evidence_count", 0),
+        "confidence": classification.get("confidence_label", "low"),
     }
 
 
@@ -386,6 +604,18 @@ def format_evidence_for_prompt(evidence: dict[str, Any]) -> str:
         f"- Same category + mood in recent history: {evidence['same_category_mood_count']}",
         f"- Same weekday/weekend type in recent history: {evidence['same_weekday_type_recent_count']}",
         f"- Same category in last 7 days (including recent list): {evidence['week_same_category_count']}",
+        (
+            "- Expense classification: "
+            f"{evidence['expense_classification']['classification']} "
+            f"(confidence {evidence['expense_classification']['confidence']}; "
+            f"{evidence['expense_classification']['reason']})"
+        ),
+        (
+            "- Behavioral significance: "
+            f"{evidence['behavioral_significance']['level']} "
+            f"(confidence {evidence['behavioral_significance']['confidence']}; "
+            f"{evidence['behavioral_significance']['reason']})"
+        ),
         f"- Spending nature: {evidence['spending_nature']['label']} ({evidence['spending_nature']['reason']})",
         f"- Evidence strength: {evidence['evidence_strength']}",
     ]
@@ -473,6 +703,8 @@ def deterministic_insight_from_evidence(evidence: dict[str, Any]) -> dict[str, A
     amount = evidence["amount"]
     period = evidence["time_period"]
     nature = evidence["spending_nature"]["label"]
+    classification = evidence["expense_classification"]["classification"]
+    significance = evidence["behavioral_significance"]["level"]
     same_category = evidence["same_category_recent_count"]
     same_category_period = evidence["same_category_time_period_count"]
     same_category_mood = evidence["same_category_mood_count"]
@@ -484,10 +716,14 @@ def deterministic_insight_from_evidence(evidence: dict[str, Any]) -> dict[str, A
     if same_category:
         observation += f" There are {same_category} similar {category} expenses in your recent history."
 
-    if nature == "routine_or_necessary":
-        interpretation = "This looks more like routine or essential spending than a psychological spending pattern."
+    if classification in {"essential", "routine"} and significance == "low":
+        interpretation = "This looks like routine or essential normal life spending, with no strong behavioral anomaly in the current evidence."
         pattern_tag = "neutral"
         confidence = 0.68 if same_category else 0.55
+    elif classification == "uncertain":
+        interpretation = "There is not enough history yet to say whether this is routine or discretionary."
+        pattern_tag = "neutral"
+        confidence = 0.34
     elif same_category_period >= 3:
         interpretation = f"The repeated {period.lower()} timing may point to a habit loop, but the data supports timing more than emotion."
         pattern_tag = "habit_loop"

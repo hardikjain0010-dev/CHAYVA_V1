@@ -22,6 +22,10 @@ AUTH_HEADERS = {"Authorization": f"Bearer {create_access_token({'sub': TEST_USER
 OTHER_AUTH_HEADERS = {"Authorization": f"Bearer {create_access_token({'sub': OTHER_USER})}"}
 
 
+def _headers_for(user_id: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {create_access_token({'sub': user_id})}"}
+
+
 def test_health_check():
     resp = client.get("/")
     assert resp.status_code == 200
@@ -43,6 +47,39 @@ def test_create_expense():
     assert data["category"] == "food"
     assert "id" in data
     assert data["insight"] is not None
+    assert data["expense_classification"]["classification"] in {"essential", "routine", "discretionary", "uncertain"}
+    assert data["behavioral_significance"]["level"] in {"low", "moderate", "high", "unknown"}
+
+
+def test_classification_override_rejects_unknown_values():
+    resp = client.post(
+        "/expenses",
+        json={
+            "amount": 250,
+            "category": "food",
+            "classification_override": {"classification": "bad_spend"},
+        },
+        headers=AUTH_HEADERS,
+    )
+
+    assert resp.status_code == 422
+
+
+def test_manual_classification_override_persists():
+    resp = client.post(
+        "/expenses",
+        json={
+            "amount": 250,
+            "category": "food",
+            "classification_override": {"classification": "essential", "reason": "meal plan"},
+        },
+        headers=AUTH_HEADERS,
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["expense_classification"]["classification"] == "essential"
+    assert data["expense_classification"]["source"] == "user_override"
 
 
 def test_get_expense():
@@ -131,6 +168,90 @@ def test_sms_import_confirm_and_duplicate_detection():
     # this still demonstrates the duplicate-check code path runs cleanly)
     resp2 = client.post("/sms/import/confirm", json=confirm_payload, headers=AUTH_HEADERS)
     assert resp2.status_code in (200, 409)
+
+
+def test_sms_import_confirm_uses_recent_history_for_significance():
+    user_id = f"sms-history-{uuid.uuid4()}"
+    headers = _headers_for(user_id)
+    for index, amount in enumerate((20, 25, 30), start=1):
+        db_client.add(
+            "expenses",
+            {
+                "user_id": user_id,
+                "amount": amount,
+                "category": "food",
+                "mood": "stressed",
+                "notes": "zomato delivery",
+                "date": f"2026-08-0{index}T23:00:00",
+                "source": "manual",
+            },
+        )
+
+    resp = client.post(
+        "/sms/import/confirm",
+        json={
+            "amount": 440,
+            "category": "food",
+            "merchant": "zomato delivery",
+            "date": "2026-08-10T23:15:00",
+        },
+        headers=headers,
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["source"] == "sms"
+    assert data["expense_classification"]["classification"] == "discretionary"
+    assert data["behavioral_significance"]["level"] in {"moderate", "high"}
+
+
+def test_voice_ingestion_persists_classification(monkeypatch):
+    user_id = f"voice-{uuid.uuid4()}"
+    headers = _headers_for(user_id)
+    monkeypatch.setattr(
+        "routers.voice.voice_to_expense",
+        lambda _path: {"amount": 80, "category": "commute", "notes": "bus commute", "transcript": "80 bus commute"},
+    )
+
+    resp = client.post(
+        "/voice/transcribe",
+        files={"audio": ("expense.wav", b"fake audio", "audio/wav")},
+        headers=headers,
+    )
+
+    assert resp.status_code == 200
+    expense = resp.json()["expense_parsed"]
+    assert expense["source"] == "voice"
+    assert expense["expense_classification"]["classification"] == "routine"
+    assert expense["behavioral_significance"]["level"] == "low"
+
+
+def test_whatsapp_ingestion_persists_classification_with_history():
+    from_number = f"whatsapp:+{uuid.uuid4().int % 10000000000}"
+    for index, amount in enumerate((20, 25, 30), start=1):
+        db_client.add(
+            "expenses",
+            {
+                "user_id": from_number,
+                "amount": amount,
+                "category": "general",
+                "notes": "zomato delivery",
+                "date": f"2026-08-0{index}T23:00:00",
+                "source": "whatsapp",
+            },
+        )
+
+    resp = client.post(
+        "/webhook/whatsapp",
+        data={"From": from_number, "Body": "440 zomato delivery"},
+    )
+
+    assert resp.status_code == 200
+    saved = db_client.query("expenses", user_id=from_number)
+    latest = sorted(saved, key=lambda r: r.get("date", ""), reverse=True)[0]
+    assert latest["source"] == "whatsapp"
+    assert latest["expense_classification"]["classification"] == "discretionary"
+    assert latest["behavioral_significance"]["level"] in {"moderate", "high"}
 
 
 def test_auth_verify_dev_mode():

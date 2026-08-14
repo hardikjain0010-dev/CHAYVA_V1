@@ -2,6 +2,10 @@ from datetime import datetime
 from typing import Optional, Literal
 from pydantic import BaseModel, Field
 MoodType = Literal["stressed", "bored", "happy", "lonely", "tired", "social", "great", "good", "okay", "low"]
+ClassificationType = Literal["essential", "routine", "discretionary", "uncertain"]
+class ClassificationOverride(BaseModel):
+    classification: ClassificationType
+    reason: Optional[str] = Field(None, max_length=240)
 class ExpenseCreate(BaseModel):
     user_id: Optional[str] = Field(None, description="Legacy client field; backend derives the user from JWT")
     amount: float = Field(..., gt=0, description="Amount spent, in INR")
@@ -10,6 +14,7 @@ class ExpenseCreate(BaseModel):
     notes: Optional[str] = Field(None, description="Free-text notes, e.g. 'midnight Swiggy order'")
     mood: Optional[MoodType] = Field(None, description="User's emotional state at time of spend")
     source: Optional[str] = Field("manual", description="manual | sms | whatsapp | voice")
+    classification_override: Optional[ClassificationOverride] = Field(None, description="Future user correction for expense classification")
 class ExpenseOut(BaseModel):
     id: str
     user_id: str
@@ -20,6 +25,9 @@ class ExpenseOut(BaseModel):
     mood: Optional[str] = None
     source: str = "manual"
     insight: Optional[dict] = None
+    expense_classification: Optional[dict] = None
+    behavioral_significance: Optional[dict] = None
+    classification_override: Optional[ClassificationOverride] = None
 class ExpenseWithInsight(BaseModel):
     expense: ExpenseOut
     insight: dict
@@ -51,6 +59,7 @@ class SMSImportConfirm(BaseModel):
     merchant: Optional[str] = None
     date: Optional[str] = None
     notes: Optional[str] = None
+    classification_override: Optional[ClassificationOverride] = None
 class AuthVerifyRequest(BaseModel):
     id_token: str
 class AuthSignupRequest(BaseModel):

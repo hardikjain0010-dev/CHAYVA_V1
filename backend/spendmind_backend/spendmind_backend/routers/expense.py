@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.expense_model import ExpenseCreate, ExpenseOut
 from services.firebase_service import db_client, now_iso
-from services.ai_service import analyze_expense
+from services.ai_service import analyze_expense, apply_classification_fields
 from services.cache_service import delete as delete_cache
 from core.security import get_current_user_id
 
@@ -38,6 +38,7 @@ def create_expense(
         insight = None
 
     doc["insight"] = insight
+    apply_classification_fields(doc, insight)
     doc.pop("last_5_expenses", None)
     doc.pop("recent_expenses", None)
     doc_id = db_client.add(COLLECTION, doc)

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from models.expense_model import SMSImportRequest, SMSImportConfirm
 from services.sms_parser import parse_sms
 from services.firebase_service import db_client, now_iso
-from services.ai_service import analyze_expense
+from services.ai_service import analyze_expense, apply_classification_fields
 from services.cache_service import delete as delete_cache
 from core.security import get_current_user_id
 
@@ -65,10 +65,15 @@ def sms_import_confirm(
     doc["notes"] = doc.get("merchant") or doc.get("notes")
     insight = None
     try:
+        recent = db_client.query(EXPENSE_COLLECTION, user_id=doc["user_id"])
+        recent.sort(key=lambda r: r.get("date", ""), reverse=True)
+        doc["recent_expenses"] = recent[:30]
         insight = analyze_expense(doc)
     except Exception:
         insight = None
     doc["insight"] = insight
+    apply_classification_fields(doc, insight)
+    doc.pop("recent_expenses", None)
 
     doc_id = db_client.add(EXPENSE_COLLECTION, doc)
     _invalidate_user_ai(authenticated_user_id)

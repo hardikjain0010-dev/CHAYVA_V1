@@ -36,6 +36,9 @@ export type Expense = {
   mood: string | null;
   source: string;
   insight: Record<string, unknown> | null;
+  expense_classification?: Record<string, unknown> | null;
+  behavioral_significance?: Record<string, unknown> | null;
+  classification_override?: Record<string, unknown> | null;
 };
 type ExpenseCreatePayload = {
   amount: number;
@@ -74,7 +77,7 @@ function reducer(state: State, action: Action): State {
         ...state,
         expenses: state.expenses.filter((e) => e.id !== action.payload),
       };
-       case "CLEAR_EXPENSES":
+    case "CLEAR_EXPENSES":
       // Called on logout or user change — prevents cross-user data leakage.
       return { expenses: [], loading: false, error: null };
     case "SET_ERROR":
@@ -133,7 +136,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [user]);
- // When user becomes available: fetch their expenses.
+  // When user becomes available: fetch their expenses.
   // When user changes (logout → login as different user): clear stale data first,
   // then fetch the new user's expenses. This prevents cross-user data leakage.
   useEffect(() => {
@@ -145,7 +148,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       // User logged out — clear expenses immediately.
       dispatch({ type: "CLEAR_EXPENSES" });
     }
-     }, [user?.uid]); // Depend on uid, not the entire user object, to prevent re-runs on profile updates.
+  }, [user?.uid]); // Depend on uid, not the entire user object, to prevent re-runs on profile updates.
   const addExpense = useCallback(
     async (data: ExpenseCreatePayload): Promise<Expense> => {
       if (!user) throw new Error("Not authenticated");
@@ -156,7 +159,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "ADD_EXPENSE", payload: expense });
       return expense;
     },
-    [user]
+    [user],
   );
   const removeExpense = useCallback(async (id: string): Promise<void> => {
     await del(`/expenses/${id}`);
