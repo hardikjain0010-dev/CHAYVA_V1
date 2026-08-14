@@ -11,6 +11,29 @@ ALLOWED_LANGUAGES = {
     "hinglish": "Hinglish",
 }
 
+TRIGGER_LABELS = {
+    "stress": "stress",
+    "boredom": "boredom",
+    "social_situations": "social situations",
+    "seeing_something_i_want": "seeing something they want",
+    "treating_or_rewarding_myself": "treating or rewarding themself",
+    "convenience": "convenience",
+    "unknown": "not being sure what triggers it",
+    "other": "another trigger",
+}
+
+CONTEXT_LABELS = {
+    "morning": "morning",
+    "during_college_or_work": "during college/work",
+    "after_college_or_work": "after college/work",
+    "evening": "evening",
+    "late_night": "late night",
+    "weekends": "weekends",
+    "with_friends": "being with friends",
+    "online_scrolling": "scrolling online",
+    "it_depends": "variable contexts",
+}
+
 
 def build_personal_context(
     profile: dict[str, Any] | None,
@@ -54,6 +77,24 @@ def build_personal_context(
     goals = _clean_list(profile.get("financial_goals"), 3, 60)
     if goals and _goals_are_relevant(evidence, task):
         context["relevant_context"].append("User goals: " + ", ".join(goals) + ".")
+
+    triggers = _label_list(profile.get("self_reported_spending_triggers"), TRIGGER_LABELS, 4)
+    if triggers and _self_reported_context_is_relevant(evidence, task):
+        context["self_reported_spending_triggers"] = triggers
+        context["relevant_context"].append(
+            "User-reported possible spending triggers, not observed proof: "
+            + ", ".join(triggers)
+            + "."
+        )
+
+    spending_contexts = _label_list(profile.get("self_reported_spending_contexts"), CONTEXT_LABELS, 5)
+    if spending_contexts and _self_reported_context_is_relevant(evidence, task):
+        context["self_reported_spending_contexts"] = spending_contexts
+        context["relevant_context"].append(
+            "User-reported unexpected-spending situations, not timestamp evidence: "
+            + ", ".join(spending_contexts)
+            + "."
+        )
 
     tone = _clean(profile.get("preferred_ai_tone"), 40)
     if tone:
@@ -111,6 +152,16 @@ def _goals_are_relevant(evidence: dict[str, Any] | None, task: str) -> bool:
     return classification in {"discretionary", "uncertain"} or significance in {"moderate", "high", "unknown"}
 
 
+def _self_reported_context_is_relevant(evidence: dict[str, Any] | None, task: str) -> bool:
+    if task in {"weekly_summary", "personality"}:
+        return True
+    if not evidence:
+        return False
+    classification = (evidence.get("expense_classification") or {}).get("classification")
+    significance = (evidence.get("behavioral_significance") or {}).get("level")
+    return classification in {"discretionary", "uncertain"} or significance in {"moderate", "high", "unknown"}
+
+
 def _language_label(value: Any) -> str | None:
     key = str(value or "").strip().lower()
     return ALLOWED_LANGUAGES.get(key)
@@ -133,6 +184,20 @@ def _clean_list(value: Any, max_items: int, max_len: int) -> list[str]:
         cleaned = _clean(item, max_len)
         if cleaned:
             out.append(cleaned)
+        if len(out) >= max_items:
+            break
+    return out
+
+
+def _label_list(value: Any, labels: dict[str, str], max_items: int) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    out = []
+    for item in value:
+        key = str(item or "").strip().lower()
+        label = labels.get(key)
+        if label:
+            out.append(label)
         if len(out) >= max_items:
             break
     return out

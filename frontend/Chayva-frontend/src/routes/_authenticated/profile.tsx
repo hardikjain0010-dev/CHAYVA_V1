@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Save, UserRound } from "lucide-react";
 import { PageTransition } from "@/lib/ui-helpers";
-import { getProfile, saveProfile, type UserProfilePayload } from "@/lib/profile";
+import { getProfile, updateProfile, type UserProfilePayload } from "@/lib/profile";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -60,7 +60,7 @@ function ProfilePage() {
     setError(null);
     setMessage(null);
     try {
-      const saved = await saveProfile(profile);
+      const saved = await updateProfile(profile);
       setProfile({
         display_name: saved.display_name ?? "",
         life_stage: saved.life_stage ?? null,
@@ -112,7 +112,9 @@ function ProfilePage() {
                 <Field label="Name">
                   <input
                     value={profile.display_name ?? ""}
-                    onChange={(event) => setProfile((prev) => ({ ...prev, display_name: event.target.value }))}
+                    onChange={(event) =>
+                      setProfile((prev) => ({ ...prev, display_name: event.target.value }))
+                    }
                     maxLength={60}
                     className="profile-input"
                   />
@@ -120,12 +122,20 @@ function ProfilePage() {
                 <Field label="Life stage">
                   <select
                     value={profile.life_stage ?? ""}
-                    onChange={(event) => setProfile((prev) => ({ ...prev, life_stage: event.target.value ? (event.target.value as UserProfilePayload["life_stage"]) : null }))}
+                    onChange={(event) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        life_stage: event.target.value
+                          ? (event.target.value as UserProfilePayload["life_stage"])
+                          : null,
+                      }))
+                    }
                     className="profile-input"
                   >
                     <option value="">Not specified</option>
                     <option value="student">Student</option>
                     <option value="working">Working</option>
+                    <option value="student_working">Student + working</option>
                     <option value="freelancer">Freelancer</option>
                     <option value="homemaker">Homemaker</option>
                     <option value="other">Other</option>
@@ -134,7 +144,13 @@ function ProfilePage() {
                 <Field label="Preferred language">
                   <select
                     value={profile.preferred_language ?? "english"}
-                    onChange={(event) => setProfile((prev) => ({ ...prev, preferred_language: event.target.value as UserProfilePayload["preferred_language"] }))}
+                    onChange={(event) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        preferred_language: event.target
+                          .value as UserProfilePayload["preferred_language"],
+                      }))
+                    }
                     className="profile-input"
                   >
                     <option value="english">English</option>
@@ -145,13 +161,20 @@ function ProfilePage() {
                 <Field label="AI tone">
                   <select
                     value={profile.preferred_ai_tone ?? "gentle"}
-                    onChange={(event) => setProfile((prev) => ({ ...prev, preferred_ai_tone: event.target.value as UserProfilePayload["preferred_ai_tone"] }))}
+                    onChange={(event) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        preferred_ai_tone: event.target
+                          .value as UserProfilePayload["preferred_ai_tone"],
+                      }))
+                    }
                     className="profile-input"
                   >
                     <option value="gentle">Gentle</option>
                     <option value="direct">Direct</option>
                     <option value="encouraging">Encouraging</option>
                     <option value="analytical">Analytical</option>
+                    <option value="friendly">Friendly</option>
                   </select>
                 </Field>
               </div>
@@ -159,7 +182,9 @@ function ProfilePage() {
               <Field label="College or work context">
                 <textarea
                   value={profile.college_or_work_context ?? ""}
-                  onChange={(event) => setProfile((prev) => ({ ...prev, college_or_work_context: event.target.value }))}
+                  onChange={(event) =>
+                    setProfile((prev) => ({ ...prev, college_or_work_context: event.target.value }))
+                  }
                   maxLength={160}
                   rows={3}
                   className="profile-input"
@@ -168,7 +193,9 @@ function ProfilePage() {
               <Field label="Typical daily schedule">
                 <textarea
                   value={profile.typical_daily_schedule ?? ""}
-                  onChange={(event) => setProfile((prev) => ({ ...prev, typical_daily_schedule: event.target.value }))}
+                  onChange={(event) =>
+                    setProfile((prev) => ({ ...prev, typical_daily_schedule: event.target.value }))
+                  }
                   maxLength={240}
                   rows={3}
                   className="profile-input"
@@ -178,14 +205,24 @@ function ProfilePage() {
                 <Field label="Spending priorities">
                   <input
                     value={(profile.spending_priorities ?? []).join(", ")}
-                    onChange={(event) => setProfile((prev) => ({ ...prev, spending_priorities: splitList(event.target.value) }))}
+                    onChange={(event) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        spending_priorities: splitList(event.target.value),
+                      }))
+                    }
                     className="profile-input"
                   />
                 </Field>
                 <Field label="Financial goals">
                   <input
                     value={(profile.financial_goals ?? []).join(", ")}
-                    onChange={(event) => setProfile((prev) => ({ ...prev, financial_goals: splitList(event.target.value) }))}
+                    onChange={(event) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        financial_goals: splitList(event.target.value),
+                      }))
+                    }
                     className="profile-input"
                   />
                 </Field>

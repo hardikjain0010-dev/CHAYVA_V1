@@ -24,6 +24,9 @@ def test_get_profile_for_existing_user_without_profile_returns_empty_shape():
     assert data["user_id"] == user_id
     assert data["display_name"] is None
     assert data["spending_priorities"] == []
+    assert data["self_reported_spending_triggers"] == []
+    assert data["self_reported_spending_contexts"] == []
+    assert data["onboarding_completed"] is False
 
 
 def test_profile_create_and_update_are_owned_by_authenticated_user():
@@ -58,6 +61,125 @@ def test_profile_create_and_update_are_owned_by_authenticated_user():
 
     stored = db_client.get("profiles", user_id)
     assert stored["user_id"] == user_id
+
+
+def test_onboarding_payload_populates_existing_profile_fields():
+    user_id = f"profile-onboarding-{uuid.uuid4()}"
+
+    resp = client.patch(
+        "/profile",
+        json={
+            "life_stage": "student_working",
+            "college_or_work_context": "College with commute",
+            "typical_daily_schedule": "College days usually include a commute.",
+            "self_reported_spending_triggers": ["stress", "convenience"],
+            "self_reported_spending_contexts": ["after_college_or_work", "online_scrolling"],
+            "spending_priorities": ["Food", "Travel / petrol"],
+            "financial_goals": ["Where my money usually goes"],
+            "preferred_ai_tone": "friendly",
+            "preferred_language": "hinglish",
+            "onboarding_completed": True,
+        },
+        headers=_headers(user_id),
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["user_id"] == user_id
+    assert data["life_stage"] == "student_working"
+    assert data["self_reported_spending_triggers"] == ["stress", "convenience"]
+    assert data["self_reported_spending_contexts"] == ["after_college_or_work", "online_scrolling"]
+    assert data["financial_goals"] == ["Where my money usually goes"]
+    assert data["preferred_ai_tone"] == "friendly"
+    assert data["preferred_language"] == "hinglish"
+    assert data["onboarding_completed"] is True
+
+
+def test_put_update_does_not_reset_existing_onboarding_completion_when_omitted():
+    user_id = f"profile-put-preserve-{uuid.uuid4()}"
+    headers = _headers(user_id)
+
+    completed = client.patch(
+        "/profile",
+        json={
+            "life_stage": "student",
+            "self_reported_spending_triggers": ["stress"],
+            "self_reported_spending_contexts": ["evening"],
+            "spending_priorities": ["Food"],
+            "financial_goals": ["Understand spending"],
+            "preferred_ai_tone": "gentle",
+            "preferred_language": "english",
+            "onboarding_completed": True,
+        },
+        headers=headers,
+    )
+    assert completed.status_code == 200
+    assert completed.json()["onboarding_completed"] is True
+
+    updated = client.put(
+        "/profile",
+        json={
+            "display_name": "Updated Name",
+            "preferred_language": "hinglish",
+        },
+        headers=headers,
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["display_name"] == "Updated Name"
+    assert updated.json()["onboarding_completed"] is True
+
+
+def test_incomplete_onboarding_state_is_persisted_without_marking_complete():
+    user_id = f"profile-incomplete-{uuid.uuid4()}"
+
+    resp = client.patch(
+        "/profile",
+        json={"onboarding_completed": False},
+        headers=_headers(user_id),
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["user_id"] == user_id
+    assert data["onboarding_completed"] is False
+    assert db_client.get("profiles", user_id)["onboarding_completed"] is False
+
+
+def test_onboarding_rejects_invalid_self_reported_values_and_oversized_lists():
+    user_id = f"profile-onboarding-invalid-{uuid.uuid4()}"
+
+    invalid_value = client.patch(
+        "/profile",
+        json={"self_reported_spending_triggers": ["stress_spender"]},
+        headers=_headers(user_id),
+    )
+    assert invalid_value.status_code == 422
+
+    too_many = client.patch(
+        "/profile",
+        json={
+            "self_reported_spending_triggers": [
+                "stress",
+                "boredom",
+                "social_situations",
+                "convenience",
+                "unknown",
+            ]
+        },
+        headers=_headers(user_id),
+    )
+    assert too_many.status_code == 422
+
+
+def test_legacy_profile_with_context_is_treated_as_completed():
+    user_id = f"profile-legacy-{uuid.uuid4()}"
+    db_client.add("profiles", {"user_id": user_id, "life_stage": "student"}, doc_id=user_id)
+
+    resp = client.get("/profile", headers=_headers(user_id))
+
+    assert resp.status_code == 200
+    assert resp.json()["onboarding_completed"] is True
 
 
 def test_profile_rejects_invalid_values_and_requires_auth():

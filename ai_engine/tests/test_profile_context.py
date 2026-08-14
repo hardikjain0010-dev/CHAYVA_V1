@@ -13,6 +13,12 @@ RICH_PROFILE = {
     "preferred_ai_tone": "gentle",
 }
 
+SELF_REPORTED_PROFILE = {
+    **RICH_PROFILE,
+    "self_reported_spending_triggers": ["stress", "seeing_something_i_want"],
+    "self_reported_spending_contexts": ["late_night", "online_scrolling"],
+}
+
 
 def test_empty_profile_returns_no_context():
     context = build_personal_context({}, task="expense_analysis")
@@ -76,3 +82,45 @@ def test_profile_context_does_not_change_behavioral_evidence():
 
     assert with_profile["expense_classification"] == without_profile["expense_classification"]
     assert with_profile["behavioral_significance"] == without_profile["behavioral_significance"]
+
+
+def test_self_reported_context_is_labeled_and_bounded_in_prompt():
+    evidence = build_evidence_bundle(
+        amount=900,
+        category="shopping",
+        mood="stressed",
+        notes="saw it online",
+        date_value="2026-08-10T21:00:00",
+        recent_expenses=[],
+    )
+
+    context = build_personal_context(SELF_REPORTED_PROFILE, evidence=evidence, task="expense_analysis")
+    prompt_block = format_personal_context_for_prompt(context)
+
+    assert context["self_reported_spending_triggers"] == ["stress", "seeing something they want"]
+    assert context["self_reported_spending_contexts"] == ["late night", "scrolling online"]
+    assert "User-reported possible spending triggers, not observed proof" in prompt_block
+    assert "User-reported unexpected-spending situations, not timestamp evidence" in prompt_block
+    assert "Observed transaction/history evidence is stronger" in prompt_block
+    assert "self_reported_spending_triggers" not in prompt_block
+    assert "stress spender" not in prompt_block.lower()
+
+
+def test_self_reported_context_does_not_create_behavioral_conclusion_for_first_expense():
+    evidence = build_evidence_bundle(
+        amount=500,
+        category="food",
+        mood="",
+        notes="",
+        date_value="2026-08-10T14:00:00",
+        recent_expenses=[],
+    )
+
+    context = build_personal_context(SELF_REPORTED_PROFILE, evidence=evidence, task="expense_analysis")
+    prompt_block = format_personal_context_for_prompt(context)
+
+    assert evidence["behavioral_significance"]["level"] == "unknown"
+    assert context["self_reported_spending_triggers"] == ["stress", "seeing something they want"]
+    assert "not observed proof" in prompt_block
+    assert "Observed transaction/history evidence is stronger" in prompt_block
+    assert "stress spender" not in prompt_block.lower()

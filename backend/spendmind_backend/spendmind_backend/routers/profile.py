@@ -15,7 +15,7 @@ COLLECTION = "profiles"
 def get_profile(authenticated_user_id: str = Depends(get_current_user_id)):
     profile = db_client.get(COLLECTION, authenticated_user_id)
     if profile:
-        return profile
+        return _normalize_profile(profile, authenticated_user_id)
     return _empty_profile(authenticated_user_id)
 
 
@@ -25,9 +25,13 @@ def replace_profile(
     authenticated_user_id: str = Depends(get_current_user_id),
 ):
     existing = db_client.get(COLLECTION, authenticated_user_id)
+    updates = payload.model_dump()
+    provided_updates = payload.model_dump(exclude_unset=True)
+    if existing and "onboarding_completed" not in provided_updates:
+        updates["onboarding_completed"] = _normalize_profile(existing, authenticated_user_id)["onboarding_completed"]
     timestamp = now_iso()
     doc = {
-        **payload.model_dump(),
+        **updates,
         "user_id": authenticated_user_id,
         "created_at": existing.get("created_at") if existing else timestamp,
         "updated_at": timestamp,
@@ -64,7 +68,8 @@ def update_profile(
 
 
 def load_profile_for_user(user_id: str) -> dict:
-    return db_client.get(COLLECTION, user_id) or {}
+    profile = db_client.get(COLLECTION, user_id)
+    return _normalize_profile(profile, user_id) if profile else {}
 
 
 def _empty_profile(user_id: str) -> dict:
@@ -78,8 +83,37 @@ def _empty_profile(user_id: str) -> dict:
         "spending_priorities": [],
         "financial_goals": [],
         "preferred_ai_tone": None,
+        "self_reported_spending_triggers": [],
+        "self_reported_spending_contexts": [],
+        "onboarding_completed": False,
         "created_at": None,
         "updated_at": None,
+    }
+
+
+def _normalize_profile(profile: dict, user_id: str) -> dict:
+    legacy_profile_has_context = any(
+        profile.get(field)
+        for field in (
+            "display_name",
+            "life_stage",
+            "college_or_work_context",
+            "preferred_language",
+            "typical_daily_schedule",
+            "spending_priorities",
+            "financial_goals",
+            "preferred_ai_tone",
+        )
+    )
+    return {
+        **_empty_profile(user_id),
+        **profile,
+        "user_id": user_id,
+        "spending_priorities": profile.get("spending_priorities") or [],
+        "financial_goals": profile.get("financial_goals") or [],
+        "self_reported_spending_triggers": profile.get("self_reported_spending_triggers") or [],
+        "self_reported_spending_contexts": profile.get("self_reported_spending_contexts") or [],
+        "onboarding_completed": bool(profile.get("onboarding_completed", legacy_profile_has_context)),
     }
 
 

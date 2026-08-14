@@ -76,7 +76,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     throw new Error(
-      errorMessageFromPayload(payload, `Request failed with status ${response.status}`)
+      errorMessageFromPayload(payload, `Request failed with status ${response.status}`),
     );
   }
 
@@ -93,6 +93,10 @@ export function post<T>(path: string, body?: RequestBody, init?: RequestInit) {
 
 export function put<T>(path: string, body?: RequestBody, init?: RequestInit) {
   return request<T>(path, { ...init, method: "PUT", body });
+}
+
+export function patch<T>(path: string, body?: RequestBody, init?: RequestInit) {
+  return request<T>(path, { ...init, method: "PATCH", body });
 }
 
 export function del<T>(path: string, init?: RequestInit) {

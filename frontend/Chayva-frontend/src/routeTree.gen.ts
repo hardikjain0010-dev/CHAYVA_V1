@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDnaRouteImport } from './routes/_authenticated/dna'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedJourneyRouteImport } from './routes/_authenticated/journey'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedReflectRouteImport } from './routes/_authenticated/reflect'
 import { Route as AuthenticatedWeekRouteImport } from './routes/_authenticated/week'
@@ -60,6 +61,11 @@ const AuthenticatedJourneyRoute = AuthenticatedJourneyRouteImport.update({
   path: '/journey',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/dna': typeof AuthenticatedDnaRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/journey': typeof AuthenticatedJourneyRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reflect': typeof AuthenticatedReflectRoute
   '/week': typeof AuthenticatedWeekRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/dna': typeof AuthenticatedDnaRoute
   '/expenses': typeof AuthenticatedExpensesRoute
   '/journey': typeof AuthenticatedJourneyRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reflect': typeof AuthenticatedReflectRoute
   '/week': typeof AuthenticatedWeekRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/dna': typeof AuthenticatedDnaRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/journey': typeof AuthenticatedJourneyRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reflect': typeof AuthenticatedReflectRoute
   '/_authenticated/week': typeof AuthenticatedWeekRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/dna'
     | '/expenses'
     | '/journey'
+    | '/onboarding'
     | '/profile'
     | '/reflect'
     | '/week'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/dna'
     | '/expenses'
     | '/journey'
+    | '/onboarding'
     | '/profile'
     | '/reflect'
     | '/week'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dna'
     | '/_authenticated/expenses'
     | '/_authenticated/journey'
+    | '/_authenticated/onboarding'
     | '/_authenticated/profile'
     | '/_authenticated/reflect'
     | '/_authenticated/week'
@@ -218,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJourneyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -248,6 +267,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDnaRoute: typeof AuthenticatedDnaRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedJourneyRoute: typeof AuthenticatedJourneyRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReflectRoute: typeof AuthenticatedReflectRoute
   AuthenticatedWeekRoute: typeof AuthenticatedWeekRoute
@@ -259,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDnaRoute: AuthenticatedDnaRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedJourneyRoute: AuthenticatedJourneyRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReflectRoute: AuthenticatedReflectRoute,
   AuthenticatedWeekRoute: AuthenticatedWeekRoute,

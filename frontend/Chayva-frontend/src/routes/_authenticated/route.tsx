@@ -1,18 +1,32 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth";
+import { getProfile } from "@/lib/profile";
 import { ExpenseProvider } from "@/lib/expense-context";
 import { CoachingProvider } from "@/lib/coaching-context";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
 
-  beforeLoad: async () => {
-    // Single auth check during navigation — if no valid token/user, redirect.
+  beforeLoad: async ({ location }) => {
     const user = await getCurrentUser();
 
     if (!user) {
       throw redirect({ to: "/auth" });
+    }
+
+    const profile = await getProfile();
+    const isOnboarding = location.pathname === "/onboarding";
+    const skipKey = `chayva_onboarding_skip:${user.uid}`;
+    const skippedForSession =
+      typeof window !== "undefined" && window.sessionStorage.getItem(skipKey) === "true";
+
+    if (!profile.onboarding_completed && !isOnboarding && !skippedForSession) {
+      throw redirect({ to: "/onboarding" });
+    }
+
+    if (profile.onboarding_completed && isOnboarding) {
+      throw redirect({ to: "/dashboard" });
     }
   },
 
@@ -20,10 +34,12 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  // UserProvider fetches /auth/me once and holds the user in context.
-  // ExpenseProvider fetches /expenses once and holds all expenses in context.
-  // All child pages read from these providers — no independent fetching.
-  // On logout: UserProvider sets user=null → ExpenseProvider clears expenses.
+  const pathname = Route.useRouterState({ select: (state) => state.location.pathname });
+
+  if (pathname === "/onboarding") {
+    return <Outlet />;
+  }
+
   return (
     <ExpenseProvider>
       <CoachingProvider>
