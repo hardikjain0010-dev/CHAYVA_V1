@@ -5,6 +5,7 @@ Model: Gemini Flash (temperature=0.7 for narrative warmth)
 """
 
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT
+from ai_engine.prompts.insight_context import format_history_for_prompt
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PROMPT TEMPLATE
@@ -29,6 +30,9 @@ SUMMARY STATS:
 - Most common category: {top_category}
 - Most common mood: {top_mood}
 - Days with most spending: {peak_days}
+
+COMPUTED BEHAVIORAL EVIDENCE:
+{behavioral_evidence}
 
 GENERATION INSTRUCTIONS:
 1. headline: A single warm sentence capturing the emotional theme of the week (not financial).
@@ -79,6 +83,8 @@ STRICT OUTPUT FORMAT — return ONLY this JSON, nothing else:
 RULES:
 - No financial judgment (no "you overspent")
 - No comparisons to others
+- Do not turn routine/necessary categories into emotional problems.
+- Do not claim a time-based trigger unless computed evidence shows repeated timing.
 - All fields must be filled — never return null or empty string
 - If data is sparse (<5 transactions): lower confidence tone ("patterns are beginning to form")
 - Return ONLY the JSON object — no markdown, no preamble, no extra text
@@ -101,6 +107,7 @@ def build_weekly_summary_prompt(expenses: list) -> tuple[str, dict]:
 
     stats = _compute_weekly_stats(expenses)
     expenses_formatted = _format_expenses_for_prompt(expenses)
+    behavioral_evidence = format_history_for_prompt(expenses)
 
     prompt = WEEKLY_SUMMARY_PROMPT_TEMPLATE.format(
         master_system=MASTER_SYSTEM_PROMPT.strip(),
@@ -109,7 +116,8 @@ def build_weekly_summary_prompt(expenses: list) -> tuple[str, dict]:
         transaction_count=stats["transaction_count"],
         top_category=stats["top_category"],
         top_mood=stats["top_mood"],
-        peak_days=stats["peak_days"]
+        peak_days=stats["peak_days"],
+        behavioral_evidence=behavioral_evidence
     )
 
     return prompt, stats

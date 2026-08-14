@@ -6,6 +6,7 @@ Temperature: 0.2 for maximum consistency across runs.
 """
 
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT
+from ai_engine.prompts.insight_context import format_history_for_prompt
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PROMPT TEMPLATE
@@ -37,11 +38,15 @@ PATTERN SUMMARY:
 - Top spending days: {top_days}
 - Mood distribution: {mood_distribution}
 
+COMPUTED BEHAVIORAL EVIDENCE:
+{behavioral_evidence}
+
 ANALYSIS INSTRUCTIONS:
 1. Look for CORRELATIONS across the entire 30 days:
    - Same mood + same category = emotional trigger
    - Same time of day + spending spike = situational trigger
    - Same context in notes = event-based trigger
+   - Routine/necessary categories are not triggers unless they show unusual repetition, amount deviation, or explicit notes/mood support.
 
 2. For each trigger found:
    - trigger: Name the trigger clearly (e.g., "Late-night stress", "Post-exam relief", "Weekend social outings")
@@ -87,6 +92,7 @@ CONSISTENCY RULES:
 - behavior must describe what the user actually does (based on data), not generic advice
 - frequency must be data-derived, not estimated; use qualitative wording when exact frequency is not supported
 - emotions must come from mood, notes, or obvious context; otherwise use cautious wording
+- Never use "late night" as a trigger from time alone; it needs repeated timing plus category/mood/notes evidence.
 - Return ONLY the JSON array — no markdown, no explanation, no extra text
 """
 
@@ -107,6 +113,7 @@ def build_trigger_prompt(expenses: list) -> tuple[str, dict]:
 
     stats = _compute_trigger_stats(expenses)
     expenses_formatted = _format_expenses_for_trigger_analysis(expenses)
+    behavioral_evidence = format_history_for_prompt(expenses)
 
     prompt = TRIGGER_PROMPT_TEMPLATE.format(
         master_system=MASTER_SYSTEM_PROMPT.strip(),
@@ -115,7 +122,8 @@ def build_trigger_prompt(expenses: list) -> tuple[str, dict]:
         date_range=stats["date_range"],
         top_times=stats["top_times"],
         top_days=stats["top_days"],
-        mood_distribution=stats["mood_distribution"]
+        mood_distribution=stats["mood_distribution"],
+        behavioral_evidence=behavioral_evidence
     )
 
     return prompt, stats

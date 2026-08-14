@@ -34,6 +34,12 @@ const MOODS = [
   { value: "social", emoji: "🥳" },
 ];
 
+function currentLocalDateTime() {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
 function AddExpensePage() {
   const navigate = useNavigate();
   const { addExpense } = useExpenses();
@@ -42,9 +48,7 @@ function AddExpensePage() {
   const [category, setCategory] = useState("Food");
   const [note, setNote] = useState("");
   const [mood, setMood] = useState("happy");
-  const [spentAt, setSpentAt] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [spentAt, setSpentAt] = useState(currentLocalDateTime);
 
   const [loading, setLoading] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
@@ -72,14 +76,18 @@ function AddExpensePage() {
         source: "manual",
       });
 
-      const insightPayload = expense.insight && typeof expense.insight === "object" ? expense.insight : null;
+      const insightPayload =
+        expense.insight && typeof expense.insight === "object" ? expense.insight : null;
       const insightText =
         insightPayload && typeof insightPayload === "object" && "insight" in insightPayload
           ? String((insightPayload as Record<string, unknown>).insight)
           : null;
 
       setSavedAnalysis(insightPayload);
-      setSavedFeedback(insightText ?? "Expense saved. AI insight will appear after the backend coach processes this transaction.");
+      setSavedFeedback(
+        insightText ??
+          "Expense saved. AI insight will appear after the backend coach processes this transaction.",
+      );
       toast.success("Expense saved — your backend coach is analyzing it.");
 
       setTimeout(() => {
@@ -99,27 +107,18 @@ function AddExpensePage() {
     <PageTransition>
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <p className="text-sm uppercase tracking-widest text-primary">
-            Quick log
-          </p>
+          <p className="text-sm uppercase tracking-widest text-primary">Quick log</p>
 
-          <h1 className="mt-1 text-3xl font-bold">
-            Add Expense
-          </h1>
+          <h1 className="mt-1 text-3xl font-bold">Add Expense</h1>
 
           <p className="mt-2 text-muted-foreground">
             Log a transaction and let Chayva discover your spending patterns.
           </p>
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="glass space-y-6 rounded-3xl p-6"
-        >
+        <form onSubmit={onSubmit} className="glass space-y-6 rounded-3xl p-6">
           <div>
-            <label className="text-sm font-medium">
-              Amount
-            </label>
+            <label className="text-sm font-medium">Amount</label>
 
             <div className="mt-2 flex items-center rounded-xl border border-border bg-background px-3">
               <span className="text-lg">₹</span>
@@ -139,9 +138,7 @@ function AddExpensePage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="text-sm font-medium">
-                Category
-              </label>
+              <label className="text-sm font-medium">Category</label>
 
               <select
                 value={category}
@@ -157,12 +154,10 @@ function AddExpensePage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium">
-                Date
-              </label>
+              <label className="text-sm font-medium">Date & time</label>
 
               <input
-                type="date"
+                type="datetime-local"
                 value={spentAt}
                 onChange={(e) => setSpentAt(e.target.value)}
                 className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3"
@@ -171,9 +166,7 @@ function AddExpensePage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">
-              Mood
-            </label>
+            <label className="text-sm font-medium">Mood</label>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {MOODS.map((item) => {
@@ -187,9 +180,7 @@ function AddExpensePage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setMood(item.value)}
                     className={`rounded-xl border px-4 py-2 transition ${
-                      active
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border"
+                      active ? "border-primary bg-primary text-primary-foreground" : "border-border"
                     }`}
                   >
                     {item.emoji} {item.value}
@@ -200,9 +191,7 @@ function AddExpensePage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">
-              Note
-            </label>
+            <label className="text-sm font-medium">Note</label>
 
             <textarea
               rows={3}
@@ -250,31 +239,42 @@ function AddExpensePage() {
                   Chayva noticed
                 </div>
 
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {savedFeedback}
-                </p>
+                <p className="mt-2 text-sm text-muted-foreground">{savedFeedback}</p>
                 {savedAnalysis ? (
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Behavior: {String((savedAnalysis as Record<string, unknown>).behavior ?? "forming")}
+                      Behavior:{" "}
+                      {String((savedAnalysis as Record<string, unknown>).behavior ?? "forming")}
                     </span>
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
                       Emotion: {String((savedAnalysis as Record<string, unknown>).emotion ?? mood)}
                     </span>
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Trigger: {String((savedAnalysis as Record<string, unknown>).detected_trigger ?? "forming")}
+                      Trigger:{" "}
+                      {String(
+                        (savedAnalysis as Record<string, unknown>).detected_trigger ?? "forming",
+                      )}
                     </span>
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Type: {String((savedAnalysis as Record<string, unknown>).spending_type ?? "forming")}
+                      Type:{" "}
+                      {String(
+                        (savedAnalysis as Record<string, unknown>).spending_type ?? "forming",
+                      )}
                     </span>
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Pattern: {String((savedAnalysis as Record<string, unknown>).pattern_tag ?? "neutral")}
+                      Pattern:{" "}
+                      {String((savedAnalysis as Record<string, unknown>).pattern_tag ?? "neutral")}
                     </span>
                     <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Confidence: {String((savedAnalysis as Record<string, unknown>).confidence ?? "—")}
+                      Confidence:{" "}
+                      {String((savedAnalysis as Record<string, unknown>).confidence ?? "—")}
                     </span>
                     <span className="basis-full rounded-2xl border border-foreground/10 bg-background/40 px-3 py-2">
-                      Suggestion: {String((savedAnalysis as Record<string, unknown>).suggestion ?? "No suggestion returned.")}
+                      Suggestion:{" "}
+                      {String(
+                        (savedAnalysis as Record<string, unknown>).suggestion ??
+                          "No suggestion returned.",
+                      )}
                     </span>
                   </div>
                 ) : null}

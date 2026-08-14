@@ -48,6 +48,8 @@ def spend_dna(
     category_totals: dict[str, float] = defaultdict(float)
     mood_counter = Counter()
     hour_counter = Counter()
+    time_period_counter = Counter()
+    notes_counter = Counter()
 
     for e in expenses:
         category_totals[e.get("category", "other")] += e.get("amount", 0)
@@ -56,9 +58,22 @@ def spend_dna(
             mood_counter[e["mood"]] += 1
 
         try:
-            hour_counter[datetime.fromisoformat(e["date"]).hour] += 1
+            hour = datetime.fromisoformat(e["date"]).hour
+            hour_counter[hour] += 1
+            if 5 <= hour < 12:
+                time_period_counter["morning"] += 1
+            elif 12 <= hour < 17:
+                time_period_counter["afternoon"] += 1
+            elif 17 <= hour < 22:
+                time_period_counter["evening"] += 1
+            else:
+                time_period_counter["night"] += 1
         except Exception:
             pass
+        for word in str(e.get("notes") or "").lower().replace(",", " ").split():
+            cleaned = word.strip(".!?;:()[]")
+            if len(cleaned) > 2 and cleaned not in {"the", "and", "for", "with", "from", "this", "that"}:
+                notes_counter[cleaned] += 1
 
     most_impulsive_hour = None
     if hour_counter:
@@ -66,18 +81,24 @@ def spend_dna(
         most_impulsive_hour = f"{h:02d}:00"
 
     impulse_count = 0
+    routine_count = 0
     for e in expenses:
         insight = e.get("insight") or {}
         if insight.get("spending_type") == "impulsive" or insight.get("pattern_tag") in {"impulse_buying", "boredom_spending"}:
             impulse_count += 1
         elif e.get("source") in ("sms", "whatsapp", "voice") and e.get("mood") in ("bored", "stressed"):
             impulse_count += 1
+        if insight.get("spending_type") == "routine" or insight.get("spending_nature") == "routine_or_necessary":
+            routine_count += 1
 
     profile = {
         "category_totals": dict(category_totals),
         "mood_frequencies": dict(mood_counter),
         "impulse_count": impulse_count,
         "total_expenses": len(expenses),
+        "routine_count": routine_count,
+        "time_period_counts": dict(time_period_counter),
+        "top_notes_keywords": [word for word, _ in notes_counter.most_common(8)],
     }
     reactive = sum(count for mood, count in mood_counter.items() if mood in {"stressed", "bored", "lonely", "tired"})
     mindfulness_score = (

@@ -32,13 +32,14 @@ def create_expense(
     try:
         recent = db_client.query(COLLECTION, user_id=doc["user_id"])
         recent.sort(key=lambda r: r.get("date", ""), reverse=True)
-        doc["last_5_expenses"] = recent[:5]
+        doc["recent_expenses"] = recent[:30]
         insight = analyze_expense(doc)
     except Exception:
         insight = None
 
     doc["insight"] = insight
     doc.pop("last_5_expenses", None)
+    doc.pop("recent_expenses", None)
     doc_id = db_client.add(COLLECTION, doc)
     _invalidate_user_ai(doc["user_id"])
     return {**doc, "id": doc_id}

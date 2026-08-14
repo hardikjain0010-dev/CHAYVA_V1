@@ -1,14 +1,11 @@
 """
 SpendMind — Insight Prompt
 Analyzes a single expense for emotional/behavioral patterns.
-Model: Gemini Flash (temperature=0.3 for consistent JSON)
+Model: Gemini Flash (temperature=0.7)
 """
 
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PROMPT TEMPLATE
-# ─────────────────────────────────────────────────────────────────────────────
+from ai_engine.prompts.insight_context import build_evidence_bundle, format_evidence_for_prompt
 
 INSIGHT_PROMPT_TEMPLATE = """
 {master_system}
@@ -17,56 +14,63 @@ INSIGHT_PROMPT_TEMPLATE = """
 
 TASK: SINGLE EXPENSE BEHAVIORAL ANALYSIS
 
-You are analyzing ONE expense to detect its emotional and psychological driver.
+You are analyzing ONE expense. Use ONLY the factual evidence below.
+Do NOT assume late-night psychology unless the exact time period is Night AND other evidence supports it.
+Do NOT diagnose the user. Do NOT shame. Do NOT call necessary expenses bad spending.
 
-EXPENSE DATA:
-- Amount: ₹{amount}
-- Category: {category}
-- Mood at time of purchase: {mood}
-- User notes: {notes}
-- Time of day: {time_of_day}
-- Last 5 expenses (for pattern context): {last_5_expenses}
+COMPUTED EVIDENCE (facts — cite these, do not invent others):
+{evidence_block}
 
-ANALYSIS INSTRUCTIONS:
-1. Look at the mood + category + time combination first.
-2. Check if last_5_expenses reveal a repeated pattern (e.g., always orders food when stressed).
-3. Identify the psychological driver from this list:
-   - comfort_spending (spending to soothe stress, anxiety, loneliness, tiredness, burnout, or late-night emotional hunger)
-   - reward_seeking (self-reward after achievement, celebration, salary/income received, finishing a project, birthday, or earned relief)
-   - social_pressure (spending due to friends, peer pressure, group plans, or wanting to belong)
-   - impulse_buying (unplanned, desire-driven)
-   - boredom_spending (purchasing to fill empty time)
-   - habit_loop (automatic, situational habit)
-   - neutral (no clear emotional driver)
+ANALYSIS APPROACH:
+1. OBSERVATION — state only what the evidence shows (amount, category, time, notes, repetition counts).
+2. INTERPRETATION — a cautious behavioral explanation using words like may, might, appears, seems.
+   Skip interpretation when evidence is thin (e.g., first expense, necessary category, no mood/notes).
+3. REFLECTION — one small awareness-oriented next step. Not a command. Not generic saving advice.
 
-4. intensity = how emotionally charged this purchase was (1=low, 5=high)
-5. confidence = how confident you are in the pattern tag (0.0 to 1.0)
+EVIDENCE HIERARCHY:
+- Strongest: repeated category + repeated timing + mood/notes support.
+- Medium: repeated category or amount deviation with some contextual support.
+- Weak: one transaction, missing mood/notes, or time-only evidence.
+- For routine_or_necessary spending, prefer neutral interpretation unless there is explicit contradictory evidence.
 
-PATTERN TAG DECISION RULES:
-- Stress, exam anxiety, loneliness, burnout, tiredness, sad mood, late-night emotional eating, or notes like "needed comfort" -> comfort_spending.
-- Celebration, achievement, salary received, finished project, birthday, "treated myself", "deserved it", proud/relieved/happy after effort -> reward_seeking.
-- Friends, peer pressure, group outing, splitting bills, everyone ordering, social mood -> social_pressure.
-- Repeated similar purchases in the same context, especially small repeated food/chai/snack purchases -> habit_loop.
-- Shopping or buying without planning, sudden desire, "saw it and bought it", random purchase -> impulse_buying.
-- Bored mood with snack/scrolling/time-filling context -> boredom_spending unless it is clearly a repeated routine, then habit_loop.
-- Do not label stress relief as reward_seeking unless the notes clearly show achievement or celebration.
-- Do not infer emotions that are not in mood, notes, time, category, or recent expenses. If evidence is thin, lower confidence and use "may", "might", or "appears".
+TIME PERIOD GUIDANCE (use actual time period from evidence — never assume Night):
+- Morning: commute, breakfast, routine, planned essentials
+- Afternoon: college/work, lunch, errands, scheduled purchases
+- Evening: social plans, transition after day, reward after effort
+- Night: convenience, winding down, delivery — ONLY mention if time period is actually Night
 
-STRICT OUTPUT FORMAT — return ONLY this JSON, nothing else:
+CATEGORY GUIDANCE:
+- Rent, utilities, groceries, transport/petrol, health, subscriptions are often necessary.
+  Treat them as routine unless notes/mood/repetition suggest otherwise.
+- Do not psychologize a necessary expense without specific evidence.
+
+PATTERN TAG (pick ONE):
+comfort_spending | reward_seeking | social_pressure | impulse_buying | boredom_spending | habit_loop | neutral
+
+TAG RULES:
+- Use neutral for necessary/routine expenses with thin emotional evidence.
+- Use neutral for routine_or_necessary spending unless notes/mood/history clearly support a behavioral pattern.
+- Use habit_loop only when repetition evidence exists in the computed facts.
+- Lower confidence when mood/notes are missing or history is empty.
+- Never tag based on time alone.
+
+VARIETY RULE:
+- Reference the specific category, notes, exact time, or repetition counts in your text.
+- Do NOT reuse generic late-night food language unless this expense is actually Night food with supporting evidence.
+- If two expenses differ in time period or notes, your wording must differ meaningfully.
+
+STRICT OUTPUT FORMAT — return ONLY this JSON:
 {{
-  "insight": "1-2 warm, non-judgmental sentences explaining the WHY behind this expense",
-  "pattern_tag": "one of: comfort_spending | reward_seeking | social_pressure | impulse_buying | boredom_spending | habit_loop | neutral",
+  "observation": "1 sentence of factual observation from evidence only",
+  "interpretation": "1 sentence cautious behavioral explanation, or empty string if evidence is too thin",
+  "reflection": "1 short awareness-oriented suggestion, specific to this expense",
+  "insight": "1-3 warm conversational sentences combining observation + interpretation for the UI",
+  "pattern_tag": "one allowed tag",
   "intensity": <integer 1-5>,
   "confidence": <float 0.0-1.0>
 }}
 
-RULES:
-- insight must be warm and human, never shaming
-- insight must explain psychology, not just describe the purchase
-- insight must not invent facts, exact frequencies, counts, percentages, or unsupported emotions
-- avoid therapy jargon, saving advice, motivational quotes, and robotic wording
-- If notes/category are in Hindi, write the insight in Hindi
-- Return ONLY the JSON object — no markdown, no explanation, no extra text
+Return ONLY the JSON object — no markdown, no extra text.
 """
 
 
@@ -76,57 +80,34 @@ def build_insight_prompt(
     mood: str,
     notes: str,
     time_of_day: str,
-    last_5_expenses: list
+    last_5_expenses: list,
+    date: str | None = None,
 ) -> str:
-    """
-    Build the final insight prompt string ready to send to the model.
+    evidence = build_evidence_bundle(
+        amount=amount,
+        category=category,
+        mood=mood,
+        notes=notes,
+        date_value=date,
+        recent_expenses=last_5_expenses,
+    )
+    if evidence["time_period"] == "Unknown" and time_of_day:
+        legacy_map = {
+            "morning": "Morning",
+            "afternoon": "Afternoon",
+            "evening": "Evening",
+            "night": "Night",
+            "late_night": "Night",
+        }
+        evidence["time_period"] = legacy_map.get(time_of_day.lower(), evidence["time_period"])
 
-    Args:
-        amount: expense amount in INR
-        category: food, transport, shopping, entertainment, etc.
-        mood: stressed, bored, happy, lonely, social, tired
-        notes: user's free-text note about the expense
-        time_of_day: morning | afternoon | evening | night | late_night
-        last_5_expenses: list of dicts [{amount, category, mood, date}]
-
-    Returns:
-        Formatted prompt string
-    """
-    notes_clean = notes.strip() if notes else "No notes provided"
-    mood_clean = mood.strip() if mood else "not specified"
-
-    last_5_str = _format_last_5(last_5_expenses)
+    evidence_block = format_evidence_for_prompt(evidence)
 
     return INSIGHT_PROMPT_TEMPLATE.format(
         master_system=MASTER_SYSTEM_PROMPT.strip(),
-        amount=amount,
-        category=category,
-        mood=mood_clean,
-        notes=notes_clean,
-        time_of_day=time_of_day,
-        last_5_expenses=last_5_str
+        evidence_block=evidence_block,
     )
 
-
-def _format_last_5(expenses: list) -> str:
-    """Format last 5 expenses into readable context string."""
-    if not expenses:
-        return "No previous expenses available."
-
-    lines = []
-    for i, exp in enumerate(expenses[-5:], 1):
-        amount = exp.get("amount", "?")
-        category = exp.get("category", "unknown")
-        mood = exp.get("mood", "not logged")
-        date = exp.get("date", "recent")
-        lines.append(f"  {i}. ₹{amount} on {category} | mood: {mood} | {date}")
-
-    return "\n" + "\n".join(lines)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EXAMPLE INPUTS AND EXPECTED OUTPUTS (for testing reference)
-# ─────────────────────────────────────────────────────────────────────────────
 
 INSIGHT_EXAMPLES = [
     {
@@ -135,85 +116,33 @@ INSIGHT_EXAMPLES = [
             "category": "food",
             "mood": "stressed",
             "notes": "ordered Swiggy after exam",
-            "time_of_day": "night",
+            "date": "2026-08-04T21:15:00",
             "last_5_expenses": [
-                {"amount": 280, "category": "food", "mood": "stressed", "date": "2 days ago"},
-                {"amount": 120, "category": "transport", "mood": "neutral", "date": "3 days ago"},
-                {"amount": 400, "category": "food", "mood": "stressed", "date": "5 days ago"},
-            ]
+                {"amount": 280, "category": "food", "mood": "stressed", "date": "2026-08-03T20:45:00"},
+                {"amount": 400, "category": "food", "mood": "stressed", "date": "2026-08-01T21:30:00"},
+            ],
         },
         "expected_pattern_tag": "comfort_spending",
-        "expected_intensity_range": [3, 5],
-        "expected_insight_keywords": ["stress", "comfort", "exam", "pattern"]
     },
     {
         "input": {
-            "amount": 1200,
-            "category": "shopping",
-            "mood": "happy",
-            "notes": "treated myself after getting internship offer",
-            "time_of_day": "afternoon",
-            "last_5_expenses": []
-        },
-        "expected_pattern_tag": "reward_seeking",
-        "expected_intensity_range": [2, 4],
-        "expected_insight_keywords": ["reward", "celebrate", "achievement"]
-    },
-    {
-        "input": {
-            "amount": 600,
-            "category": "food",
-            "mood": "social",
-            "notes": "went out with friends, everyone was ordering",
-            "time_of_day": "evening",
-            "last_5_expenses": []
-        },
-        "expected_pattern_tag": "social_pressure",
-        "expected_intensity_range": [2, 4],
-        "expected_insight_keywords": ["social", "friends", "group"]
-    },
-    {
-        "input": {
-            "amount": 50,
-            "category": "food",
-            "mood": "bored",
-            "notes": "chai from canteen",
-            "time_of_day": "afternoon",
-            "last_5_expenses": [
-                {"amount": 50, "category": "food", "mood": "bored", "date": "yesterday"},
-                {"amount": 50, "category": "food", "mood": "neutral", "date": "2 days ago"},
-            ]
-        },
-        "expected_pattern_tag": "habit_loop",
-        "expected_intensity_range": [1, 2],
-        "expected_insight_keywords": ["habit", "routine", "automatic"]
-    },
-    {
-        "input": {
-            "amount": 30,
-            "category": "food",
-            "mood": "neutral",
-            "notes": "",
-            "time_of_day": "morning",
-            "last_5_expenses": []
+            "amount": 12000,
+            "category": "Rent",
+            "mood": "",
+            "notes": "monthly rent",
+            "date": "2026-08-04T09:00:00",
+            "last_5_expenses": [],
         },
         "expected_pattern_tag": "neutral",
-        "expected_intensity_range": [1, 2],
-        "expected_insight_keywords": []
-    }
+    },
 ]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EDGE CASE HANDLING RULES (documented for prompt tuning reference)
-# ─────────────────────────────────────────────────────────────────────────────
 
 INSIGHT_EDGE_CASES = {
     "missing_mood": "Treat as 'not specified' — do not assume emotional state",
-    "empty_notes": "Rely on category + time_of_day + last_5 for pattern detection",
-    "empty_last_5": "Analyze only current expense — lower confidence score expected",
-    "very_small_amount": "₹10–₹50 likely habit/neutral — do not over-psychologize",
-    "hindi_notes": "Detect Hindi in notes field — respond insight in Hindi",
-    "contradictory_mood": "e.g., mood=happy but category=medicine — trust category over mood for pattern",
-    "late_night_food": "time_of_day=late_night + food = strong comfort_spending signal regardless of mood",
-    "high_amount_impulse": "amount > ₹2000 + no notes + mood=bored = strong impulse_buying signal"
+    "empty_notes": "Rely on category, exact time, and repetition evidence only",
+    "empty_last_5": "Analyze only current expense — lower confidence",
+    "very_small_amount": "₹10–₹50 may be habit/neutral — do not over-psychologize",
+    "hindi_notes": "Detect Hindi in notes — respond in Hindi",
+    "necessary_category": "Rent/groceries/transport default to neutral unless strong emotional evidence",
+    "night_food": "Only interpret as comfort if Night + mood/notes/repetition support it",
 }

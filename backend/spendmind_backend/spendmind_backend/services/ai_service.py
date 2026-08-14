@@ -27,19 +27,23 @@ from ai_engine import (  # noqa: E402
 )
 from ai_engine.router.model_router import route_prompt  # noqa: E402
 from ai_engine.prompts.base import MASTER_SYSTEM_PROMPT  # noqa: E402
+from ai_engine.prompts.insight_context import build_evidence_bundle, has_recorded_time  # noqa: E402
 
 
 def analyze_expense(expense: dict) -> dict:
     adapted = _adapt_expense(expense)
+    recent = expense.get("last_5_expenses") or expense.get("recent_expenses") or []
+    adapted_recent = [_adapt_expense(item) for item in recent]
     result = engine_analyze_expense(
         amount=adapted["amount"],
         category=adapted["category"],
         mood=adapted["mood"],
         notes=adapted["notes"],
         time_of_day=adapted["time_of_day"],
-        last_5_expenses=expense.get("last_5_expenses") or expense.get("recent_expenses") or [],
+        last_5_expenses=adapted_recent,
+        date=adapted.get("date"),
     )
-    return _enrich_expense_insight(_without_meta(result), adapted)
+    return _enrich_expense_insight(_without_meta(result), adapted, adapted_recent)
 
 
 def generate_weekly_summary(expenses: list[dict]) -> dict:
@@ -234,20 +238,72 @@ def generate_spend_dna(user_month_data: dict) -> dict:
     }
 
 
-def _enrich_expense_insight(insight: dict, expense: dict) -> dict:
+def _enrich_expense_insight(insight: dict, expense: dict, recent_expenses: list[dict] | None = None) -> dict:
+    evidence = build_evidence_bundle(
+        amount=expense.get("amount"),
+        category=expense.get("category"),
+        mood=expense.get("mood"),
+        notes=expense.get("notes"),
+        date_value=expense.get("date"),
+        recent_expenses=recent_expenses or [],
+    )
     pattern = insight.get("pattern_tag") or "neutral"
     mood = expense.get("mood") or "neutral"
     category = expense.get("category") or "this category"
-    trigger = _trigger_from_pattern(pattern, mood)
+    time_period = _time_period_label(expense.get("time_of_day"))
+    spending_nature = evidence.get("spending_nature", {}).get("label", "unclear")
+    trigger = _trigger_from_context(pattern, mood, insight.get("observation", ""), time_period, spending_nature)
 
     return {
         **insight,
         "behavior": _label_from_pattern(pattern),
-        "emotion": mood,
+        "emotion": mood if mood else "not specified",
         "detected_trigger": trigger,
-        "spending_type": _spending_type(pattern),
-        "suggestion": _suggestion_from_pattern(pattern, category),
+        "spending_type": _spending_type(pattern, spending_nature),
+        "suggestion": insight.get("reflection") or _suggestion_from_pattern(pattern, category),
+        "time_period": time_period,
+        "spending_nature": spending_nature,
+        "evidence_strength": evidence.get("evidence_strength"),
+        "history_counts": {
+            "same_category": evidence.get("same_category_recent_count", 0),
+            "same_time_period": evidence.get("same_time_period_recent_count", 0),
+            "same_category_time_period": evidence.get("same_category_time_period_count", 0),
+            "same_mood": evidence.get("same_mood_recent_count", 0),
+            "same_category_mood": evidence.get("same_category_mood_count", 0),
+        },
     }
+
+
+def _time_period_label(time_of_day: str | None) -> str:
+    mapping = {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "night": "Night",
+        "late_night": "Night",
+        "unknown": "Unknown",
+    }
+    return mapping.get((time_of_day or "unknown").lower(), "Unknown")
+
+
+def _trigger_from_context(
+    pattern: str,
+    mood: str,
+    observation: str,
+    time_period: str,
+    spending_nature: str = "unclear",
+) -> str:
+    if pattern == "neutral":
+        if spending_nature == "routine_or_necessary":
+            return "Routine or essential expense"
+        if time_period != "Unknown":
+            return f"{time_period} routine"
+        return "No strong trigger detected"
+    if mood and mood not in {"neutral", "not specified", ""}:
+        return f"{mood.title()} mood cue"
+    if observation:
+        return observation[:80]
+    return _label_from_pattern(pattern)
 
 
 def _label_from_pattern(pattern: str) -> str:
@@ -263,15 +319,9 @@ def _label_from_pattern(pattern: str) -> str:
     return labels.get(pattern, "Intentional spend")
 
 
-def _trigger_from_pattern(pattern: str, mood: str) -> str:
-    if pattern == "neutral":
-        return "No strong trigger detected"
-    if mood and mood != "neutral":
-        return f"{mood.title()} mood cue"
-    return _label_from_pattern(pattern)
-
-
-def _spending_type(pattern: str) -> str:
+def _spending_type(pattern: str, spending_nature: str = "unclear") -> str:
+    if spending_nature == "routine_or_necessary":
+        return "routine"
     if pattern in {"impulse_buying", "boredom_spending"}:
         return "impulsive"
     if pattern in {"comfort_spending", "reward_seeking", "social_pressure"}:
@@ -300,6 +350,7 @@ def _adapt_expenses(expenses: list[dict]) -> list[dict]:
 def _adapt_expense(expense: dict) -> dict:
     date_value = expense.get("date") or expense.get("timestamp")
     dt = _parse_datetime(date_value)
+    recorded_time = has_recorded_time(date_value)
     return {
         **expense,
         "amount": _coerce_float(expense.get("amount"), 0),
@@ -307,7 +358,7 @@ def _adapt_expense(expense: dict) -> dict:
         "mood": expense.get("mood") or "",
         "notes": expense.get("notes") or expense.get("merchant") or "",
         "date": dt.isoformat() if dt else date_value,
-        "time_of_day": expense.get("time_of_day") or _time_of_day(dt),
+        "time_of_day": expense.get("time_of_day") or _time_of_day(dt, recorded_time),
         "day_of_week": expense.get("day_of_week") or (dt.strftime("%A").lower() if dt else ""),
     }
 
@@ -322,6 +373,8 @@ def _adapt_spending_profile(profile: dict) -> dict:
         "night_spend_ratio": float(profile.get("night_spend_ratio") or 0),
         "avg_amount": float(profile.get("avg_amount") or 0),
         "top_notes_keywords": profile.get("top_notes_keywords", []),
+        "routine_count": int(profile.get("routine_count") or 0),
+        "time_period_counts": profile.get("time_period_counts", {}),
     }
     if not adapted["total_expenses"]:
         adapted["total_expenses"] = max(
@@ -348,8 +401,8 @@ def _parse_datetime(value: Any) -> Optional[datetime]:
         return None
 
 
-def _time_of_day(dt: Optional[datetime]) -> str:
-    if dt is None:
+def _time_of_day(dt: Optional[datetime], has_time: bool = True) -> str:
+    if dt is None or not has_time:
         return "unknown"
     hour = dt.hour
     if 5 <= hour < 12:
@@ -358,8 +411,6 @@ def _time_of_day(dt: Optional[datetime]) -> str:
         return "afternoon"
     if 17 <= hour < 22:
         return "evening"
-    if 22 <= hour or hour < 2:
-        return "late_night"
     return "night"
 
 

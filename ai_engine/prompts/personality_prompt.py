@@ -111,6 +111,8 @@ CLASSIFICATION INSTRUCTIONS:
 IMPORTANT: If the data shows mixed signals, pick the DOMINANT pattern (highest frequency/amount).
 Minimum 15 expenses required for reliable classification — note this in confidence if under 15.
 
+Treat this as an evolving current signal, not a permanent identity. Routine/necessary spending should reduce confidence in emotional labels unless mood, notes, or repeated discretionary evidence supports them.
+
 STRICT OUTPUT FORMAT — return ONLY this JSON, nothing else:
 EVIDENCE RULES:
 - Sound like a behavioral psychologist noticing patterns, not a financial advisor giving money advice.
@@ -172,6 +174,7 @@ def _format_spending_profile(profile: dict) -> str:
     lines.append(f"Total expenses analyzed: {total}")
     lines.append(f"Average transaction amount: ₹{profile.get('avg_amount', 'unknown')}")
     lines.append(f"Impulse purchases detected: {profile.get('impulse_count', 0)}")
+    lines.append(f"Routine/necessary expenses detected: {profile.get('routine_count', 0)}")
     lines.append(f"Weekend spending ratio: {profile.get('weekend_spend_ratio', 0):.0%} of all spending")
     lines.append(f"Night-time spending ratio: {profile.get('night_spend_ratio', 0):.0%} of all spending")
     lines.append("")
@@ -195,6 +198,12 @@ def _format_spending_profile(profile: dict) -> str:
     keywords = profile.get("top_notes_keywords", [])
     if keywords:
         lines.append(f"COMMON NOTES KEYWORDS: {', '.join(keywords)}")
+
+    time_counts = profile.get("time_period_counts", {})
+    if time_counts:
+        lines.append("TIME PERIOD COUNTS:")
+        for period, count in sorted(time_counts.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"  {period}: {count} expenses")
 
     return "\n".join(lines)
 

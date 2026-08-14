@@ -105,6 +105,9 @@ def _profile_from_expenses(expenses: list[dict], moods: list[dict]) -> dict:
     impulse_count = 0
     night_count = 0
     weekend_count = 0
+    notes_counter = Counter()
+    time_period_counter = Counter()
+    routine_count = 0
 
     for expense in expenses:
         mood = expense.get("mood")
@@ -113,12 +116,26 @@ def _profile_from_expenses(expenses: list[dict], moods: list[dict]) -> dict:
         insight = expense.get("insight") or {}
         if insight.get("spending_type") == "impulsive" or insight.get("pattern_tag") in {"impulse_buying", "boredom_spending"}:
             impulse_count += 1
+        if insight.get("spending_type") == "routine" or insight.get("spending_nature") == "routine_or_necessary":
+            routine_count += 1
+        for word in str(expense.get("notes") or "").lower().replace(",", " ").split():
+            cleaned = word.strip(".!?;:()[]")
+            if len(cleaned) > 2 and cleaned not in {"the", "and", "for", "with", "from", "this", "that"}:
+                notes_counter[cleaned] += 1
         try:
             dt = datetime.fromisoformat(expense.get("date", ""))
             if dt.hour >= 22 or dt.hour < 5:
                 night_count += 1
             if dt.weekday() >= 5:
                 weekend_count += 1
+            if 5 <= dt.hour < 12:
+                time_period_counter["morning"] += 1
+            elif 12 <= dt.hour < 17:
+                time_period_counter["afternoon"] += 1
+            elif 17 <= dt.hour < 22:
+                time_period_counter["evening"] += 1
+            else:
+                time_period_counter["night"] += 1
         except Exception:
             pass
 
@@ -136,7 +153,17 @@ def _profile_from_expenses(expenses: list[dict], moods: list[dict]) -> dict:
         "weekend_spend_ratio": round(weekend_count / total, 2) if total else 0,
         "night_spend_ratio": round(night_count / total, 2) if total else 0,
         "avg_amount": round(sum(amounts) / total, 2) if total else 0,
+        "routine_count": routine_count,
+        "time_period_counts": dict(time_period_counter),
+        "top_notes_keywords": [word for word, _ in notes_counter.most_common(8)],
     }
+
+
+def _most_common_time_period(profile: dict) -> str | None:
+    counts = profile.get("time_period_counts") or {}
+    if not counts:
+        return None
+    return max(counts, key=counts.get)
 
 
 def _reflection_insight(moods: list[dict], recent_expenses: list[dict]) -> dict:
@@ -483,26 +510,7 @@ def insights_personality(
     def compute():
         expenses = _within_days(_user_expenses(user_id), 30)
         mood_entries = _within_days_moods(_user_moods(user_id), 30)
-        category_totals: dict[str, float] = defaultdict(float)
-        mood_counter = Counter()
-        impulse_count = 0
-        for e in expenses:
-            category_totals[e.get("category", "other")] += e.get("amount", 0)
-            if e.get("mood"):
-                mood_counter[e["mood"]] += 1
-            if e.get("source") in ("sms", "whatsapp", "voice") and e.get("mood") in ("bored", "stressed"):
-                impulse_count += 1
-
-        for entry in mood_entries:
-            if entry.get("mood"):
-                mood_counter[entry["mood"]] += 1
-
-        profile = {
-            "category_totals": dict(category_totals),
-            "mood_frequencies": dict(mood_counter),
-            "impulse_count": impulse_count,
-            "total_expenses": len(expenses),
-        }
+        profile = _profile_from_expenses(expenses, mood_entries)
         result = classify_personality(profile)
         db_client.add("personality_cache", {"user_id": user_id, **result}, doc_id=f"{user_id}_latest")
         return result
@@ -649,13 +657,13 @@ def coaching_snapshot(
                 "today_trigger": triggers[0].get("trigger") if triggers else None,
                 "most_frequent_trigger": triggers[0].get("trigger") if triggers else None,
                 "mood_trigger": triggers[0].get("emotion") if triggers else dominant_mood,
-                "time_trigger": "night" if profile.get("night_spend_ratio", 0) >= 0.35 else "daytime",
+                "time_trigger": _most_common_time_period(profile),
                 "category_trigger": favorite_category,
                 "weekend_trigger": "weekend" if profile.get("weekend_spend_ratio", 0) >= 0.35 else "weekday",
                 "recurring_pattern": triggers[0].get("behavior") if triggers else None,
                 "trigger_frequency": triggers[0].get("frequency") if triggers else None,
                 "current_trigger_risk": nudge_payload.get("risk_level"),
-                "most_common_time": "night" if profile.get("night_spend_ratio", 0) >= 0.35 else "daytime",
+                "most_common_time": _most_common_time_period(profile),
                 "most_common_mood": max(profile["mood_frequencies"], key=profile["mood_frequencies"].get) if profile.get("mood_frequencies") else None,
                 "triggers": triggers,
             },

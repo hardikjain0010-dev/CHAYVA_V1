@@ -64,6 +64,9 @@ RESPONSE FORMAT:
 
 GRACEFUL_DEFAULTS = {
     "insight": {
+        "observation": "This expense is logged with the details you provided.",
+        "interpretation": "",
+        "reflection": "Keep adding mood and notes so patterns become clearer over time.",
         "insight": "This looks like an everyday expense. Spending patterns become clearer over time as you log more.",
         "pattern_tag": "neutral",
         "intensity": 1,

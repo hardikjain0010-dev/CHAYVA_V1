@@ -170,6 +170,7 @@ def _format_trigger_patterns(patterns: list) -> str:
 
 TIME_WINDOW_KEYWORDS = {
     "late_night": ["late night", "midnight", "after 10", "after 11", "11pm", "10pm"],
+    "night": ["night", "late night", "after 9", "after 10", "after 11", "9pm", "10pm", "11pm"],
     "evening": ["evening", "7pm", "8pm", "9pm", "after dinner", "7-9"],
     "afternoon": ["afternoon", "2pm", "3pm", "4pm", "2-4", "post lunch"],
     "morning": ["morning", "breakfast", "9am", "10am"],
