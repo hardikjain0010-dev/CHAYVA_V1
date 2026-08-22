@@ -8,12 +8,9 @@ Docs (Swagger UI): http://localhost:8000/docs
 """
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 
 from core.config import settings
 from core.exceptions import register_exception_handlers
-from core.limiter import limiter
 
 from routers import expense, mood, insights, auth, sms, webhook, voice, spend_dna, profile
 
@@ -27,17 +24,21 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
 register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173", 
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://chayva-v11.vercel.app"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.include_router(expense.router)

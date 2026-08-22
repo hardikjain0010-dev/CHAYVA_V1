@@ -23,7 +23,10 @@ def register_exception_handlers(app):
 
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception):
+        import traceback
+        print(f"[ERROR] {type(exc).__name__}: {str(exc)}")
+        print(traceback.format_exc())
         return JSONResponse(
             status_code=500,
-            content={"error": True, "message": "Internal server error", "code": 500},
+            content={"error": True, "message": str(exc), "code": 500},
         )

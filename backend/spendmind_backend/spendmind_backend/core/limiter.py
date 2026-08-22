@@ -1,4 +1,5 @@
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-limiter = Limiter(key_func=get_remote_address)
+# Disable rate limiting for development to avoid CORS preflight issues
+limiter = Limiter(key_func=get_remote_address, enabled=False)

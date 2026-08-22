@@ -48,7 +48,7 @@ class Settings:
         
         # No CORS_ORIGINS set - provide defaults based on environment
         if self.ENV == "development":
-            return ["http://localhost:5173", "http://127.0.0.1:5173"]
+            return ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]
         
         # Production requires explicit CORS configuration
         raise ValueError(

@@ -1,4 +1,5 @@
 import uuid
+import re
 from fastapi import APIRouter, HTTPException, status, Depends
 from models.expense_model import AuthVerifyRequest
 from core.security import verify_id_token
@@ -18,12 +19,33 @@ from core.security import (
 )
 from services.firebase_service import db_client, now_iso
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+def validate_password_strength(password: str) -> tuple[bool, str]:
+    """Validate password strength. Returns (is_valid, error_message)."""
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter."
+    if not re.search(r"[0-9]", password):
+        return False, "Password must contain at least one number."
+    return True, ""
+
 @router.post("/signup", response_model=TokenOut)
 def signup(payload: AuthSignupRequest):
+    # Validate password strength
+    is_valid, error_msg = validate_password_strength(payload.password)
+    if not is_valid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+    
     # Check duplicate email
     existing = db_client.query("users", email=payload.email)
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, 
+            detail="This email is already registered. Please sign in instead."
+        )
 
     user_id = str(uuid.uuid4())
     hashed_pwd = hash_password(payload.password)
@@ -92,7 +114,8 @@ def google_signin(payload: AuthGoogleRequest):
     
     if users:
         user = users[0]
-        db_client.update("users", user["id"], {"last_login": now_iso()})
+        doc_id = user.get("id") or user.get("uid")
+        db_client.update("users", doc_id, {"last_login": now_iso()})
     else:
         # Create user
         user_id = str(uuid.uuid4())
@@ -107,6 +130,25 @@ def google_signin(payload: AuthGoogleRequest):
             "email_verified": google_data.get("email_verified", False)
         }
         db_client.add("users", user, doc_id=user_id)
+        
+        # Initialize empty profile for new Google user (inline to avoid circular import)
+        profile_doc = {
+            "user_id": user_id,
+            "display_name": None,
+            "life_stage": None,
+            "college_or_work_context": None,
+            "preferred_language": None,
+            "typical_daily_schedule": None,
+            "spending_priorities": [],
+            "financial_goals": [],
+            "preferred_ai_tone": None,
+            "self_reported_spending_triggers": [],
+            "self_reported_spending_contexts": [],
+            "onboarding_completed": False,
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+        }
+        db_client.add("profiles", profile_doc, doc_id=user_id)
         
     user_out = UserOut(**user)
     token = create_access_token(data={"sub": user["uid"]})

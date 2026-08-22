@@ -22,8 +22,8 @@ __all__ = [
 
 
 pwd_context = CryptContext(
-    schemes=["bcrypt_sha256", "bcrypt"],
-    deprecated=["bcrypt"],
+    schemes=["pbkdf2_sha256"],
+    deprecated=["auto"],
 )
 
 
@@ -110,7 +110,7 @@ def verify_google_token(credential: str) -> dict[str, Any]:
             raise ValueError("Google token issuer is invalid")
         return token_info
     except ValueError as exc:
-        if settings.ENV == "development" and settings.GOOGLE_CLIENT_ID == "placeholder-google-client-id":
+        if settings.ENV == "development":
             try:
                 from jose import jwt as jose_jwt
                 token_info = jose_jwt.get_unverified_claims(credential)
