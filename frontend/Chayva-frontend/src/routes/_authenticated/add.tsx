@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
-
 import { useExpenses } from "@/lib/expense-context";
-import { PageTransition } from "@/lib/ui-helpers";
+import {
+  PageTransition,
+  CategoryIcon,
+  AIInsightReveal,
+} from "@/lib/ui-helpers";
 
 export const Route = createFileRoute("/_authenticated/add")({
   component: AddExpensePage,
 });
+
+// ---------------------------------------------------------------------------
+// Static data
+// ---------------------------------------------------------------------------
 
 const CATEGORIES = [
   "Food",
@@ -26,12 +33,12 @@ const CATEGORIES = [
 ];
 
 const MOODS = [
-  { value: "happy", emoji: "😊" },
-  { value: "stressed", emoji: "😣" },
-  { value: "bored", emoji: "😐" },
-  { value: "lonely", emoji: "🥺" },
-  { value: "tired", emoji: "😴" },
-  { value: "social", emoji: "🥳" },
+  { value: "happy", emoji: "😊", label: "Happy" },
+  { value: "stressed", emoji: "😣", label: "Stressed" },
+  { value: "bored", emoji: "😐", label: "Bored" },
+  { value: "lonely", emoji: "🥺", label: "Lonely" },
+  { value: "tired", emoji: "😴", label: "Tired" },
+  { value: "social", emoji: "🥳", label: "Social" },
 ];
 
 function currentLocalDateTime() {
@@ -40,12 +47,9 @@ function currentLocalDateTime() {
   return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
-function nestedString(value: Record<string, unknown> | null, key: string, child: string) {
-  const nested = value?.[key];
-  if (!nested || typeof nested !== "object") return null;
-  const childValue = (nested as Record<string, unknown>)[child];
-  return childValue == null ? null : String(childValue);
-}
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 function AddExpensePage() {
   const navigate = useNavigate();
@@ -58,21 +62,19 @@ function AddExpensePage() {
   const [spentAt, setSpentAt] = useState(currentLocalDateTime);
 
   const [loading, setLoading] = useState(false);
-  const [savedFeedback, setSavedFeedback] = useState<string | null>(null);
-  const [savedAnalysis, setSavedAnalysis] = useState<Record<string, unknown> | null>(null);
+  const [savedInsight, setSavedInsight] = useState<Record<string, unknown> | null>(null);
+  const [showInsight, setShowInsight] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const value = Number(amount);
-
     if (isNaN(value) || value <= 0) {
       toast.error("Please enter a valid amount.");
       return;
     }
 
     setLoading(true);
-
     try {
       const expense = await addExpense({
         amount: value,
@@ -84,24 +86,18 @@ function AddExpensePage() {
       });
 
       const insightPayload =
-        expense.insight && typeof expense.insight === "object" ? expense.insight : null;
-      const insightText =
-        insightPayload && typeof insightPayload === "object" && "insight" in insightPayload
-          ? String((insightPayload as Record<string, unknown>).insight)
+        expense.insight && typeof expense.insight === "object"
+          ? (expense.insight as Record<string, unknown>)
           : null;
 
-      setSavedAnalysis(insightPayload);
-      setSavedFeedback(
-        insightText ??
-          "Expense saved. AI insight will appear after the backend coach processes this transaction.",
-      );
-      toast.success("Expense saved — your backend coach is analyzing it.");
+      setSavedInsight(insightPayload);
+      setShowInsight(true);
+      toast.success("Expense logged.");
 
+      // Navigate after showing insight briefly
       setTimeout(() => {
-        navigate({
-          to: "/expenses",
-        });
-      }, 1200);
+        navigate({ to: "/expenses" });
+      }, insightPayload ? 3500 : 1200);
     } catch (error) {
       console.error(error);
       toast.error("Failed to save expense.");
@@ -110,192 +106,230 @@ function AddExpensePage() {
     }
   }
 
+  // Build insight data for AIInsightReveal from the expense.insight object
+  const insightData = savedInsight
+    ? {
+        observation:
+          savedInsight.insight ? String(savedInsight.insight) : null,
+        evidence:
+          savedInsight.detected_trigger
+            ? `Detected trigger: ${String(savedInsight.detected_trigger)}`
+            : null,
+        interpretation:
+          savedInsight.behavior
+            ? `Spending type: ${String(savedInsight.behavior)}`
+            : null,
+        suggestion:
+          savedInsight.suggestion ? String(savedInsight.suggestion) : null,
+        tags: [
+          savedInsight.spending_type && {
+            label: String(savedInsight.spending_type),
+          },
+          savedInsight.pattern_tag && {
+            label: String(savedInsight.pattern_tag),
+          },
+          (savedInsight.expense_classification as Record<string, unknown> | null)
+            ?.classification && {
+            label: String(
+              (savedInsight.expense_classification as Record<string, unknown>)
+                .classification
+            ),
+          },
+          (savedInsight.behavioral_significance as Record<string, unknown> | null)
+            ?.level && {
+            label: `significance: ${String(
+              (savedInsight.behavioral_significance as Record<string, unknown>)
+                .level
+            )}`,
+          },
+        ].filter(Boolean) as Array<{ label: string }>,
+      }
+    : null;
+
   return (
     <PageTransition>
-      <div className="mx-auto max-w-3xl space-y-6">
-        <div>
-          <p className="text-sm uppercase tracking-widest text-primary">Quick log</p>
-
-          <h1 className="mt-1 text-3xl font-bold">Add Expense</h1>
-
-          <p className="mt-2 text-muted-foreground">
-            Log a transaction and let Chayva discover your spending patterns.
-          </p>
-        </div>
-
-        <form onSubmit={onSubmit} className="glass space-y-6 rounded-3xl p-6">
-          <div>
-            <label className="text-sm font-medium">Amount</label>
-
-            <div className="mt-2 flex items-center rounded-xl border border-border bg-background px-3">
-              <span className="text-lg">₹</span>
-
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                required
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-transparent px-2 py-3 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="text-sm font-medium">Category</label>
-
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3"
-              >
-                {CATEGORIES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Date & time</label>
-
-              <input
-                type="datetime-local"
-                value={spentAt}
-                onChange={(e) => setSpentAt(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Mood</label>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {MOODS.map((item) => {
-                const active = mood === item.value;
-
-                return (
-                  <motion.button
-                    key={item.value}
-                    type="button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setMood(item.value)}
-                    className={`rounded-xl border px-4 py-2 transition ${
-                      active ? "border-primary bg-primary text-primary-foreground" : "border-border"
-                    }`}
-                  >
-                    {item.emoji} {item.value}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Note</label>
-
-            <textarea
-              rows={3}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Optional"
-              className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-3 outline-none"
-            />
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground"
+      <div className="mx-auto max-w-xl">
+        {/* Header */}
+        <header className="mb-8">
+          <button
+            onClick={() => navigate({ to: "/expenses" })}
+            className="mb-5 flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
           >
-            {loading ? "Saving..." : "Save Expense"}
-          </motion.button>
-        </form>
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+          <p className="chayva-eyebrow">Capture</p>
+          <h1 className="chayva-headline mt-1 text-3xl text-foreground">
+            What did you spend on?
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Every entry helps Chayva understand the why behind your spending.
+          </p>
+        </header>
 
-        <AnimatePresence>
-          {savedFeedback && (
+        <AnimatePresence mode="wait">
+          {showInsight ? (
+            // ---------------------------------------------------------------
+            // AI INSIGHT REVEAL — after saving
+            // ---------------------------------------------------------------
             <motion.div
-              initial={{
-                opacity: 0,
-                y: 20,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={{
-                opacity: 0,
-              }}
-              className="glass flex gap-3 rounded-2xl p-5"
+              key="insight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Check size={18} />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Sparkles size={16} />
-                  Chayva noticed
+              <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/6 px-4 py-3">
+                <span className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-primary text-primary-foreground">
+                  <Check className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">₹{amount} logged</p>
+                  <p className="text-xs text-muted-foreground">{category} · {mood}</p>
                 </div>
-
-                <p className="mt-2 text-sm text-muted-foreground">{savedFeedback}</p>
-                {savedAnalysis ? (
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Behavior:{" "}
-                      {String((savedAnalysis as Record<string, unknown>).behavior ?? "forming")}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Emotion: {String((savedAnalysis as Record<string, unknown>).emotion ?? mood)}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Trigger:{" "}
-                      {String(
-                        (savedAnalysis as Record<string, unknown>).detected_trigger ?? "forming",
-                      )}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Type:{" "}
-                      {String(
-                        (savedAnalysis as Record<string, unknown>).spending_type ?? "forming",
-                      )}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Classification:{" "}
-                      {nestedString(savedAnalysis, "expense_classification", "classification") ??
-                        "forming"}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Significance:{" "}
-                      {nestedString(savedAnalysis, "behavioral_significance", "level") ?? "forming"}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Pattern:{" "}
-                      {String((savedAnalysis as Record<string, unknown>).pattern_tag ?? "neutral")}
-                    </span>
-                    <span className="rounded-full border border-foreground/10 bg-background/40 px-2.5 py-1">
-                      Confidence:{" "}
-                      {String((savedAnalysis as Record<string, unknown>).confidence ?? "—")}
-                    </span>
-                    <span className="basis-full rounded-2xl border border-foreground/10 bg-background/40 px-3 py-2">
-                      Suggestion:{" "}
-                      {String(
-                        (savedAnalysis as Record<string, unknown>).suggestion ??
-                          "No suggestion returned.",
-                      )}
-                    </span>
-                  </div>
-                ) : null}
               </div>
+
+              <AIInsightReveal show={showInsight} data={insightData} />
+
+              {!insightData?.observation && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Chayva will analyze this expense soon.
+                </p>
+              )}
+
+              <p className="text-center text-xs text-muted-foreground">
+                Taking you to your journal…
+              </p>
             </motion.div>
+          ) : (
+            // ---------------------------------------------------------------
+            // CAPTURE FORM
+            // ---------------------------------------------------------------
+            <motion.form
+              key="form"
+              onSubmit={onSubmit}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-7"
+            >
+              {/* ----------------------------------------------------------- */}
+              {/* AMOUNT — dominant input                                      */}
+              {/* ----------------------------------------------------------- */}
+              <div className="glass rounded-3xl p-7 text-center">
+                <p className="chayva-eyebrow mb-4">Amount</p>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span className="font-outfit text-4xl font-bold text-muted-foreground">₹</span>
+                  <input
+                    id="amount-input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    className="capture-input max-w-[200px]"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {/* ----------------------------------------------------------- */}
+              {/* CATEGORY — icon grid                                         */}
+              {/* ----------------------------------------------------------- */}
+              <div>
+                <p className="chayva-eyebrow mb-3">Category</p>
+                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategory(cat)}
+                      className={`category-tile ${category === cat ? "active" : ""}`}
+                    >
+                      <CategoryIcon name={cat} className="h-5 w-5" />
+                      <span>{cat}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ----------------------------------------------------------- */}
+              {/* MOOD — emoji row                                             */}
+              {/* ----------------------------------------------------------- */}
+              <div>
+                <p className="chayva-eyebrow mb-3">How were you feeling?</p>
+                <div className="flex flex-wrap gap-2">
+                  {MOODS.map((m) => (
+                    <motion.button
+                      key={m.value}
+                      type="button"
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setMood(m.value)}
+                      className={`mood-pill ${mood === m.value ? "active" : ""}`}
+                    >
+                      <span className="text-base">{m.emoji}</span>
+                      {m.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ----------------------------------------------------------- */}
+              {/* DATE / TIME — secondary field                                */}
+              {/* ----------------------------------------------------------- */}
+              <div>
+                <label className="chayva-eyebrow block mb-2" htmlFor="spent-at">
+                  When
+                </label>
+                <input
+                  id="spent-at"
+                  type="datetime-local"
+                  value={spentAt}
+                  onChange={(e) => setSpentAt(e.target.value)}
+                  className="profile-input"
+                />
+              </div>
+
+              {/* ----------------------------------------------------------- */}
+              {/* NOTE — optional context                                      */}
+              {/* ----------------------------------------------------------- */}
+              <div>
+                <label className="chayva-eyebrow block mb-2" htmlFor="expense-note">
+                  Note <span className="normal-case tracking-normal text-muted-foreground opacity-70">(optional)</span>
+                </label>
+                <textarea
+                  id="expense-note"
+                  rows={2}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="What was the context? A quick note helps Chayva understand."
+                  className="profile-input resize-none"
+                />
+              </div>
+
+              {/* ----------------------------------------------------------- */}
+              {/* SUBMIT                                                        */}
+              {/* ----------------------------------------------------------- */}
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-2xl bg-gradient-primary py-3.5 text-base font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60 transition"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                    Saving…
+                  </span>
+                ) : (
+                  "Log this expense"
+                )}
+              </motion.button>
+            </motion.form>
           )}
         </AnimatePresence>
       </div>

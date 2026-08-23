@@ -4,8 +4,8 @@ services:
     runtime: python
     runtimeVersion: "3.12"
     plan: free
-    buildCommand: pip install -r backend/requirements.txt && cp -r ai_engine backend/spendmind_backend/
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt && cp -r ../ai_engine .
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
         value: 8000

@@ -206,21 +206,24 @@ function OnboardingPage() {
   if (step === total) {
     return (
       <OnboardingFrame>
-        <div className="glass mx-auto w-full max-w-xl rounded-2xl p-6 shadow-[var(--glass-shadow-strong)] md:p-8">
-          <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-primary text-primary-foreground">
-            <Sparkles className="h-6 w-6" />
+        <div className="glass rounded-2xl p-7 shadow-[var(--glass-shadow-strong)] md:p-9 text-center">
+          <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow)]">
+            <Sparkles className="h-7 w-7" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">Your Chayva profile is ready.</h1>
-          <p className="mt-4 text-base leading-7 text-muted-foreground">
+          <p className="chayva-eyebrow mb-3">Your profile is ready</p>
+          <h1 className="chayva-headline text-2xl text-foreground md:text-3xl">
+            Chayva now knows a little about you.
+          </h1>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm mx-auto">
             {completionSummary(savedProfile ?? buildPayload(answers))}
           </p>
-          <p className="mt-4 text-base font-medium">
+          <p className="mt-4 text-sm font-medium text-foreground/80">
             Now let's see what your spending actually tells us.
           </p>
           <button
             type="button"
             onClick={() => navigate({ to: "/dashboard", replace: true })}
-            className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+            className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring"
           >
             Enter Chayva
             <ArrowRight className="h-4 w-4" />
@@ -237,14 +240,14 @@ function OnboardingPage() {
           <Welcome onBegin={() => setStep(1)} onSkip={skipForNow} saving={saving} error={error} />
         ) : (
           <div className="glass rounded-2xl p-5 shadow-[var(--glass-shadow-strong)] md:p-7">
-            <div className="mb-6">
-              <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
-                <span>{step} of 8</span>
-                <span>{progress}%</span>
+            <div className="mb-7">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="chayva-eyebrow">Step {step} of 8</p>
+                <span className="text-xs font-semibold text-primary">{progress}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-foreground/10" aria-hidden="true">
+              <div className="h-1.5 overflow-hidden rounded-full bg-foreground/8" aria-label={`${progress}% complete`} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
                 <div
-                  className="h-full rounded-full bg-gradient-primary transition-all"
+                  className="h-full rounded-full bg-gradient-primary transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -286,7 +289,26 @@ function OnboardingPage() {
 }
 
 function OnboardingFrame({ children }: { children: React.ReactNode }) {
-  return <main className="flex min-h-screen items-center px-4 py-8 md:px-6">{children}</main>;
+  return (
+    <main
+      className="relative flex min-h-screen items-center justify-center px-4 py-10 md:px-6"
+      style={{ background: "var(--gradient-app)", backgroundAttachment: "fixed" }}
+    >
+      {/* Ambient glow */}
+      <div aria-hidden className="pointer-events-none fixed -top-32 -left-20 h-[480px] w-[480px] rounded-full bg-primary/10 blur-[120px]" />
+      <div aria-hidden className="pointer-events-none fixed bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-accent/8 blur-[100px]" />
+      <div className="relative z-10 w-full max-w-xl">
+        {/* Brand mark */}
+        <div className="mb-8 flex items-center gap-2.5 justify-center">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <span className="text-base font-bold tracking-tight">Chayva</span>
+        </div>
+        {children}
+      </div>
+    </main>
+  );
 }
 
 function Welcome({
@@ -301,17 +323,18 @@ function Welcome({
   error: string | null;
 }) {
   return (
-    <section className="glass rounded-2xl p-6 shadow-[var(--glass-shadow-strong)] md:p-8">
-      <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-primary text-primary-foreground">
-        <Sparkles className="h-6 w-6" />
+    <section className="glass rounded-2xl p-7 shadow-[var(--glass-shadow-strong)] md:p-9">
+      <div className="mb-6">
+        <p className="chayva-eyebrow mb-3">The beginning of a relationship</p>
+        <h1 className="chayva-headline text-3xl text-foreground">
+          Let's make Chayva understand you.
+        </h1>
+        <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm">
+          A few questions help Chayva recognize your spending patterns more personally. There are no right or wrong answers — only your context.
+        </p>
       </div>
-      <h1 className="text-3xl font-semibold tracking-tight">Let's make Chayva understand you.</h1>
-      <p className="mt-4 text-base leading-7 text-muted-foreground">
-        A few quick questions help Chayva recognize your spending patterns more personally. There
-        are no right or wrong answers.
-      </p>
       {error ? (
-        <p className="mt-5 text-sm text-destructive" role="alert">
+        <p className="mt-4 text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
@@ -319,7 +342,7 @@ function Welcome({
         <button
           type="button"
           onClick={onBegin}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-ring"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring"
         >
           Let's begin
           <ArrowRight className="h-4 w-4" />
@@ -328,7 +351,7 @@ function Welcome({
           type="button"
           disabled={saving}
           onClick={onSkip}
-          className="rounded-xl border border-foreground/10 px-5 py-3 text-sm font-medium text-muted-foreground transition hover:bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          className="rounded-xl border border-foreground/12 px-5 py-3.5 text-sm font-medium text-muted-foreground transition hover:bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
         >
           Skip for now
         </button>
@@ -514,8 +537,8 @@ function Question({
 function SingleQuestion({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <div className="mt-6">{children}</div>
+      <h1 className="chayva-headline text-xl text-foreground md:text-2xl">{title}</h1>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -549,15 +572,19 @@ function Choice({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`min-h-12 rounded-xl border px-4 py-3 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-ring ${
+      className={`min-h-12 rounded-xl border px-4 py-3.5 text-left text-sm transition focus:outline-none focus:ring-2 focus:ring-ring ${
         selected
-          ? "border-primary bg-primary/15 text-foreground shadow-[var(--shadow-glow)]"
-          : "border-foreground/10 bg-background/40 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+          ? "border-primary/40 bg-primary/10 text-foreground shadow-[var(--shadow-glow-sm)]"
+          : "border-foreground/10 bg-background/30 text-muted-foreground hover:border-primary/30 hover:bg-background/50 hover:text-foreground"
       }`}
     >
       <span className="flex items-start justify-between gap-3">
         <span>{children}</span>
-        {selected ? <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> : null}
+        {selected ? (
+          <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-gradient-primary mt-0.5">
+            <Check className="h-2.5 w-2.5 text-primary-foreground" />
+          </span>
+        ) : null}
       </span>
     </button>
   );

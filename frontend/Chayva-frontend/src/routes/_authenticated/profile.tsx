@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Save, UserRound } from "lucide-react";
-import { PageTransition } from "@/lib/ui-helpers";
+import { motion } from "framer-motion";
+import { Save, UserRound, Clock, Target, MessageSquare, AlertCircle } from "lucide-react";
+import { PageTransition, LoadingSkeleton } from "@/lib/ui-helpers";
 import { getProfile, updateProfile, type UserProfilePayload } from "@/lib/profile";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -25,6 +26,8 @@ function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selfReportedTriggers, setSelfReportedTriggers] = useState<string[]>([]);
+  const [selfReportedContexts, setSelfReportedContexts] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,16 +45,17 @@ function ProfilePage() {
           financial_goals: data.financial_goals ?? [],
           preferred_ai_tone: data.preferred_ai_tone ?? "gentle",
         });
+        setSelfReportedTriggers(data.self_reported_spending_triggers ?? []);
+        setSelfReportedContexts(data.self_reported_spending_contexts ?? []);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load profile.");
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : "Unable to load profile.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     void load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -72,6 +76,7 @@ function ProfilePage() {
         preferred_ai_tone: saved.preferred_ai_tone ?? "gentle",
       });
       setMessage("Profile saved.");
+      setTimeout(() => setMessage(null), 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save profile.");
     } finally {
@@ -81,91 +86,169 @@ function ProfilePage() {
 
   return (
     <PageTransition>
-      <div className="space-y-6">
+      <div className="mx-auto max-w-2xl space-y-7">
+
+        {/* ================================================================= */}
+        {/* HEADER                                                             */}
+        {/* ================================================================= */}
         <header>
-          <p className="text-xs uppercase tracking-[0.2em] text-accent">Personal context</p>
-          <h1 className="mt-1 text-4xl font-semibold tracking-tight md:text-5xl">Profile</h1>
-          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-            Optional details Chayva can use when they are relevant to your spending evidence.
+          <p className="chayva-eyebrow">Context</p>
+          <h1 className="chayva-headline mt-1 text-3xl text-foreground">Your Context</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground max-w-lg">
+            Help Chayva understand you better. This context shapes how it interprets your spending — it's not a survey, it's a conversation.
           </p>
         </header>
 
-        <form onSubmit={onSubmit} className="glass rounded-2xl p-6">
-          {loading ? (
-            <div className="space-y-3">
-              <div className="h-10 w-1/2 animate-pulse rounded bg-foreground/10" />
-              <div className="h-32 animate-pulse rounded bg-foreground/10" />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary text-primary-foreground">
-                  <UserRound className="h-5 w-5" />
-                </span>
-                <div>
-                  <h2 className="text-lg font-semibold">Your context</h2>
-                  <p className="text-sm text-muted-foreground">Keep this short and factual.</p>
-                </div>
-              </div>
+        {/* Loading */}
+        {loading ? (
+          <div className="glass rounded-2xl p-6 space-y-4">
+            <LoadingSkeleton lines={4} />
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-5">
 
-              <div className="grid gap-4 md:grid-cols-2">
+            {/* ============================================================= */}
+            {/* SECTION: About You                                             */}
+            {/* ============================================================= */}
+            <ProfileSection
+              icon={UserRound}
+              title="About You"
+              delay={0}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Name">
                   <input
+                    id="profile-name"
                     value={profile.display_name ?? ""}
-                    onChange={(event) =>
-                      setProfile((prev) => ({ ...prev, display_name: event.target.value }))
+                    onChange={(e) =>
+                      setProfile((p) => ({ ...p, display_name: e.target.value }))
                     }
                     maxLength={60}
                     className="profile-input"
+                    placeholder="How should Chayva address you?"
                   />
                 </Field>
                 <Field label="Life stage">
                   <select
+                    id="profile-life-stage"
                     value={profile.life_stage ?? ""}
-                    onChange={(event) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        life_stage: event.target.value
-                          ? (event.target.value as UserProfilePayload["life_stage"])
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        life_stage: e.target.value
+                          ? (e.target.value as UserProfilePayload["life_stage"])
                           : null,
                       }))
                     }
                     className="profile-input"
                   >
                     <option value="">Not specified</option>
-                    <option value="student">Student</option>
-                    <option value="working">Working</option>
+                    <option value="student">College student</option>
+                    <option value="working">Working professional</option>
                     <option value="student_working">Student + working</option>
                     <option value="freelancer">Freelancer</option>
                     <option value="homemaker">Homemaker</option>
                     <option value="other">Other</option>
                   </select>
                 </Field>
-                <Field label="Preferred language">
-                  <select
-                    value={profile.preferred_language ?? "english"}
-                    onChange={(event) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        preferred_language: event.target
-                          .value as UserProfilePayload["preferred_language"],
+              </div>
+            </ProfileSection>
+
+            {/* ============================================================= */}
+            {/* SECTION: Life Rhythm                                           */}
+            {/* ============================================================= */}
+            <ProfileSection
+              icon={Clock}
+              title="Life Rhythm"
+              subtitle="Context about your days helps Chayva interpret when and why you spend."
+              delay={0.05}
+            >
+              <Field label="College or work context">
+                <textarea
+                  id="profile-work-context"
+                  value={profile.college_or_work_context ?? ""}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, college_or_work_context: e.target.value }))
+                  }
+                  maxLength={160}
+                  rows={2}
+                  className="profile-input resize-none"
+                  placeholder="e.g. Engineering student, College 9am–5pm, remote worker…"
+                />
+              </Field>
+              <Field label="Typical daily schedule">
+                <textarea
+                  id="profile-schedule"
+                  value={profile.typical_daily_schedule ?? ""}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, typical_daily_schedule: e.target.value }))
+                  }
+                  maxLength={240}
+                  rows={2}
+                  className="profile-input resize-none"
+                  placeholder="e.g. College 9am–4pm, Active evenings…"
+                />
+              </Field>
+            </ProfileSection>
+
+            {/* ============================================================= */}
+            {/* SECTION: Goals                                                 */}
+            {/* ============================================================= */}
+            <ProfileSection
+              icon={Target}
+              title="Goals"
+              subtitle="What you're working toward — comma-separated."
+              delay={0.10}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Spending priorities">
+                  <input
+                    id="profile-priorities"
+                    value={(profile.spending_priorities ?? []).join(", ")}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        spending_priorities: splitList(e.target.value),
                       }))
                     }
                     className="profile-input"
-                  >
-                    <option value="english">English</option>
-                    <option value="hindi">Hindi</option>
-                    <option value="hinglish">Hinglish</option>
-                  </select>
+                    placeholder="e.g. Food, experiences, health"
+                  />
                 </Field>
+                <Field label="Financial goals">
+                  <input
+                    id="profile-goals"
+                    value={(profile.financial_goals ?? []).join(", ")}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        financial_goals: splitList(e.target.value),
+                      }))
+                    }
+                    className="profile-input"
+                    placeholder="e.g. Save more, reduce impulse spending"
+                  />
+                </Field>
+              </div>
+            </ProfileSection>
+
+            {/* ============================================================= */}
+            {/* SECTION: How Chayva Talks to You                               */}
+            {/* ============================================================= */}
+            <ProfileSection
+              icon={MessageSquare}
+              title="How Chayva Talks to You"
+              delay={0.15}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="AI tone">
                   <select
+                    id="profile-ai-tone"
                     value={profile.preferred_ai_tone ?? "gentle"}
-                    onChange={(event) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        preferred_ai_tone: event.target
-                          .value as UserProfilePayload["preferred_ai_tone"],
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        preferred_ai_tone: e.target.value as UserProfilePayload["preferred_ai_tone"],
                       }))
                     }
                     className="profile-input"
@@ -177,84 +260,153 @@ function ProfilePage() {
                     <option value="friendly">Friendly</option>
                   </select>
                 </Field>
-              </div>
-
-              <Field label="College or work context">
-                <textarea
-                  value={profile.college_or_work_context ?? ""}
-                  onChange={(event) =>
-                    setProfile((prev) => ({ ...prev, college_or_work_context: event.target.value }))
-                  }
-                  maxLength={160}
-                  rows={3}
-                  className="profile-input"
-                />
-              </Field>
-              <Field label="Typical daily schedule">
-                <textarea
-                  value={profile.typical_daily_schedule ?? ""}
-                  onChange={(event) =>
-                    setProfile((prev) => ({ ...prev, typical_daily_schedule: event.target.value }))
-                  }
-                  maxLength={240}
-                  rows={3}
-                  className="profile-input"
-                />
-              </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Spending priorities">
-                  <input
-                    value={(profile.spending_priorities ?? []).join(", ")}
-                    onChange={(event) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        spending_priorities: splitList(event.target.value),
+                <Field label="Preferred language">
+                  <select
+                    id="profile-language"
+                    value={profile.preferred_language ?? "english"}
+                    onChange={(e) =>
+                      setProfile((p) => ({
+                        ...p,
+                        preferred_language: e.target.value as UserProfilePayload["preferred_language"],
                       }))
                     }
                     className="profile-input"
-                  />
-                </Field>
-                <Field label="Financial goals">
-                  <input
-                    value={(profile.financial_goals ?? []).join(", ")}
-                    onChange={(event) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        financial_goals: splitList(event.target.value),
-                      }))
-                    }
-                    className="profile-input"
-                  />
+                  >
+                    <option value="english">English</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="hinglish">Hinglish</option>
+                  </select>
                 </Field>
               </div>
+            </ProfileSection>
 
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
-              {message ? <p className="text-sm text-primary">{message}</p> : null}
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60"
+            {/* ============================================================= */}
+            {/* SECTION: What You've Told Chayva                              */}
+            {/* CRITICAL: explicitly labeled as user-reported, not proven fact */}
+            {/* ============================================================= */}
+            {(selfReportedTriggers.length > 0 || selfReportedContexts.length > 0) && (
+              <ProfileSection
+                icon={AlertCircle}
+                title="What You've Told Chayva"
+                delay={0.20}
               >
-                <Save className="h-4 w-4" />
-                {saving ? "Saving..." : "Save profile"}
-              </button>
-            </div>
-          )}
-        </form>
+                <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 mb-4">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    <span className="font-medium text-foreground/70">Note:</span> This is what you reported during onboarding — not what Chayva has observed from your actual expenses. Observed patterns may differ and will take precedence in AI analysis.
+                  </p>
+                </div>
+
+                {selfReportedTriggers.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-[0.14em] mb-2">
+                      Self-reported triggers
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selfReportedTriggers.map((t) => (
+                        <span key={t} className="behavior-tag">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selfReportedContexts.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-[0.14em] mb-2">
+                      Self-reported contexts
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selfReportedContexts.map((c) => (
+                        <span key={c} className="behavior-tag">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </ProfileSection>
+            )}
+
+            {/* ============================================================= */}
+            {/* FEEDBACK + SAVE                                                */}
+            {/* ============================================================= */}
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+            {message && (
+              <p className="text-sm text-primary">{message}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60 transition hover:-translate-y-0.5"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Saving…" : "Save context"}
+            </button>
+          </form>
+        )}
       </div>
     </PageTransition>
   );
 }
 
+// ---------------------------------------------------------------------------
+// ProfileSection — grouped section with icon
+// ---------------------------------------------------------------------------
+
+function ProfileSection({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+  delay = 0,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.26 }}
+      className="glass rounded-2xl p-5 space-y-4"
+    >
+      <div className="flex items-center gap-2.5 pb-1 border-b border-foreground/8">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        <div>
+          <h2 className="text-sm font-semibold">{title}</h2>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
+      </div>
+      {children}
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Field — form field wrapper
+// ---------------------------------------------------------------------------
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </span>
       {children}
     </label>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function splitList(value: string) {
   return value

@@ -13,7 +13,7 @@ def _signup(prefix: str):
     email = f"{prefix}-{uuid.uuid4()}@example.com"
     response = client.post(
         "/auth/signup",
-        json={"email": email, "password": "release-pass-123"},
+        json={"email": email, "password": "Release-pass-123"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -26,7 +26,7 @@ def test_release_auth_expenses_ai_and_user_isolation():
 
     signin_a = client.post(
         "/auth/signin",
-        json={"email": email_a, "password": "release-pass-123"},
+        json={"email": email_a, "password": "Release-pass-123"},
     )
     assert signin_a.status_code == 200
     assert verify_access_token(signin_a.json()["access_token"]) == user_a["uid"]

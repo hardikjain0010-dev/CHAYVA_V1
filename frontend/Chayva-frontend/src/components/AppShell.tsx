@@ -1,118 +1,202 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { LayoutDashboard, ListOrdered, Plus, LogOut, Brain, Sun, Moon, CalendarDays, Dna, MoonStar, MapPin, UserRound } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard,
+  Plus,
+  LogOut,
+  Brain,
+  Sun,
+  Moon,
+  CalendarDays,
+  Dna,
+  MoonStar,
+  MapPin,
+  UserRound,
+  BookOpen,
+  Sparkles,
+  MoreHorizontal,
+} from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { useUser } from "@/lib/user-context";
 import type { ReactNode } from "react";
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/expenses", label: "Expenses", icon: ListOrdered },
-  { to: "/add", label: "Add expense", icon: Plus },
-  { to: "/week", label: "This Week", icon: CalendarDays },
-  { to: "/dna", label: "Spend DNA", icon: Dna },
-  { to: "/reflect", label: "Reflect", icon: MoonStar },
-  { to: "/journey", label: "Journey", icon: MapPin },
-  { to: "/profile", label: "Profile", icon: UserRound },
-] as const;
+
+// ---------------------------------------------------------------------------
+// Navigation definition — maps to the product journey
+// ---------------------------------------------------------------------------
+
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [
+      { to: "/dashboard" as const, label: "Today", icon: LayoutDashboard },
+      { to: "/add" as const, label: "Capture", icon: Plus },
+      { to: "/expenses" as const, label: "Journal", icon: BookOpen },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      { to: "/week" as const, label: "This Week", icon: CalendarDays },
+      { to: "/dna" as const, label: "Spend DNA", icon: Dna },
+      { to: "/reflect" as const, label: "Reflect", icon: MoonStar },
+      { to: "/journey" as const, label: "Journey", icon: MapPin },
+    ],
+  },
+  {
+    label: "You",
+    items: [
+      { to: "/profile" as const, label: "Profile", icon: UserRound },
+    ],
+  },
+];
+
+// Mobile bottom nav shows curated 5 tabs
+const MOBILE_TABS = [
+  { to: "/dashboard" as const, label: "Today", icon: LayoutDashboard },
+  { to: "/add" as const, label: "Capture", icon: Plus },
+  { to: "/expenses" as const, label: "Journal", icon: BookOpen },
+  { to: "/reflect" as const, label: "Reflect", icon: MoonStar },
+  { to: "/profile" as const, label: "Profile", icon: UserRound },
+];
+
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // ✅ Use UserContext.logout() which clears token AND sets user=null,
-  // triggering ExpenseProvider to clear its state — prevents cross-user data leakage.
-  const { logout } = useUser();
+  const { logout, user } = useUser();
+
   function signOut() {
-    // Logout is purely client-side: clear token + user state.
-    // No server call needed — JWTs are stateless. The old /auth/logout endpoint
-    // did not exist and caused a silent error before token was cleared.
     logout();
     navigate({ to: "/auth", replace: true });
   }
-   return (
+
+  const displayName = (user as any)?.display_name ?? (user as any)?.email?.split("@")[0] ?? "You";
+
+  return (
     <div className="min-h-screen">
-      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6 md:px-6">
-        <aside className="glass hidden w-60 shrink-0 flex-col rounded-2xl p-4 md:flex">
-          <Link to="/dashboard" className="mb-6 flex items-center gap-2 px-2">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow)]">
-              <Brain className="h-5 w-5" />
-            </span>
-            <span className="font-semibold tracking-tight text-lg">Chayva</span>
-          </Link>
-          <nav className="flex flex-col gap-1">
-            {NAV.map(({ to, label, icon: Icon }) => {
-              const active = pathname === to;
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                    active
-                      ? "text-primary-foreground"
-                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                  }`}
-                >
-                     {active && (
-                    <motion.span
-                      layoutId="nav-active"
-                      className="absolute inset-0 rounded-xl bg-gradient-primary shadow-[var(--shadow-glow)]"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <Icon className="relative h-4 w-4" />
-                  <span className="relative">{label}</span>
-                </Link>
-              );
-            })}
+      <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-6 md:px-6 lg:px-8">
+
+        {/* ----------------------------------------------------------------- */}
+        {/* SIDEBAR — desktop                                                  */}
+        {/* ----------------------------------------------------------------- */}
+        <aside className="glass hidden w-56 shrink-0 flex-col rounded-2xl md:flex lg:w-60" style={{ minHeight: "calc(100vh - 3rem)", maxHeight: "calc(100vh - 3rem)", position: "sticky", top: "1.5rem" }}>
+          {/* Brand */}
+          <div className="px-5 pt-6 pb-4">
+            <Link to="/dashboard" className="flex items-center gap-2.5">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
+                <Brain className="h-4 w-4" />
+              </span>
+              <div>
+                <span className="block text-base font-bold tracking-tight leading-none">Chayva</span>
+                <span className="block text-[0.6rem] text-muted-foreground tracking-[0.14em] uppercase mt-0.5">AI Companion</span>
+              </div>
+            </Link>
+          </div>
+
+          {/* Divider */}
+          <div className="mx-4 h-px bg-border opacity-60" />
+
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto px-3 py-3">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label ?? "main"}>
+                {group.label && (
+                  <p className="nav-group-label">{group.label}</p>
+                )}
+                {group.items.map(({ to, label, icon: Icon }) => {
+                  const active = pathname === to;
+                  return (
+                    <Link key={to} to={to} className={`nav-item ${active ? "active" : ""}`}>
+                      {active && (
+                        <motion.span
+                          layoutId="sidebar-active"
+                          className="absolute inset-0 rounded-xl bg-gradient-primary shadow-[var(--shadow-glow-sm)]"
+                          transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                        />
+                      )}
+                      <Icon className="relative h-4 w-4 shrink-0" />
+                      <span className="relative">{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
-          <button
-            onClick={toggle}
-            className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {theme === "dark" ? "Light mode" : "Dark mode"}
-          </button>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+
+          {/* Divider */}
+          <div className="mx-4 h-px bg-border opacity-60" />
+
+          {/* Footer — user + actions */}
+          <div className="px-3 py-4 space-y-0.5">
+            {/* User identity */}
+            <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
+              <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-primary text-primary-foreground text-xs font-semibold shrink-0">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium truncate">{displayName}</span>
+            </div>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggle}
+              className="nav-item w-full"
+            >
+              {theme === "dark"
+                ? <Sun className="h-4 w-4 shrink-0" />
+                : <Moon className="h-4 w-4 shrink-0" />}
+              <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+            </button>
+
+            {/* Sign out */}
+            <button onClick={signOut} className="nav-item w-full">
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span>Sign out</span>
+            </button>
+          </div>
         </aside>
-         {/* Mobile bottom nav */}
-        <div className="md:hidden fixed inset-x-0 bottom-0 z-20 glass-strong flex justify-around gap-1 overflow-x-auto py-2 px-1">
-          {NAV.map(({ to, label, icon: Icon }) => {
+
+        {/* ----------------------------------------------------------------- */}
+        {/* MAIN CONTENT                                                       */}
+        {/* ----------------------------------------------------------------- */}
+        <main className="min-w-0 flex-1 pb-24 md:pb-0">
+          <AnimatePresence mode="wait">
+            {children}
+          </AnimatePresence>
+        </main>
+      </div>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* MOBILE BOTTOM NAV                                                    */}
+      {/* ------------------------------------------------------------------- */}
+      <nav
+        className="md:hidden fixed inset-x-0 bottom-0 z-30 glass-strong border-t border-border/60"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-stretch justify-around px-2 py-2">
+          {MOBILE_TABS.map(({ to, label, icon: Icon }) => {
             const active = pathname === to;
             return (
               <Link
                 key={to}
                 to={to}
-                className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs ${
+                className={`relative flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[0.65rem] font-medium transition-colors min-w-[3.5rem] ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                {label}
+                {active && (
+                  <motion.span
+                    layoutId="mobile-active"
+                    className="absolute inset-0 rounded-xl bg-primary/10"
+                    transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                  />
+                )}
+                <Icon className="relative h-5 w-5" />
+                <span className="relative">{label}</span>
               </Link>
             );
           })}
-          <button
-            onClick={toggle}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs text-muted-foreground"
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            {theme === "dark" ? "Light" : "Dark"}
-          </button>
-          <button
-            onClick={signOut}
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs text-muted-foreground"
-          >
-            <LogOut className="h-5 w-5" />
-            Sign out
-          </button>
         </div>
-        <main className="flex-1 pb-24 md:pb-0">{children}</main>
-      </div>
+      </nav>
     </div>
   );
 }

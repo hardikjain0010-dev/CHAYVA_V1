@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth";
 import { getProfile } from "@/lib/profile";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const pathname = Route.useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   if (pathname === "/onboarding") {
     return <Outlet />;
