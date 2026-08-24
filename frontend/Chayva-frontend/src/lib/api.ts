@@ -1,7 +1,7 @@
 import { getToken } from "./auth";
 
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
-const PRODUCTION_API_BASE_URL = "https://chayva-v1.onrender.com";
+const PRODUCTION_API_BASE_URL = "https://chayva-backend.onrender.com";
 
 type RequestBody = BodyInit | Record<string, unknown> | unknown[] | null | undefined;
 type ApiRequestInit = Omit<RequestInit, "body"> & { body?: RequestBody };
