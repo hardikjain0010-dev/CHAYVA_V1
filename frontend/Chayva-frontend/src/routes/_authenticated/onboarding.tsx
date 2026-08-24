@@ -159,8 +159,8 @@ function OnboardingPage() {
   const [savedProfile, setSavedProfile] = useState<UserProfilePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const total = 8;
-  const progress = Math.round((step / total) * 100);
+  const TOTAL_QUESTIONS = 8;
+  const progress = Math.round((Math.min(step, TOTAL_QUESTIONS) / TOTAL_QUESTIONS) * 100);
   const canContinue = useMemo(() => isStepValid(step, answers), [answers, step]);
 
   async function submit() {
@@ -178,7 +178,7 @@ function OnboardingPage() {
         window.sessionStorage.removeItem(`${SKIP_KEY}:${user.uid}`);
       }
       toast.success("Your Chayva profile is ready.");
-      setStep(total);
+      setStep(TOTAL_QUESTIONS + 1);
     } catch {
       setError(
         "Chayva could not save your profile right now. Your answers are still here, so you can retry.",
@@ -204,7 +204,7 @@ function OnboardingPage() {
     }
   }
 
-  if (step === total) {
+  if (step > TOTAL_QUESTIONS) {
     return (
       <OnboardingFrame>
         <div className="glass rounded-2xl p-7 shadow-[var(--glass-shadow-strong)] md:p-9 text-center">
@@ -238,12 +238,12 @@ function OnboardingPage() {
     <OnboardingFrame>
       <div className="mx-auto w-full max-w-xl">
         {step === 0 ? (
-          <Welcome onBegin={() => setStep(1)} onSkip={skipForNow} saving={saving} error={error} />
+          <Welcome onBegin={() => { setError(null); setStep(1); }} onSkip={skipForNow} saving={saving} error={error} />
         ) : (
           <div className="glass rounded-2xl p-5 shadow-[var(--glass-shadow-strong)] md:p-7">
             <div className="mb-7">
               <div className="mb-3 flex items-center justify-between">
-                <p className="chayva-eyebrow">Step {step} of 8</p>
+                <p className="chayva-eyebrow">Step {step} of {TOTAL_QUESTIONS}</p>
                 <span className="text-xs font-semibold text-primary">{progress}%</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-foreground/8" aria-label={`${progress}% complete`} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
@@ -265,7 +265,7 @@ function OnboardingPage() {
             <div className="mt-7 flex items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={() => setStep((current) => Math.max(0, current - 1))}
+                onClick={() => { setError(null); setStep((current) => Math.max(0, current - 1)); }}
                 className="inline-flex items-center gap-2 rounded-xl border border-foreground/10 px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -274,11 +274,18 @@ function OnboardingPage() {
               <button
                 type="button"
                 disabled={!canContinue || saving}
-                onClick={() => (step === total - 1 ? submit() : setStep((current) => current + 1))}
+                onClick={() => {
+                  setError(null);
+                  if (step === TOTAL_QUESTIONS) {
+                    submit();
+                  } else {
+                    setStep((current) => current + 1);
+                  }
+                }}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {step === total - 1 ? "Finish" : "Continue"}
+                {step === TOTAL_QUESTIONS ? "Finish" : "Continue"}
                 {!saving ? <ArrowRight className="h-4 w-4" /> : null}
               </button>
             </div>
