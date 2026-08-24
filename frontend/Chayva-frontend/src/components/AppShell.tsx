@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Plus,
   LogOut,
-  Brain,
   Sun,
   Moon,
   CalendarDays,
@@ -13,11 +12,10 @@ import {
   MapPin,
   UserRound,
   BookOpen,
-  Sparkles,
-  MoreHorizontal,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { useUser } from "@/lib/user-context";
+import { ChayvaLogo } from "@/components/ChayvaLogo";
 import type { ReactNode } from "react";
 
 // ---------------------------------------------------------------------------
@@ -83,9 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Brand */}
           <div className="px-5 pt-6 pb-4">
             <Link to="/dashboard" className="flex items-center gap-2.5">
-              <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
-                <Brain className="h-4 w-4" />
-              </span>
+              <ChayvaLogo className="h-8 w-8" />
               <div>
                 <span className="block text-base font-bold tracking-tight leading-none">Chayva</span>
                 <span className="block text-[0.6rem] text-muted-foreground tracking-[0.14em] uppercase mt-0.5">AI Companion</span>

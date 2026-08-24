@@ -1,27 +1,14 @@
-import { Button } from "@/components/ui/button";
-export default function Dashboard() {
-  return (
-    <div className="p-10">
-
-      <Button
-        onClick={() => alert("Button works!")}
-      >
-        Click Me
-      </Button>
-
-    </div>
-  );
-}
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
-  Brain,
   HeartPulse,
   Sparkles,
   MoonStar,
   Dna,
   Compass,
+  Brain,
 } from "lucide-react";
+import { ChayvaLogo } from "@/components/ChayvaLogo";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -88,9 +75,12 @@ function Landing() {
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
         <Link
           to="/"
-          className="text-2xl font-bold text-gradient"
+          className="flex items-center gap-2.5"
         >
-          Chayva
+          <ChayvaLogo className="h-8 w-8" />
+          <span className="text-2xl font-bold tracking-tight text-gradient">
+            Chayva
+          </span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -111,7 +101,7 @@ function Landing() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 pb-24 pt-12">
+      <main className="mx-auto max-w-7xl px-6 pb-20 pt-8 md:pt-12">
         {/* Hero */}
         <motion.section
           initial={{ opacity: 0, y: 25 }}
@@ -119,12 +109,7 @@ function Landing() {
           transition={{ duration: 0.7 }}
           className="text-center"
         >
-          <div className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm">
-            <Sparkles className="h-4 w-4 text-accent" />
-            Behavioral Finance Reimagined
-          </div>
-
-          <h1 className="mt-8 text-5xl font-bold leading-tight md:text-7xl">
+          <h1 className="mt-4 text-5xl font-bold leading-tight md:text-7xl">
             Understand the
             <br />
             <span className="text-gradient">Why</span>
@@ -156,7 +141,7 @@ function Landing() {
         </motion.section>
 
         {/* Features */}
-        <section className="mt-24 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <section className="mt-20 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {features.map(({ icon: Icon, title, body }, index) => (
             <motion.div
               key={title}
@@ -198,7 +183,7 @@ function Landing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="mx-auto max-w-7xl px-6 pb-20 pt-28 text-center"
+          className="mx-auto max-w-7xl px-6 pb-20 pt-20 text-center"
         >
           <h2
             className="mx-auto max-w-2xl text-4xl font-bold leading-[1.15] tracking-tight md:text-6xl"
@@ -230,13 +215,11 @@ function Landing() {
 
         {/* ── Navigation + brand ── */}
         <div className="mx-auto max-w-7xl px-6 py-16">
-          <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.6fr_1fr_1fr]">
+          <div className="grid gap-12 sm:grid-cols-2 md:grid-cols-4">
             {/* Brand column */}
-            <div>
+            <div className="sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2.5">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
-                  <Brain className="h-4.5 w-4.5" />
-                </span>
+                <ChayvaLogo className="h-8 w-8" />
                 <span className="text-xl font-bold tracking-tight">Chayva</span>
               </div>
 
@@ -258,16 +241,27 @@ function Landing() {
               </nav>
             </div>
 
-            {/* Explore column */}
+            {/* Experience column */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
-                Explore
+                Experience
               </p>
               <nav className="mt-4 flex flex-col gap-2.5">
                 <Link to="/reflect" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Reflect</Link>
                 <Link to="/journey" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Journey</Link>
                 <Link to="/expenses" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Expense Journal</Link>
                 <Link to="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Profile</Link>
+              </nav>
+            </div>
+
+            {/* Account column */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
+                Account
+              </p>
+              <nav className="mt-4 flex flex-col gap-2.5">
+                <Link to="/auth" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Login</Link>
+                <Link to="/auth" search={{ mode: "signup" }} className="text-sm text-muted-foreground transition-colors hover:text-foreground">Get Started</Link>
               </nav>
             </div>
           </div>
@@ -279,6 +273,10 @@ function Landing() {
         </div>
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+          <div className="flex items-center gap-2">
+            <ChayvaLogo className="h-5 w-5" />
+            <span className="text-xs text-muted-foreground/70">Behavioral finance, reimagined.</span>
+          </div>
           <p className="text-xs text-muted-foreground/50">
             © {new Date().getFullYear()} Chayva
           </p>

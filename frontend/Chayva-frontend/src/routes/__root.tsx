@@ -5,7 +5,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { UserProvider } from "@/lib/user-context";
 
@@ -22,7 +22,7 @@ function NotFoundComponent() {
         </p>
 
         <a
-        href="/"
+          href="/"
           className="mt-6 inline-flex items-center rounded-lg bg-gradient-primary px-4 py-2 text-sm font-medium text-primary-foreground"
         >
           Go Home
@@ -41,7 +41,7 @@ function ErrorComponent({ error }: { error: Error }) {
         <p className="mt-3 text-muted-foreground">
           {error.message}
         </p>
-         <button
+        <button
           onClick={() => window.location.reload()}
           className="mt-6 rounded-lg bg-gradient-primary px-4 py-2 text-primary-foreground"
         >
@@ -51,6 +51,7 @@ function ErrorComponent({ error }: { error: Error }) {
     </div>
   );
 }
+
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
 }>()({
@@ -69,8 +70,15 @@ export const Route = createRootRouteWithContext<{
         content: "AI-powered expense tracker",
       },
     ],
+    links: [
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "/favicon.svg",
+      },
+    ],
   }),
-    shellComponent: RootShell,
+  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,

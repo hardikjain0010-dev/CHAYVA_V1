@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { updateProfile, type UserProfilePayload } from "@/lib/profile";
 import { useUser } from "@/lib/user-context";
+import { ChayvaLogo } from "@/components/ChayvaLogo";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: OnboardingPage,
@@ -300,9 +301,7 @@ function OnboardingFrame({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 w-full max-w-xl">
         {/* Brand mark */}
         <div className="mb-8 flex items-center gap-2.5 justify-center">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
-            <Sparkles className="h-4 w-4" />
-          </span>
+          <ChayvaLogo className="h-8 w-8" />
           <span className="text-base font-bold tracking-tight">Chayva</span>
         </div>
         {children}

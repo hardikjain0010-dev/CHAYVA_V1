@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { z } from "zod";
-import { Brain, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { ChayvaLogo } from "@/components/ChayvaLogo";
 import { post } from "@/lib/api";
 import {
   type AuthResponse,
@@ -266,11 +267,9 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="glass w-full max-w-md rounded-2xl p-8">
-        <div className="mb-6 flex items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary text-primary-foreground">
-            <Brain className="h-5 w-5" />
-          </span>
-          <span className="text-lg font-semibold">
+        <div className="mb-6 flex items-center gap-2.5">
+          <ChayvaLogo className="h-9 w-9" />
+          <span className="text-xl font-bold tracking-tight">
             Chayva
           </span>
         </div>
