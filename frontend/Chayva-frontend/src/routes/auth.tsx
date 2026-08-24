@@ -35,11 +35,19 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
+  // Sync mode with URL search parameters
   useEffect(() => {
-    if (user) {
+    if (initialMode && initialMode !== mode) {
+      setMode(initialMode);
+    }
+  }, [initialMode]);
+
+  useEffect(() => {
+    // Only auto-redirect to dashboard if user already has an active session AND is not requesting a new signup
+    if (user && initialMode !== "signup") {
       navigate({ to: "/dashboard" });
     }
-  }, [navigate, user]);
+  }, [navigate, user, initialMode]);
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -380,13 +388,11 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
             : "New to Chayva?"}{" "}
           <button
             type="button"
-            onClick={() =>
-              setMode(
-                mode === "signup"
-                  ? "signin"
-                  : "signup"
-              )
-            }
+            onClick={() => {
+              const nextMode = mode === "signup" ? "signin" : "signup";
+              setMode(nextMode);
+              navigate({ to: "/auth", search: { mode: nextMode } });
+            }}
             className="font-medium text-foreground underline underline-offset-4"
           >
             {mode === "signup"
