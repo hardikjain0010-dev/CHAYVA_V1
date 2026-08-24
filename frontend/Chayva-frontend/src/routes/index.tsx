@@ -186,25 +186,104 @@ function Landing() {
             </motion.div>
           ))}
         </section>
+      </main>
 
-        {/* Belief */}
-        <motion.section
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
+      {/* ================================================================= */}
+      {/* FOOTER                                                            */}
+      {/* ================================================================= */}
+      <footer className="relative mt-0 overflow-hidden">
+        {/* ── Editorial closing ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-24 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent p-10 text-center"
+          transition={{ duration: 0.7 }}
+          className="mx-auto max-w-7xl px-6 pb-20 pt-28 text-center"
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
-            Our Belief
+          <h2
+            className="mx-auto max-w-2xl text-4xl font-bold leading-[1.15] tracking-tight md:text-6xl"
+            style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.025em" }}
+          >
+            Understand your spending.
+            <br />
+            <span className="text-gradient">Understand yourself.</span>
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
+            Your money has patterns. Start noticing them.
           </p>
 
-          <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-semibold leading-relaxed">
-            Progress isn't measured by spending less.
-            <br />
-            It's measured by understanding yourself better.
-          </h2>
-        </motion.section>
-      </main>
+          <Link
+            to="/auth"
+            search={{ mode: "signup" }}
+            className="mt-10 inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:scale-105"
+          >
+            Start understanding
+            <span aria-hidden="true">→</span>
+          </Link>
+        </motion.div>
+
+        {/* ── Divider ── */}
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="h-px w-full" style={{ background: "var(--divider)" }} />
+        </div>
+
+        {/* ── Navigation + brand ── */}
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr] lg:grid-cols-[1.6fr_1fr_1fr]">
+            {/* Brand column */}
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
+                  <Brain className="h-4.5 w-4.5" />
+                </span>
+                <span className="text-xl font-bold tracking-tight">Chayva</span>
+              </div>
+
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                Behavioral finance, reimagined.
+              </p>
+            </div>
+
+            {/* Product column */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
+                Product
+              </p>
+              <nav className="mt-4 flex flex-col gap-2.5">
+                <Link to="/dashboard" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Dashboard</Link>
+                <Link to="/add" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Add Expense</Link>
+                <Link to="/week" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Weekly Insights</Link>
+                <Link to="/dna" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Spend DNA</Link>
+              </nav>
+            </div>
+
+            {/* Explore column */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground/60">
+                Explore
+              </p>
+              <nav className="mt-4 flex flex-col gap-2.5">
+                <Link to="/reflect" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Reflect</Link>
+                <Link to="/journey" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Journey</Link>
+                <Link to="/expenses" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Expense Journal</Link>
+                <Link to="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Profile</Link>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom bar ── */}
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="h-px w-full" style={{ background: "var(--divider)" }} />
+        </div>
+
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+          <p className="text-xs text-muted-foreground/50">
+            © {new Date().getFullYear()} Chayva
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
