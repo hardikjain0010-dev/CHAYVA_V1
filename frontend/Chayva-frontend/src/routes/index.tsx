@@ -176,38 +176,7 @@ function Landing() {
       {/* ================================================================= */}
       {/* FOOTER                                                            */}
       {/* ================================================================= */}
-      <footer className="relative mt-0 overflow-hidden">
-        {/* ── Editorial closing ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="mx-auto max-w-7xl px-6 pb-20 pt-20 text-center"
-        >
-          <h2
-            className="mx-auto max-w-2xl text-4xl font-bold leading-[1.15] tracking-tight md:text-6xl"
-            style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.025em" }}
-          >
-            Understand your spending.
-            <br />
-            <span className="text-gradient">Understand yourself.</span>
-          </h2>
-
-          <p className="mx-auto mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
-            Your money has patterns. Start noticing them.
-          </p>
-
-          <Link
-            to="/auth"
-            search={{ mode: "signup" }}
-            className="mt-10 inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:scale-105"
-          >
-            Start understanding
-            <span aria-hidden="true">→</span>
-          </Link>
-        </motion.div>
-
+      <footer className="relative mt-12 overflow-hidden">
         {/* ── Divider ── */}
         <div className="mx-auto max-w-7xl px-6">
           <div className="h-px w-full" style={{ background: "var(--divider)" }} />
