@@ -12,9 +12,9 @@ import {
   MapPin,
   UserRound,
   BookOpen,
-  Menu,
   X,
   Compass,
+  ChevronRight,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
@@ -22,10 +22,51 @@ import { useUser } from "@/lib/user-context";
 import { ChayvaLogo } from "@/components/ChayvaLogo";
 
 // ---------------------------------------------------------------------------
-// Navigation definition — maps to the product journey
+// Centralized Navigation Architecture (Single Source of Truth)
 // ---------------------------------------------------------------------------
 
-const NAV_GROUPS = [
+// Primary destinations (Bottom Navigation on Mobile)
+export const PRIMARY_NAV_ITEMS = [
+  { to: "/dashboard" as const, label: "Today", icon: LayoutDashboard },
+  { to: "/expenses" as const, label: "Journal", icon: BookOpen },
+  { to: "/add" as const, label: "Capture", icon: Plus, isAction: true },
+  { to: "/reflect" as const, label: "Reflect", icon: MoonStar },
+];
+
+// Secondary destinations (Insights group inside More Bottom Sheet)
+export const SECONDARY_INSIGHTS = [
+  {
+    to: "/week" as const,
+    label: "This Week",
+    description: "Your behavioral week",
+    icon: CalendarDays,
+  },
+  {
+    to: "/dna" as const,
+    label: "Spend DNA",
+    description: "Your spending identity",
+    icon: Dna,
+  },
+  {
+    to: "/journey" as const,
+    label: "Journey",
+    description: "How your awareness evolves",
+    icon: MapPin,
+  },
+];
+
+// Secondary destinations (Account group inside More Bottom Sheet)
+export const SECONDARY_ACCOUNT = [
+  {
+    to: "/profile" as const,
+    label: "Profile",
+    description: "Personal context & settings",
+    icon: UserRound,
+  },
+];
+
+// Desktop Sidebar Navigation (All groups presented together)
+export const DESKTOP_NAV_GROUPS = [
   {
     label: null,
     items: [
@@ -51,30 +92,24 @@ const NAV_GROUPS = [
   },
 ];
 
-// Mobile bottom navigation tabs
-const MOBILE_BOTTOM_TABS = [
-  { to: "/dashboard" as const, label: "Today", icon: LayoutDashboard },
-  { to: "/expenses" as const, label: "Journal", icon: BookOpen },
-  { to: "/add" as const, label: "Capture", icon: Plus, isAction: true },
-  { to: "/reflect" as const, label: "Reflect", icon: MoonStar },
-];
+const SECONDARY_PATHS = ["/week", "/dna", "/journey", "/profile"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { logout, user } = useUser();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
   function signOut() {
-    setMobileMenuOpen(false);
+    setMoreSheetOpen(false);
     logout();
     navigate({ to: "/auth", replace: true });
   }
 
-  // Manage body scroll locking when mobile drawer is open
+  // Manage body scroll locking when mobile bottom sheet is open
   useEffect(() => {
-    if (mobileMenuOpen) {
+    if (moreSheetOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -82,31 +117,32 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileMenuOpen]);
+  }, [moreSheetOpen]);
 
-  // Close drawer on Escape key
+  // Close sheet on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobileMenuOpen) {
-        setMobileMenuOpen(false);
+      if (e.key === "Escape" && moreSheetOpen) {
+        setMoreSheetOpen(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [mobileMenuOpen]);
+  }, [moreSheetOpen]);
 
-  // Close drawer on route change
+  // Close sheet on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
+    setMoreSheetOpen(false);
   }, [pathname]);
 
   const displayName = (user as any)?.display_name ?? (user as any)?.email?.split("@")[0] ?? "You";
   const userEmail = (user as any)?.email ?? "";
+  const isMoreActive = SECONDARY_PATHS.includes(pathname);
 
   return (
     <div className="min-h-screen">
       {/* ----------------------------------------------------------------- */}
-      {/* MOBILE TOP BAR (visible on mobile < md)                            */}
+      {/* MOBILE TOP BAR (Brand + Theme toggle only — No hamburger)         */}
       {/* ----------------------------------------------------------------- */}
       <header className="md:hidden fixed top-0 inset-x-0 z-30 glass-strong border-b border-border/60 px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2.5">
@@ -114,30 +150,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="text-lg font-bold tracking-tight text-gradient">Chayva</span>
         </Link>
 
-        <div className="flex items-center gap-1.5">
-          {/* Quick theme toggle */}
-          <button
-            onClick={toggle}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground active:scale-95"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
-
-          {/* Menu / Drawer button */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-background/50 text-foreground transition hover:bg-foreground/5 active:scale-95"
-            aria-label="Open menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
+        {/* Theme toggle only */}
+        <button
+          onClick={toggle}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground active:scale-95"
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        >
+          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
       </header>
 
       <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-6 md:px-6 lg:px-8">
         {/* ----------------------------------------------------------------- */}
-        {/* SIDEBAR — desktop                                                  */}
+        {/* SIDEBAR — Desktop                                                  */}
         {/* ----------------------------------------------------------------- */}
         <aside
           className="glass hidden w-56 shrink-0 flex-col rounded-2xl md:flex lg:w-60"
@@ -166,7 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto px-3 py-3">
-            {NAV_GROUPS.map((group) => (
+            {DESKTOP_NAV_GROUPS.map((group) => (
               <div key={group.label ?? "main"}>
                 {group.label && <p className="nav-group-label">{group.label}</p>}
                 {group.items.map(({ to, label, icon: Icon }) => {
@@ -231,15 +256,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* ------------------------------------------------------------------- */}
-      {/* MOBILE BOTTOM NAV                                                    */}
+      {/* MOBILE BOTTOM NAVIGATION (Primary Destinations)                     */}
       {/* ------------------------------------------------------------------- */}
       <nav
         className="md:hidden fixed inset-x-0 bottom-0 z-30 glass-strong border-t border-border/60"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-around px-2 py-1.5">
-          {MOBILE_BOTTOM_TABS.map(({ to, label, icon: Icon, isAction }) => {
-            const active = pathname === to;
+          {PRIMARY_NAV_ITEMS.map(({ to, label, icon: Icon, isAction }) => {
+            const active = pathname === to && !moreSheetOpen;
             if (isAction) {
               return (
                 <Link
@@ -277,17 +302,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
 
-          {/* More / Menu Drawer trigger */}
+          {/* More (Secondary Navigation Hub Trigger) */}
           <button
-            onClick={() => setMobileMenuOpen(true)}
+            onClick={() => setMoreSheetOpen((prev) => !prev)}
+            aria-label="Open more options"
             className={`relative flex min-h-[44px] min-w-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-xl px-2.5 py-1 text-[0.65rem] font-medium transition-colors ${
-              ["/week", "/dna", "/journey", "/profile"].includes(pathname)
+              isMoreActive || moreSheetOpen
                 ? "text-primary font-semibold"
                 : "text-muted-foreground"
             }`}
           >
-            {["/week", "/dna", "/journey", "/profile"].includes(pathname) && (
-              <span className="absolute top-1.5 right-3.5 h-2 w-2 rounded-full bg-primary" />
+            {(isMoreActive || moreSheetOpen) && (
+              <motion.span
+                layoutId="mobile-more-active"
+                className="absolute inset-0 rounded-xl bg-primary/10"
+                transition={{ type: "spring", stiffness: 400, damping: 34 }}
+              />
             )}
             <Compass className="relative h-5 w-5" />
             <span className="relative">More</span>
@@ -296,36 +326,40 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
 
       {/* ------------------------------------------------------------------- */}
-      {/* MOBILE SLIDE-OVER NAVIGATION DRAWER                                */}
+      {/* MORE BOTTOM SHEET (Secondary Navigation Hub — No Duplicates)        */}
       {/* ------------------------------------------------------------------- */}
       <AnimatePresence>
-        {mobileMenuOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex">
+        {moreSheetOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={() => setMoreSheetOpen(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm"
               aria-hidden="true"
             />
 
-            {/* Drawer Pane */}
-            <motion.aside
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="relative ml-auto flex h-full w-[85vw] max-w-sm flex-col glass-strong border-l border-border/60 shadow-2xl"
+            {/* Bottom Sheet Modal */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="relative z-10 w-full max-w-lg rounded-t-3xl glass-strong border-t border-border/70 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
               style={{
-                paddingTop: "env(safe-area-inset-top, 1rem)",
-                paddingBottom: "env(safe-area-inset-bottom, 1rem)",
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 1.25rem)",
               }}
             >
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between p-5 border-b border-border/50">
+              {/* Drag Handle Indicator */}
+              <div className="pt-3 pb-1 flex justify-center">
+                <div className="h-1.5 w-12 rounded-full bg-muted-foreground/30" />
+              </div>
+
+              {/* Sheet Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
                 <div className="flex items-center gap-3">
                   <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-primary text-primary-foreground text-sm font-semibold shadow-[var(--shadow-glow-sm)]">
                     {displayName.charAt(0).toUpperCase()}
@@ -339,77 +373,166 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
 
                 <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/50 text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground active:scale-95"
-                  aria-label="Close menu"
+                  onClick={() => setMoreSheetOpen(false)}
+                  className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-border/50 text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground active:scale-95"
+                  aria-label="Close sheet"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* Navigation Links */}
-              <nav className="flex-1 overflow-y-auto p-4 space-y-4">
-                {NAV_GROUPS.map((group) => (
-                  <div key={group.label ?? "main"}>
-                    {group.label && (
-                      <p className="px-3 pb-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-                        {group.label}
-                      </p>
-                    )}
-                    <div className="space-y-1">
-                      {group.items.map(({ to, label, icon: Icon }) => {
-                        const active = pathname === to;
-                        return (
-                          <Link
-                            key={to}
-                            to={to}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`flex min-h-[44px] items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition ${
-                              active
-                                ? "bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)] font-semibold"
-                                : "text-foreground/80 hover:bg-foreground/5 active:bg-foreground/10"
+              {/* Sheet Body — Secondary Destinations */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* 1. INSIGHTS GROUP */}
+                <div>
+                  <p className="px-3 pb-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                    Insights
+                  </p>
+                  <div className="space-y-1.5">
+                    {SECONDARY_INSIGHTS.map(({ to, label, description, icon: Icon }) => {
+                      const active = pathname === to;
+                      return (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setMoreSheetOpen(false)}
+                          className={`flex items-center justify-between rounded-2xl p-3 text-sm font-medium transition ${
+                            active
+                              ? "bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]"
+                              : "border border-border/40 bg-foreground/[0.02] text-foreground hover:bg-foreground/[0.06] active:bg-foreground/[0.08]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`grid h-8 w-8 place-items-center rounded-xl shrink-0 ${
+                                active
+                                  ? "bg-white/20 text-white"
+                                  : "bg-primary/10 text-primary"
+                              }`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm leading-tight">{label}</p>
+                              <p
+                                className={`text-xs truncate ${
+                                  active ? "text-white/80" : "text-muted-foreground"
+                                }`}
+                              >
+                                {description}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight
+                            className={`h-4 w-4 shrink-0 ${
+                              active ? "text-white/80" : "text-muted-foreground/60"
                             }`}
-                          >
-                            <Icon className="h-4.5 w-4.5 shrink-0" />
-                            <span>{label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                          />
+                        </Link>
+                      );
+                    })}
                   </div>
-                ))}
-              </nav>
+                </div>
 
-              {/* Drawer Footer Actions */}
-              <div className="p-4 border-t border-border/50 space-y-2">
-                {/* Theme Toggle */}
-                <button
-                  onClick={toggle}
-                  className="flex min-h-[44px] w-full items-center justify-between rounded-xl border border-border/60 bg-foreground/[0.03] px-3.5 py-2.5 text-sm font-medium text-foreground transition hover:bg-foreground/[0.07] active:scale-[0.99]"
-                >
-                  <div className="flex items-center gap-3">
-                    {theme === "dark" ? (
-                      <Sun className="h-4.5 w-4.5 text-primary" />
-                    ) : (
-                      <Moon className="h-4.5 w-4.5 text-primary" />
-                    )}
-                    <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+                {/* 2. YOU / ACCOUNT GROUP */}
+                <div>
+                  <p className="px-3 pb-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                    You
+                  </p>
+                  <div className="space-y-1.5">
+                    {SECONDARY_ACCOUNT.map(({ to, label, description, icon: Icon }) => {
+                      const active = pathname === to;
+                      return (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setMoreSheetOpen(false)}
+                          className={`flex items-center justify-between rounded-2xl p-3 text-sm font-medium transition ${
+                            active
+                              ? "bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]"
+                              : "border border-border/40 bg-foreground/[0.02] text-foreground hover:bg-foreground/[0.06] active:bg-foreground/[0.08]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`grid h-8 w-8 place-items-center rounded-xl shrink-0 ${
+                                active
+                                  ? "bg-white/20 text-white"
+                                  : "bg-primary/10 text-primary"
+                              }`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm leading-tight">{label}</p>
+                              <p
+                                className={`text-xs truncate ${
+                                  active ? "text-white/80" : "text-muted-foreground"
+                                }`}
+                              >
+                                {description}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight
+                            className={`h-4 w-4 shrink-0 ${
+                              active ? "text-white/80" : "text-muted-foreground/60"
+                            }`}
+                          />
+                        </Link>
+                      );
+                    })}
                   </div>
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                    {theme}
-                  </span>
-                </button>
+                </div>
 
-                {/* Sign Out */}
-                <button
-                  onClick={signOut}
-                  className="flex min-h-[44px] w-full items-center gap-3 rounded-xl border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm font-medium text-destructive transition hover:bg-destructive/10 active:scale-[0.99]"
-                >
-                  <LogOut className="h-4.5 w-4.5 shrink-0" />
-                  <span>Sign out</span>
-                </button>
+                {/* 3. PREFERENCES & ACTIONS */}
+                <div>
+                  <p className="px-3 pb-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                    Preferences
+                  </p>
+                  <div className="space-y-2">
+                    {/* Appearance toggle */}
+                    <button
+                      onClick={toggle}
+                      className="flex min-h-[44px] w-full items-center justify-between rounded-2xl border border-border/40 bg-foreground/[0.02] px-3.5 py-2.5 text-sm font-medium text-foreground transition hover:bg-foreground/[0.06] active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary shrink-0">
+                          {theme === "dark" ? (
+                            <Sun className="h-4 w-4" />
+                          ) : (
+                            <Moon className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-sm leading-tight">Appearance</p>
+                          <p className="text-xs text-muted-foreground">
+                            Currently {theme === "dark" ? "Dark mode" : "Light mode"}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs uppercase tracking-wider font-semibold text-primary">
+                        {theme}
+                      </span>
+                    </button>
+
+                    {/* Sign out */}
+                    <button
+                      onClick={signOut}
+                      className="flex min-h-[44px] w-full items-center gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm font-medium text-destructive transition hover:bg-destructive/10 active:scale-[0.99]"
+                    >
+                      <div className="grid h-8 w-8 place-items-center rounded-xl bg-destructive/10 text-destructive shrink-0">
+                        <LogOut className="h-4 w-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-sm leading-tight">Sign out</p>
+                        <p className="text-xs text-destructive/70">End current session</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </motion.aside>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

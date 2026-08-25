@@ -168,16 +168,21 @@ function DashboardPage() {
         </header>
 
         {/* ================================================================= */}
-        {/* ERROR STATE                                                        */}
+        {/* NON-BLOCKING SERVER RECONNECTING BANNER                            */}
         {/* ================================================================= */}
         {error && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/25 bg-destructive/8 px-5 py-4 text-sm text-destructive">
-            <span>{error}</span>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-foreground/80 shadow-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
+              <span className="truncate">Chayva is reconnecting to server. Displaying cached insights.</span>
+            </div>
             <button
               onClick={() => void refetch()}
-              className="rounded-lg border border-destructive/30 px-3 py-1 transition hover:bg-destructive/10"
+              disabled={loading}
+              className="flex items-center gap-1.5 shrink-0 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 font-semibold text-primary text-xs hover:bg-primary/20 transition active:scale-95 disabled:opacity-50"
             >
-              Retry
+              <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+              <span>Retry</span>
             </button>
           </div>
         )}
