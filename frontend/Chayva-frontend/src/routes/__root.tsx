@@ -5,9 +5,11 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { Toaster } from "sonner";
+import { useEffect, type ReactNode } from "react";
+import { Toaster, toast } from "sonner";
 import { UserProvider } from "@/lib/user-context";
+import { registerServiceWorker, useOnlineStatus } from "@/lib/pwa";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 
 import "../style.css";
 
@@ -60,21 +62,53 @@ export const Route = createRootRouteWithContext<{
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       {
-        title: "Chayva",
+        title: "Chayva — AI Behavioral Finance Companion",
       },
       {
         name: "description",
-        content: "AI-powered expense tracker",
+        content: "Understand the why behind your spending.",
+      },
+      {
+        name: "theme-color",
+        content: "#7C3AED",
+      },
+      {
+        name: "mobile-web-app-capable",
+        content: "yes",
+      },
+      {
+        name: "apple-mobile-web-app-capable",
+        content: "yes",
+      },
+      {
+        name: "apple-mobile-web-app-status-bar-style",
+        content: "default",
+      },
+      {
+        name: "apple-mobile-web-app-title",
+        content: "Chayva",
+      },
+      {
+        name: "application-name",
+        content: "Chayva",
       },
     ],
     links: [
       {
+        rel: "manifest",
+        href: "/manifest.json",
+      },
+      {
         rel: "icon",
         type: "image/svg+xml",
         href: "/favicon.svg",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/apple-touch-icon.png",
       },
     ],
   }),
@@ -101,10 +135,25 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const isOnline = useOnlineStatus();
+
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
+  useEffect(() => {
+    if (!isOnline) {
+      toast.warning("You're currently offline. Cached application shell is active.", {
+        id: "offline-warning",
+        duration: 4000,
+      });
+    }
+  }, [isOnline]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <UserProvider>
+        <PWAInstallBanner />
         <Outlet />
       </UserProvider>
       <Toaster position="top-right" richColors />
