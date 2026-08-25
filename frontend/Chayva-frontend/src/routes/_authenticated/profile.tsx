@@ -1,9 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Save, UserRound, Clock, Target, MessageSquare, AlertCircle } from "lucide-react";
+import { Save, UserRound, Clock, Target, MessageSquare, AlertCircle, Sun, Moon, LogOut } from "lucide-react";
 import { PageTransition, LoadingSkeleton } from "@/lib/ui-helpers";
 import { getProfile, updateProfile, type UserProfilePayload } from "@/lib/profile";
+import { useTheme } from "@/lib/theme";
+import { useUser } from "@/lib/user-context";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -325,6 +327,11 @@ function ProfilePage() {
             )}
 
             {/* ============================================================= */}
+            {/* SECTION: Account & Preferences                                 */}
+            {/* ============================================================= */}
+            <ProfilePreferencesSection />
+
+            {/* ============================================================= */}
             {/* FEEDBACK + SAVE                                                */}
             {/* ============================================================= */}
             {error && (
@@ -337,7 +344,7 @@ function ProfilePage() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60 transition hover:-translate-y-0.5"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60 transition hover:-translate-y-0.5"
             >
               <Save className="h-4 w-4" />
               {saving ? "Saving…" : "Save context"}
@@ -346,6 +353,90 @@ function ProfilePage() {
         )}
       </div>
     </PageTransition>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ProfilePreferencesSection — Theme & Account controls
+// ---------------------------------------------------------------------------
+
+function ProfilePreferencesSection() {
+  const { theme, toggle } = useTheme();
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
+
+  function onSignOut() {
+    logout();
+    navigate({ to: "/auth", replace: true });
+  }
+
+  const userEmail = (user as any)?.email ?? "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25, duration: 0.26 }}
+      className="glass rounded-2xl p-5 space-y-4"
+    >
+      <div className="flex items-center gap-2.5 pb-1 border-b border-foreground/8">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
+          <Sun className="h-3.5 w-3.5" />
+        </span>
+        <div>
+          <h2 className="text-sm font-semibold">Account & Preferences</h2>
+          <p className="text-xs text-muted-foreground">Theme and account session controls</p>
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-1">
+        {/* Theme switcher */}
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-foreground/8 bg-foreground/[0.02] p-3.5">
+          <div>
+            <p className="text-sm font-medium text-foreground">Theme</p>
+            <p className="text-xs text-muted-foreground">
+              Currently using <span className="font-semibold text-primary capitalize">{theme} mode</span>
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-border/80 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-foreground/5 active:scale-95"
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? (
+              <>
+                <Sun className="h-4 w-4 text-primary" />
+                <span>Light mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="h-4 w-4 text-primary" />
+                <span>Dark mode</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Account Info + Sign Out */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-foreground/8 bg-foreground/[0.02] p-3.5">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Signed In As</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[14rem] sm:max-w-xs">{userEmail}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/8 px-4 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/15 active:scale-95"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign out</span>
+          </button>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 

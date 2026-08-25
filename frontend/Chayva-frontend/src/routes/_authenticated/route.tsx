@@ -9,24 +9,38 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
 
   beforeLoad: async ({ location }) => {
-    const user = await getCurrentUser();
+    let user = null;
+    try {
+      user = await getCurrentUser();
+    } catch {
+      user = null;
+    }
 
     if (!user) {
       throw redirect({ to: "/auth" });
     }
 
-    const profile = await getProfile();
     const isOnboarding = location.pathname === "/onboarding";
     const skipKey = `chayva_onboarding_skip:${user.uid}`;
     const skippedForSession =
       typeof window !== "undefined" && window.sessionStorage.getItem(skipKey) === "true";
 
-    if (!profile.onboarding_completed && !isOnboarding && !skippedForSession) {
-      throw redirect({ to: "/onboarding" });
-    }
+    try {
+      const profile = await getProfile();
 
-    if (profile.onboarding_completed && isOnboarding) {
-      throw redirect({ to: "/dashboard" });
+      if (!profile.onboarding_completed && !isOnboarding && !skippedForSession) {
+        throw redirect({ to: "/onboarding" });
+      }
+
+      if (profile.onboarding_completed && isOnboarding) {
+        throw redirect({ to: "/dashboard" });
+      }
+    } catch (err) {
+      // If it's a TanStack redirect, rethrow it so navigation happens
+      if (err && typeof err === "object" && ("to" in err || "href" in err || "status" in err)) {
+        throw err;
+      }
+      console.warn("Could not verify profile in beforeLoad:", err);
     }
   },
 

@@ -332,6 +332,7 @@ def test_nudges_current_returns_shape():
 def test_insights_personality_shape():
     resp = client.get("/insights/personality", headers=AUTH_HEADERS)
     assert resp.status_code == 200
+    assert resp.status_code == 200
     data = resp.json()
     assert "type" in data
     assert "traits" in data
@@ -343,3 +344,56 @@ def test_spend_dna_shape():
     data = resp.json()
     assert "personality_type" in data
     assert "monthly_narrative" in data
+
+
+def test_auth_signup_and_signin_case_insensitive_with_profile_init():
+    unique_suffix = uuid.uuid4().hex[:8]
+    signup_email = f"User.{unique_suffix}@Example.COM"
+    signin_email = f"user.{unique_suffix}@example.com"
+    password = "StrongPassword123"
+
+    # 1. Signup with mixed case email
+    signup_resp = client.post(
+        "/auth/signup",
+        json={"email": signup_email, "password": password},
+    )
+    assert signup_resp.status_code == 200
+    signup_data = signup_resp.json()
+    user_id = signup_data["user"]["uid"]
+    assert signup_data["user"]["email"] == signin_email
+    token = signup_data["access_token"]
+
+    # 2. Verify profile document was automatically created in profiles collection
+    profile_resp = client.get(
+        "/profile",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert profile_resp.status_code == 200
+    profile_data = profile_resp.json()
+    assert profile_data["user_id"] == user_id
+    assert profile_data["onboarding_completed"] is False
+
+    # 3. Duplicate signup with lowercase should fail with 409
+    dup_resp = client.post(
+        "/auth/signup",
+        json={"email": signin_email, "password": password},
+    )
+    assert dup_resp.status_code == 409
+
+    # 4. Signin with lowercase email and correct password
+    signin_resp = client.post(
+        "/auth/signin",
+        json={"email": signin_email, "password": password},
+    )
+    assert signin_resp.status_code == 200
+    signin_data = signin_resp.json()
+    assert signin_data["user"]["uid"] == user_id
+    assert signin_data["user"]["email"] == signin_email
+    assert "access_token" in signin_data
+
+    # 5. Signin with wrong password fails with 401
+    wrong_pwd_resp = client.post(
+        "/auth/signin",
+        json={"email": signin_email, "password": "WrongPassword999"},
+    )
+    assert wrong_pwd_resp.status_code == 401

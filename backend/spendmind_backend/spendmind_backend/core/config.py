@@ -33,28 +33,25 @@ class Settings:
     
     @property
     def CORS_ORIGINS(self) -> list:
-        """Get CORS origins, with automatic localhost support in development.
-        
-        - Development: uses localhost defaults if CORS_ORIGINS is not set
-        - Production: requires explicit CORS_ORIGINS to be set (raises ValueError if missing)
-        """
+        """Get CORS origins, supporting production Vercel app and localhost dev."""
+        defaults = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "https://chayva-v1.vercel.app",
+        ]
         cors_env = os.getenv("CORS_ORIGINS", "").strip()
-        
         if cors_env:
-            # Parse comma-separated origins, trim whitespace, ignore empty entries
-            origins = [o.strip() for o in cors_env.split(",") if o.strip()]
-            if origins:
-                return origins
-        
-        # No CORS_ORIGINS set - provide defaults based on environment
-        if self.ENV == "development":
-            return ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]
-        
-        # Production requires explicit CORS configuration
-        raise ValueError(
-            "CORS_ORIGINS environment variable must be set in production. "
-            "Example: CORS_ORIGINS=https://your-app.vercel.app"
-        )
+            custom = [o.strip() for o in cors_env.split(",") if o.strip()]
+            for origin in custom:
+                if origin not in defaults:
+                    defaults.append(origin)
+        return defaults
 
    # --- Rate limiting ---
     AI_CALLS_PER_HOUR: int = int(os.getenv("AI_CALLS_PER_HOUR", "30"))

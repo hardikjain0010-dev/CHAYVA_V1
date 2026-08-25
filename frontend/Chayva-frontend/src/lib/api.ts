@@ -1,4 +1,4 @@
-import { getToken } from "./auth";
+import { getToken, clearToken } from "./auth";
 
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
 const PRODUCTION_API_BASE_URL = "https://chayva-backend.onrender.com";
@@ -76,6 +76,9 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   const payload = await parseResponse(response);
 
   if (!response.ok) {
+    if (response.status === 401 && !path.startsWith("/auth/sign")) {
+      clearToken();
+    }
     throw new Error(
       errorMessageFromPayload(payload, `Request failed with status ${response.status}`),
     );

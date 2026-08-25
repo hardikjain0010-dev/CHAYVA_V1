@@ -42,12 +42,13 @@ function AuthPage() {
     }
   }, [initialMode]);
 
+  // Only auto-redirect on mount if user ALREADY had an active session before submitting
+  const isSubmittingRef = useRef(false);
   useEffect(() => {
-    // Only auto-redirect to dashboard if user already has an active session AND is not requesting a new signup
-    if (user && initialMode !== "signup") {
+    if (user && initialMode !== "signup" && !isSubmittingRef.current && !loading) {
       navigate({ to: "/dashboard" });
     }
-  }, [navigate, user, initialMode]);
+  }, [navigate, user, initialMode, loading]);
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -102,9 +103,10 @@ function AuthPage() {
     document.body.appendChild(script);
   }, []);
 
-    async function handleCredentialResponse(
+  async function handleCredentialResponse(
     response: google.accounts.id.CredentialResponse
-    ){
+  ) {
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       const res = await post<AuthResponse>("/auth/google", {
@@ -112,6 +114,7 @@ function AuthPage() {
       });
       await completeAuthentication(res, "Signed in with Google successfully!");
     } catch (err) {
+      isSubmittingRef.current = false;
       const errorMessage = err instanceof Error ? err.message : "Google sign-in failed.";
       
       // Provide user-friendly error messages
@@ -131,9 +134,15 @@ function AuthPage() {
     }
   }
 
-   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
     
+    if (!normalizedEmail) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
     if (mode === "signup") {
       // Validate password strength
       const validation = validatePassword(password);
@@ -148,22 +157,24 @@ function AuthPage() {
       }
     }
     
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       if (mode === "signup") {
         const res = await post<AuthResponse>("/auth/signup", {
-          email,
+          email: normalizedEmail,
           password,
         });
         await completeAuthentication(res, "Account created successfully!");
       } else {
         const res = await post<AuthResponse>("/auth/signin", {
-          email,
+          email: normalizedEmail,
           password,
         });
         await completeAuthentication(res, "Signed in successfully!");
       }
     } catch (err) {
+      isSubmittingRef.current = false;
       clearToken();
       const errorMessage = err instanceof Error ? err.message : "Authentication failed.";
       
@@ -191,6 +202,7 @@ function AuthPage() {
     const user = await refreshUser();
     if (!user) {
       clearToken();
+      isSubmittingRef.current = false;
       throw new Error("Could not verify your session. Please sign in again.");
     }
     toast.success(successMessage);
@@ -205,7 +217,7 @@ function AuthPage() {
       }
     } catch (error) {
       // If profile fetch fails, proceed to dashboard
-      console.warn("Could not fetch profile, proceeding to dashboard");
+      console.warn("Could not fetch profile, proceeding to dashboard", error);
     }
     
     navigate({ to: "/dashboard", replace: true });
