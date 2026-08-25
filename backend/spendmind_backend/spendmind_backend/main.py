@@ -47,6 +47,16 @@ app.include_router(spend_dna.router)
 app.include_router(profile.router)
 
 
-@app.get("/", tags=["Health"], summary="Health check")
-def health_check():
+@app.get("/", tags=["Health"], summary="Root health check")
+def root_check():
     return {"status": "ok", "service": "SpendMind API", "env": settings.ENV}
+
+
+@app.get("/health", tags=["Health"], summary="Public health check")
+def health_check():
+    return {"status": "ok", "service": "chayva-backend", "env": settings.ENV}
+
+
+@app.get("/readiness", tags=["Health"], summary="Readiness check")
+def readiness_check():
+    return {"status": "ready", "service": "chayva-backend"}

@@ -32,6 +32,17 @@ def test_health_check():
     assert resp.json()["status"] == "ok"
 
 
+def test_public_health_and_readiness_endpoints():
+    health_resp = client.get("/health")
+    assert health_resp.status_code == 200
+    assert health_resp.json()["status"] == "ok"
+    assert health_resp.json()["service"] == "chayva-backend"
+
+    readiness_resp = client.get("/readiness")
+    assert readiness_resp.status_code == 200
+    assert readiness_resp.json()["status"] == "ready"
+
+
 def test_create_expense():
     payload = {
         "user_id": TEST_USER,

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { ChayvaLogo } from "@/components/ChayvaLogo";
-import { post } from "@/lib/api";
+import { post, ApiError } from "@/lib/api";
 import {
   type AuthResponse,
   clearToken,
@@ -103,6 +103,52 @@ function AuthPage() {
     document.body.appendChild(script);
   }, []);
 
+  function formatAuthError(err: unknown, fallback: string): string {
+    if (err instanceof ApiError) {
+      if (err.status === 401) {
+        return "Invalid email or password. Please check your credentials.";
+      }
+      if (err.status === 409) {
+        return "This email is already registered. Please sign in instead.";
+      }
+      if (err.status === 400 && err.message.includes("Google")) {
+        return "This account is linked with Google. Please use Google Sign-In.";
+      }
+      if (err.status === 403) {
+        return "Access denied. Please check your account permissions.";
+      }
+      if (err.status === 422) {
+        return "Please provide a valid email and password.";
+      }
+      if (err.status === 429) {
+        return "Too many attempts. Please wait a moment before trying again.";
+      }
+      if (err.status && err.status >= 500) {
+        return "Server error occurred. Please try again shortly.";
+      }
+      if (err.isTimeout) {
+        return "Server is waking up from sleep. Please try again in a few seconds.";
+      }
+      if (err.isNetworkError) {
+        return err.message;
+      }
+      return err.message || fallback;
+    }
+    if (err instanceof Error) {
+      if (err.message.includes("Google token missing email")) {
+        return "Google account information is incomplete. Please try again.";
+      }
+      if (err.message.includes("Invalid Google token")) {
+        return "Google authentication failed. Please try again.";
+      }
+      if (err.message.includes("Google Sign-In is not configured")) {
+        return "Google authentication is not available right now. Please use email/password.";
+      }
+      return err.message;
+    }
+    return fallback;
+  }
+
   async function handleCredentialResponse(
     response: google.accounts.id.CredentialResponse
   ) {
@@ -115,20 +161,7 @@ function AuthPage() {
       await completeAuthentication(res, "Signed in with Google successfully!");
     } catch (err) {
       isSubmittingRef.current = false;
-      const errorMessage = err instanceof Error ? err.message : "Google sign-in failed.";
-      
-      // Provide user-friendly error messages
-      if (errorMessage.includes("Google token missing email")) {
-        toast.error("Google account information is incomplete. Please try again.");
-      } else if (errorMessage.includes("Invalid Google token")) {
-        toast.error("Google authentication failed. Please try again.");
-      } else if (errorMessage.includes("Google Sign-In is not configured")) {
-        toast.error("Google authentication is not available right now. Please use email/password.");
-      } else if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
-        toast.error("Network error. Please check your connection and try again.");
-      } else {
-        toast.error(errorMessage);
-      }
+      toast.error(formatAuthError(err, "Google sign-in failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -176,18 +209,7 @@ function AuthPage() {
     } catch (err) {
       isSubmittingRef.current = false;
       clearToken();
-      const errorMessage = err instanceof Error ? err.message : "Authentication failed.";
-      
-      // Provide user-friendly error messages
-      if (errorMessage.includes("already registered")) {
-        toast.error("This email is already registered. Please sign in instead.");
-      } else if (errorMessage.includes("Invalid email or password")) {
-        toast.error("Invalid email or password. Please try again.");
-      } else if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
-        toast.error("Network error. Please check your connection and try again.");
-      } else {
-        toast.error(errorMessage);
-      }
+      toast.error(formatAuthError(err, "Authentication failed. Please check your connection or credentials."));
     } finally {
       setLoading(false);
     }
