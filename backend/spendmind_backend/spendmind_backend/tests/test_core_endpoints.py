@@ -36,7 +36,7 @@ def test_public_health_and_readiness_endpoints():
     health_resp = client.get("/health")
     assert health_resp.status_code == 200
     assert health_resp.json()["status"] == "ok"
-    assert health_resp.json()["service"] == "chayva-backend"
+    assert health_resp.json()["service"] == "caayva-backend"
 
     readiness_resp = client.get("/readiness")
     assert readiness_resp.status_code == 200

@@ -100,8 +100,8 @@ function ExpensesPage() {
         {/* ================================================================= */}
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="chayva-eyebrow">Understand</p>
-            <h1 className="chayva-headline mt-1 text-3xl text-foreground">Your Journal</h1>
+            <p className="caayva-eyebrow">Understand</p>
+            <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Journal</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {filteredExpenses.length} {filteredExpenses.length === 1 ? "entry" : "entries"}
               {filteredExpenses.length > 0 && ` · ₹${totalFiltered.toFixed(0)} total`}
@@ -205,7 +205,7 @@ function ExpensesPage() {
             title={expenses.length === 0 ? "Your journal is empty." : "No matching entries."}
             description={
               expenses.length === 0
-                ? "Start logging expenses with mood and context. Chayva will start reading your behavioral patterns as you build your journal."
+                ? "Start logging expenses with mood and context. Caayva will start reading your behavioral patterns as you build your journal."
                 : "Try a different search or filter."
             }
             action={
@@ -396,7 +396,7 @@ function JournalEntry({
                   <InsightFlow
                     compact
                     data={{
-                      // LEVEL 1: What Chayva noticed
+                      // LEVEL 1: What Caayva noticed
                       observation: insightText,
                       // LEVEL 2: Evidence
                       evidence: insight?.detected_trigger
@@ -430,7 +430,7 @@ function JournalEntry({
                 </>
               ) : (
                 <p className="text-xs italic text-muted-foreground">
-                  Chayva will analyze this entry when more context is available.
+                  Caayva will analyze this entry when more context is available.
                 </p>
               )}
             </div>

@@ -40,8 +40,8 @@ function WeekPage() {
         {/* HEADER                                                             */}
         {/* ================================================================= */}
         <header>
-          <p className="chayva-eyebrow">Weekly Story</p>
-          <h1 className="chayva-headline mt-1 text-3xl text-foreground">Your Week in Focus</h1>
+          <p className="caayva-eyebrow">Weekly Story</p>
+          <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Week in Focus</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Behavioral patterns from the past 7 days.
           </p>
@@ -76,7 +76,7 @@ function WeekPage() {
           <EmptyLearningState
             icon={Sparkles}
             title="Your weekly story is taking shape."
-            description="Keep logging expenses across a few days — including mood and context. Chayva will compose your first weekly behavioral narrative once there's enough signal to work with."
+            description="Keep logging expenses across a few days — including mood and context. Caayva will compose your first weekly behavioral narrative once there's enough signal to work with."
           />
         ) : (
           <>
@@ -96,10 +96,10 @@ function WeekPage() {
                   <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-primary text-primary-foreground">
                     <Sparkles className="h-3 w-3" />
                   </span>
-                  <p className="chayva-eyebrow">Key insight this week</p>
+                  <p className="caayva-eyebrow">Key insight this week</p>
                 </div>
 
-                <h2 className="chayva-headline text-2xl text-foreground md:text-3xl max-w-2xl">
+                <h2 className="caayva-headline text-2xl text-foreground md:text-3xl max-w-2xl">
                   {weekly?.weekly_narrative ?? weekly?.behavior_summary}
                 </h2>
 
@@ -129,7 +129,7 @@ function WeekPage() {
             {/* ============================================================= */}
             {behaviorTimeline.length > 0 && (
               <section className="glass rounded-2xl p-5">
-                <p className="chayva-eyebrow mb-4">Day by day</p>
+                <p className="caayva-eyebrow mb-4">Day by day</p>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
                   {behaviorTimeline.map((entry) => (
                     <div
@@ -215,7 +215,7 @@ function WeekPage() {
             {metrics.totalSpend > 0 && (
               <section className="rounded-2xl border border-foreground/8 bg-foreground/[0.02] px-6 py-5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="chayva-eyebrow">This week's total</p>
+                  <p className="caayva-eyebrow">This week's total</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
                     ₹{metrics.totalSpend.toFixed(0)}
                   </p>
@@ -233,13 +233,13 @@ function WeekPage() {
             <div className="grid gap-4 md:grid-cols-2">
               {weekly?.one_win && (
                 <div className="glass rounded-2xl p-5 border-l-4 border-l-primary/60">
-                  <p className="chayva-eyebrow mb-2">One win</p>
+                  <p className="caayva-eyebrow mb-2">One win</p>
                   <p className="text-sm leading-relaxed">{weekly.one_win}</p>
                 </div>
               )}
               {(weekly?.coach_recommendation || weekly?.coach_advice) && (
                 <div className="glass rounded-2xl p-5 border-l-4 border-l-accent/60">
-                  <p className="chayva-eyebrow mb-2">What to notice next</p>
+                  <p className="caayva-eyebrow mb-2">What to notice next</p>
                   <p className="text-sm leading-relaxed">
                     {weekly.coach_recommendation ?? weekly.coach_advice}
                   </p>
@@ -276,7 +276,7 @@ function NarrativeBlock({
       transition={{ delay, duration: 0.26 }}
       className="glass rounded-2xl p-5"
     >
-      <p className="chayva-eyebrow">{eyebrow}</p>
+      <p className="caayva-eyebrow">{eyebrow}</p>
       <p className={`mt-3 text-sm leading-relaxed ${accent ? "text-foreground/90" : "text-foreground/80"}`}>
         {content}
       </p>

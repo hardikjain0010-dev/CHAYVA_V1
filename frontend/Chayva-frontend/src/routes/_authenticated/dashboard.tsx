@@ -139,13 +139,13 @@ function DashboardPage() {
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">{formatDate()}</p>
-            <h1 className="chayva-headline mt-1 text-3xl text-foreground md:text-4xl">
+            <h1 className="caayva-headline mt-1 text-3xl text-foreground md:text-4xl">
               {getGreeting()} {getGreetingEmoji()}
             </h1>
             <p className="mt-1.5 text-base text-muted-foreground">
               {isFirstUser
-                ? "Welcome to Chayva."
-                : "Here's what Chayva noticed."}
+                ? "Welcome to Caayva."
+                : "Here's what Caayva noticed."}
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -174,7 +174,7 @@ function DashboardPage() {
           <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-foreground/80 shadow-sm">
             <div className="flex items-center gap-2 min-w-0">
               <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
-              <span className="truncate">Chayva is reconnecting to server. Displaying cached insights.</span>
+              <span className="truncate">Caayva is reconnecting to server. Displaying cached insights.</span>
             </div>
             <button
               onClick={() => void refetch()}
@@ -194,8 +194,8 @@ function DashboardPage() {
         {isFirstUser ? (
           <EmptyLearningState
             icon={Sparkles}
-            title="Chayva is ready to learn your rhythm."
-            description="Add your first expense — with a note on your mood and what triggered it. Your first few entries help Chayva understand what's routine, what's reactive, and what patterns are forming."
+            title="Caayva is ready to learn your rhythm."
+            description="Add your first expense — with a note on your mood and what triggered it. Your first few entries help Caayva understand what's routine, what's reactive, and what patterns are forming."
             action={
               <Link
                 to="/add"
@@ -224,19 +224,19 @@ function DashboardPage() {
                 <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
                   <Sparkles className="h-3 w-3" />
                 </span>
-                <p className="chayva-eyebrow">Something Chayva noticed</p>
+                <p className="caayva-eyebrow">Something Caayva noticed</p>
               </div>
 
               {/* Primary observation — dominant typography */}
               {loading && !coachObservation ? (
                 <LoadingSkeleton lines={2} className="max-w-xl" />
               ) : coachObservation ? (
-                <h2 className="chayva-headline text-2xl text-foreground md:text-3xl max-w-2xl">
+                <h2 className="caayva-headline text-2xl text-foreground md:text-3xl max-w-2xl">
                   {coachObservation}
                 </h2>
               ) : hasNoInsight ? (
                 <h2 className="text-xl font-semibold text-foreground/80 max-w-2xl">
-                  Chayva is still learning your spending rhythm.
+                  Caayva is still learning your spending rhythm.
                 </h2>
               ) : null}
 
@@ -266,7 +266,7 @@ function DashboardPage() {
               {/* Learning state — not enough data yet */}
               {hasNoInsight && (
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-lg">
-                  Keep logging expenses with mood and notes. Chayva learns with every entry and will start noticing patterns in your behavior.
+                  Keep logging expenses with mood and notes. Caayva learns with every entry and will start noticing patterns in your behavior.
                 </p>
               )}
             </div>
@@ -281,7 +281,7 @@ function DashboardPage() {
           <section className="glass rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="chayva-eyebrow">Spending rhythm</p>
+                <p className="caayva-eyebrow">Spending rhythm</p>
                 <p className="text-xs text-muted-foreground mt-0.5">How your week is moving</p>
               </div>
               <span className="text-xs text-muted-foreground">7 days</span>
@@ -323,7 +323,7 @@ function DashboardPage() {
                 whileHover={{ y: -2 }}
                 className="glass rounded-2xl px-4 py-4"
               >
-                <p className="chayva-eyebrow text-muted-foreground" style={{ fontSize: "0.6rem" }}>
+                <p className="caayva-eyebrow text-muted-foreground" style={{ fontSize: "0.6rem" }}>
                   {stat.label}
                 </p>
                 <p className="mt-2 text-xl font-bold tabular-nums tracking-tight">
@@ -340,7 +340,7 @@ function DashboardPage() {
         {byCategory.length > 0 && (
           <section className="glass rounded-2xl p-6">
             <div className="mb-5">
-              <p className="chayva-eyebrow">Where your money went</p>
+              <p className="caayva-eyebrow">Where your money went</p>
               <p className="text-xs text-muted-foreground mt-0.5">Supporting context for the behavioral read</p>
             </div>
             <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
@@ -410,8 +410,8 @@ function DashboardPage() {
           <section className="glass rounded-2xl p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <p className="chayva-eyebrow">Recent journal</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Latest moments Chayva is reading</p>
+                <p className="caayva-eyebrow">Recent journal</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Latest moments Caayva is reading</p>
               </div>
               <Link
                 to="/expenses"
@@ -511,7 +511,7 @@ function DashboardPage() {
                               />
                             ) : (
                               <p className="text-xs text-muted-foreground italic">
-                                Chayva is still processing this expense.
+                                Caayva is still processing this expense.
                               </p>
                             )}
                           </div>
@@ -527,7 +527,7 @@ function DashboardPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-muted-foreground pb-2">
-          Chayva learns more with every entry you make.
+          Caayva learns more with every entry you make.
         </p>
       </div>
     </PageTransition>

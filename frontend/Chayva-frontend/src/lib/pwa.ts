@@ -15,7 +15,7 @@ export function registerServiceWorker() {
           if (newWorker) {
             newWorker.addEventListener("statechange", () => {
               if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                console.info("[PWA] New version of Chayva is available.");
+                console.info("[PWA] New version of Caayva is available.");
               }
             });
           }
@@ -63,7 +63,7 @@ export function usePWAInstall() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const dismissed = localStorage.getItem("chayva_pwa_dismissed") === "true";
+    const dismissed = localStorage.getItem("caayva_pwa_dismissed") === "true";
     setIsDismissed(dismissed);
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -105,7 +105,7 @@ export function usePWAInstall() {
   function dismiss() {
     setIsDismissed(true);
     try {
-      localStorage.setItem("chayva_pwa_dismissed", "true");
+      localStorage.setItem("caayva_pwa_dismissed", "true");
     } catch {}
   }
 

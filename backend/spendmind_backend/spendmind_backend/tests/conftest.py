@@ -14,7 +14,7 @@ def _mock_route_prompt(task_type: str, prompt: str, system_override=None, max_re
             "observation": "This expense was logged with the supplied details.",
             "interpretation": "Patterns will become clearer as more history is available.",
             "reflection": "Keep adding mood and notes for sharper reads.",
-            "insight": "This expense is logged. Chayva will connect it to your patterns as more history builds.",
+            "insight": "This expense is logged. Caayva will connect it to your patterns as more history builds.",
             "pattern_tag": "neutral",
             "intensity": 1,
             "confidence": 0.4,

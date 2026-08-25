@@ -8,23 +8,23 @@ import {
   Compass,
   Brain,
 } from "lucide-react";
-import { ChayvaLogo } from "@/components/ChayvaLogo";
+import { CaayvaLogo } from "@/components/CaayvaLogo";
 
 export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
       {
-        title: "Chayva — Behavioral Finance Coach",
+        title: "Caayva — Behavioral Finance Coach",
       },
       {
         name: "description",
         content:
-          "Understand the emotions behind your spending and build mindful financial habits with Chayva.",
+          "Understand the emotions behind your spending and build mindful financial habits with Caayva.",
       },
       {
         property: "og:title",
-        content: "Chayva — Behavioral Finance Coach",
+        content: "Caayva — Behavioral Finance Coach",
       },
       {
         property: "og:description",
@@ -77,9 +77,9 @@ function Landing() {
           to="/"
           className="flex items-center gap-2.5"
         >
-          <ChayvaLogo className="h-8 w-8" />
+          <CaayvaLogo className="h-8 w-8" />
           <span className="text-2xl font-bold tracking-tight text-gradient">
-            Chayva
+            Caayva
           </span>
         </Link>
 
@@ -117,7 +117,7 @@ function Landing() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground">
-            Chayva is your AI behavioural finance coach. Discover why you spend,
+            Caayva is your AI behavioural finance coach. Discover why you spend,
             understand emotional triggers, and build healthier financial habits
             with confidence.
           </p>
@@ -188,8 +188,8 @@ function Landing() {
             {/* Brand column */}
             <div className="sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2.5">
-                <ChayvaLogo className="h-8 w-8" />
-                <span className="text-xl font-bold tracking-tight">Chayva</span>
+                <CaayvaLogo className="h-8 w-8" />
+                <span className="text-xl font-bold tracking-tight">Caayva</span>
               </div>
 
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -243,11 +243,11 @@ function Landing() {
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
           <div className="flex items-center gap-2">
-            <ChayvaLogo className="h-5 w-5" />
+            <CaayvaLogo className="h-5 w-5" />
             <span className="text-xs text-muted-foreground/70">Behavioral finance, reimagined.</span>
           </div>
           <p className="text-xs text-muted-foreground/50">
-            © {new Date().getFullYear()} Chayva
+            © {new Date().getFullYear()} Caayva
           </p>
         </div>
       </footer>

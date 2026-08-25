@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { z } from "zod";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { ChayvaLogo } from "@/components/ChayvaLogo";
+import { CaayvaLogo } from "@/components/CaayvaLogo";
 import { post, ApiError } from "@/lib/api";
 import {
   type AuthResponse,
@@ -209,9 +209,9 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="glass w-full max-w-md rounded-2xl p-8">
         <div className="mb-6 flex items-center gap-2.5">
-          <ChayvaLogo className="h-9 w-9" />
+          <CaayvaLogo className="h-9 w-9" />
           <span className="text-xl font-bold tracking-tight">
-            Chayva
+            Caayva
           </span>
         </div>
         <h1 className="text-2xl font-semibold">
@@ -293,7 +293,7 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
         <p className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "signup"
             ? "Already have an account?"
-            : "New to Chayva?"}{" "}
+            : "New to Caayva?"}{" "}
           <button
             type="button"
             onClick={() => {

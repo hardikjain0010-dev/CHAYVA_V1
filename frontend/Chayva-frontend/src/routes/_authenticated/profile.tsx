@@ -94,10 +94,10 @@ function ProfilePage() {
         {/* HEADER                                                             */}
         {/* ================================================================= */}
         <header>
-          <p className="chayva-eyebrow">Context</p>
-          <h1 className="chayva-headline mt-1 text-3xl text-foreground">Your Context</h1>
+          <p className="caayva-eyebrow">Context</p>
+          <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Context</h1>
           <p className="mt-1.5 text-sm text-muted-foreground max-w-lg">
-            Help Chayva understand you better. This context shapes how it interprets your spending — it's not a survey, it's a conversation.
+            Help Caayva understand you better. This context shapes how it interprets your spending — it's not a survey, it's a conversation.
           </p>
         </header>
 
@@ -127,7 +127,7 @@ function ProfilePage() {
                     }
                     maxLength={60}
                     className="profile-input"
-                    placeholder="How should Chayva address you?"
+                    placeholder="How should Caayva address you?"
                   />
                 </Field>
                 <Field label="Life stage">
@@ -162,7 +162,7 @@ function ProfilePage() {
             <ProfileSection
               icon={Clock}
               title="Life Rhythm"
-              subtitle="Context about your days helps Chayva interpret when and why you spend."
+              subtitle="Context about your days helps Caayva interpret when and why you spend."
               delay={0.05}
             >
               <Field label="College or work context">
@@ -235,11 +235,11 @@ function ProfilePage() {
             </ProfileSection>
 
             {/* ============================================================= */}
-            {/* SECTION: How Chayva Talks to You                               */}
+            {/* SECTION: How Caayva Talks to You                               */}
             {/* ============================================================= */}
             <ProfileSection
               icon={MessageSquare}
-              title="How Chayva Talks to You"
+              title="How Caayva Talks to You"
               delay={0.15}
             >
               <div className="grid gap-4 sm:grid-cols-2">
@@ -283,18 +283,18 @@ function ProfilePage() {
             </ProfileSection>
 
             {/* ============================================================= */}
-            {/* SECTION: What You've Told Chayva                              */}
+            {/* SECTION: What You've Told Caayva                              */}
             {/* CRITICAL: explicitly labeled as user-reported, not proven fact */}
             {/* ============================================================= */}
             {(selfReportedTriggers.length > 0 || selfReportedContexts.length > 0) && (
               <ProfileSection
                 icon={AlertCircle}
-                title="What You've Told Chayva"
+                title="What You've Told Caayva"
                 delay={0.20}
               >
                 <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 mb-4">
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    <span className="font-medium text-foreground/70">Note:</span> This is what you reported during onboarding — not what Chayva has observed from your actual expenses. Observed patterns may differ and will take precedence in AI analysis.
+                    <span className="font-medium text-foreground/70">Note:</span> This is what you reported during onboarding — not what Caayva has observed from your actual expenses. Observed patterns may differ and will take precedence in AI analysis.
                   </p>
                 </div>
 

@@ -1,6 +1,6 @@
 import { get } from "./api";
 
-const TOKEN_KEY = "chayva_access_token";
+const TOKEN_KEY = "caayva_access_token";
 
 export type User = {
   uid: string;

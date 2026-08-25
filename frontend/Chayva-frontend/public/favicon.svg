@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
   <defs>
-    <linearGradient id="chayva-fav-gradient" x1="20" y1="12" x2="84" y2="88" gradientUnits="userSpaceOnUse">
+    <linearGradient id="caayva-fav-gradient" x1="20" y1="12" x2="84" y2="88" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#7C3AED" />
       <stop offset="40%" stop-color="#9333EA" />
       <stop offset="75%" stop-color="#D946EF" />
       <stop offset="100%" stop-color="#EC4899" />
     </linearGradient>
-    <linearGradient id="chayva-fav-inner-flow" x1="62" y1="34" x2="32" y2="68" gradientUnits="userSpaceOnUse">
+    <linearGradient id="caayva-fav-inner-flow" x1="62" y1="34" x2="32" y2="68" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#EDE9FE" stop-opacity="0.95" />
       <stop offset="45%" stop-color="#DDD6FE" stop-opacity="0.85" />
       <stop offset="80%" stop-color="#C4B5FD" stop-opacity="0.75" />
       <stop offset="100%" stop-color="#E9D5FF" stop-opacity="0.6" />
     </linearGradient>
-    <linearGradient id="chayva-fav-inner-glow" x1="55" y1="36" x2="40" y2="62" gradientUnits="userSpaceOnUse">
+    <linearGradient id="caayva-fav-inner-glow" x1="55" y1="36" x2="40" y2="62" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
       <stop offset="60%" stop-color="#F5F3FF" stop-opacity="0.5" />
       <stop offset="100%" stop-color="#DDD6FE" stop-opacity="0.1" />
@@ -20,9 +20,9 @@
   </defs>
 
   <!-- Internal Lavender Flow -->
-  <path d="M 64 36 C 48 35 34 43 34 52 C 34 61 46 67 60 63 C 50 67 38 63 38 52 C 38 45 49 38 64 36 Z" fill="url(#chayva-fav-inner-flow)" />
-  <path d="M 60 40 C 47 40 37 46 37 53 C 37 59 45 63 56 61 C 46 62 40 58 40 53 C 40 48 48 43 60 40 Z" fill="url(#chayva-fav-inner-glow)" />
+  <path d="M 64 36 C 48 35 34 43 34 52 C 34 61 46 67 60 63 C 50 67 38 63 38 52 C 38 45 49 38 64 36 Z" fill="url(#caayva-fav-inner-flow)" />
+  <path d="M 60 40 C 47 40 37 46 37 53 C 37 59 45 63 56 61 C 46 62 40 58 40 53 C 40 48 48 43 60 40 Z" fill="url(#caayva-fav-inner-glow)" />
 
   <!-- Hero C-Shape Body -->
-  <path d="M 68 26 A 34 34 0 1 0 68 74" stroke="url(#chayva-fav-gradient)" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 68 26 A 34 34 0 1 0 68 74" stroke="url(#caayva-fav-gradient)" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round" />
 </svg>

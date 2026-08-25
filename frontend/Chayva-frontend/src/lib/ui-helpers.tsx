@@ -119,7 +119,7 @@ export function SectionHeading({
     <div className="flex items-start justify-between gap-4">
       <div>
         {eyebrow && (
-          <p className="chayva-eyebrow mb-1">{eyebrow}</p>
+          <p className="caayva-eyebrow mb-1">{eyebrow}</p>
         )}
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
         {subtitle && (
@@ -178,7 +178,7 @@ export function EvidenceRow({
 // ---------------------------------------------------------------------------
 
 export type InsightData = {
-  observation?: string | null;       // What Chayva noticed
+  observation?: string | null;       // What Caayva noticed
   evidence?: string | null;          // Supporting data point
   interpretation?: string | null;    // What it may mean (cautious)
   reflection?: string | null;        // What to consider
@@ -307,10 +307,10 @@ export function BehavioralHero({
             <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-primary text-primary-foreground">
               <Sparkles className="h-3 w-3" />
             </span>
-            <p className="chayva-eyebrow">{eyebrow}</p>
+            <p className="caayva-eyebrow">{eyebrow}</p>
           </div>
         )}
-        <h2 className="chayva-headline text-2xl text-foreground md:text-3xl">{headline}</h2>
+        <h2 className="caayva-headline text-2xl text-foreground md:text-3xl">{headline}</h2>
         {subtext && (
           <p className="mt-3 text-base leading-relaxed text-foreground/75 max-w-xl">{subtext}</p>
         )}
@@ -386,7 +386,7 @@ export function AIInsightReveal({
               <Sparkles className="h-4 w-4" />
             </span>
             <div>
-              <p className="chayva-eyebrow">Chayva noticed</p>
+              <p className="caayva-eyebrow">Caayva noticed</p>
             </div>
           </div>
 

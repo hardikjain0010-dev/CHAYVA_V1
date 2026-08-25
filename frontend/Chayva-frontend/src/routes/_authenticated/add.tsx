@@ -158,12 +158,12 @@ function AddExpensePage() {
             <ChevronLeft className="h-4 w-4" />
             Back
           </button>
-          <p className="chayva-eyebrow">Capture</p>
-          <h1 className="chayva-headline mt-1 text-3xl text-foreground">
+          <p className="caayva-eyebrow">Capture</p>
+          <h1 className="caayva-headline mt-1 text-3xl text-foreground">
             What did you spend on?
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Every entry helps Chayva understand the why behind your spending.
+            Every entry helps Caayva understand the why behind your spending.
           </p>
         </header>
 
@@ -193,7 +193,7 @@ function AddExpensePage() {
 
               {!insightData?.observation && (
                 <p className="text-center text-sm text-muted-foreground">
-                  Chayva will analyze this expense soon.
+                  Caayva will analyze this expense soon.
                 </p>
               )}
 
@@ -217,7 +217,7 @@ function AddExpensePage() {
               {/* AMOUNT — dominant input                                      */}
               {/* ----------------------------------------------------------- */}
               <div className="glass rounded-3xl p-7 text-center">
-                <p className="chayva-eyebrow mb-4">Amount</p>
+                <p className="caayva-eyebrow mb-4">Amount</p>
                 <div className="flex items-baseline justify-center gap-2">
                   <span className="font-outfit text-4xl font-bold text-muted-foreground">₹</span>
                   <input
@@ -239,7 +239,7 @@ function AddExpensePage() {
               {/* CATEGORY — icon grid                                         */}
               {/* ----------------------------------------------------------- */}
               <div>
-                <p className="chayva-eyebrow mb-3">Category</p>
+                <p className="caayva-eyebrow mb-3">Category</p>
                 <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
                   {CATEGORIES.map((cat) => (
                     <button
@@ -259,7 +259,7 @@ function AddExpensePage() {
               {/* MOOD — emoji row                                             */}
               {/* ----------------------------------------------------------- */}
               <div>
-                <p className="chayva-eyebrow mb-3">How were you feeling?</p>
+                <p className="caayva-eyebrow mb-3">How were you feeling?</p>
                 <div className="flex flex-wrap gap-2">
                   {MOODS.map((m) => (
                     <motion.button
@@ -281,7 +281,7 @@ function AddExpensePage() {
               {/* DATE / TIME — secondary field                                */}
               {/* ----------------------------------------------------------- */}
               <div>
-                <label className="chayva-eyebrow block mb-2" htmlFor="spent-at">
+                <label className="caayva-eyebrow block mb-2" htmlFor="spent-at">
                   When
                 </label>
                 <input
@@ -297,7 +297,7 @@ function AddExpensePage() {
               {/* NOTE — optional context                                      */}
               {/* ----------------------------------------------------------- */}
               <div>
-                <label className="chayva-eyebrow block mb-2" htmlFor="expense-note">
+                <label className="caayva-eyebrow block mb-2" htmlFor="expense-note">
                   Note <span className="normal-case tracking-normal text-muted-foreground opacity-70">(optional)</span>
                 </label>
                 <textarea
@@ -305,7 +305,7 @@ function AddExpensePage() {
                   rows={2}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="What was the context? A quick note helps Chayva understand."
+                  placeholder="What was the context? A quick note helps Caayva understand."
                   className="profile-input resize-none"
                 />
               </div>

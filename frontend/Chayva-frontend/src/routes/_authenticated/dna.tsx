@@ -101,8 +101,8 @@ function SpendDnaPage() {
         {/* HEADER                                                             */}
         {/* ================================================================= */}
         <header>
-          <p className="chayva-eyebrow">Identity</p>
-          <h1 className="chayva-headline mt-1 text-3xl text-foreground">Your Spend DNA</h1>
+          <p className="caayva-eyebrow">Identity</p>
+          <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Spend DNA</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Based on your behavior, not your bank balance.
           </p>
@@ -132,7 +132,7 @@ function SpendDnaPage() {
           <EmptyLearningState
             icon={Dna}
             title="Your DNA is forming."
-            description="Chayva needs a broader view of your spending — across different categories, times, and moods — before it can map your behavioral profile with confidence. Keep logging."
+            description="Caayva needs a broader view of your spending — across different categories, times, and moods — before it can map your behavioral profile with confidence. Keep logging."
           />
         ) : (
           <>
@@ -167,11 +167,11 @@ function SpendDnaPage() {
                     <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-primary text-primary-foreground">
                       <Sparkles className="h-3 w-3" />
                     </span>
-                    <p className="chayva-eyebrow">Your pattern in simple words</p>
+                    <p className="caayva-eyebrow">Your pattern in simple words</p>
                   </div>
 
                   {archetypeName && (
-                    <h2 className="chayva-headline text-2xl text-foreground md:text-3xl">
+                    <h2 className="caayva-headline text-2xl text-foreground md:text-3xl">
                       {archetypeName}
                     </h2>
                   )}
@@ -187,7 +187,7 @@ function SpendDnaPage() {
                     <div className="mt-4">
                       {isVeryLowConfidence ? (
                         <p className="text-xs text-muted-foreground italic">
-                          Early signal — Chayva is still learning your pattern. These observations will strengthen with more data.
+                          Early signal — Caayva is still learning your pattern. These observations will strengthen with more data.
                         </p>
                       ) : isLowConfidence ? (
                         <p className="text-xs text-muted-foreground">
@@ -210,7 +210,7 @@ function SpendDnaPage() {
             {/* ============================================================= */}
             {dimensions.some((d) => d.value) && (
               <section className="glass rounded-2xl p-6">
-                <p className="chayva-eyebrow mb-5">What shapes your DNA</p>
+                <p className="caayva-eyebrow mb-5">What shapes your DNA</p>
                 <div className="space-y-4">
                   {dimensions.map((d, i) => (
                     <DimensionBar
@@ -258,7 +258,7 @@ function SpendDnaPage() {
             {/* ============================================================= */}
             {(dna.coach_advice || personality.coach_advice) && archetypeDesc !== (dna.coach_advice ?? personality.coach_advice) && (
               <div className="rounded-2xl border border-primary/15 bg-primary/5 px-6 py-5">
-                <p className="chayva-eyebrow mb-2">Coach perspective</p>
+                <p className="caayva-eyebrow mb-2">Coach perspective</p>
                 <p className="text-sm leading-relaxed text-foreground/85">
                   {dna.coach_advice ?? personality.coach_advice}
                 </p>
@@ -270,7 +270,7 @@ function SpendDnaPage() {
             {/* ============================================================= */}
             {(dna.behavior_evolution || personality.behavior_evolution) && (
               <div className="rounded-2xl border border-foreground/8 bg-foreground/[0.02] px-6 py-5">
-                <p className="chayva-eyebrow mb-2">How you're evolving</p>
+                <p className="caayva-eyebrow mb-2">How you're evolving</p>
                 <p className="text-sm leading-relaxed text-foreground/80">
                   {dna.behavior_evolution ?? personality.behavior_evolution}
                 </p>
@@ -308,7 +308,7 @@ function DnaList({
       transition={{ delay, duration: 0.26 }}
       className="glass rounded-2xl p-5"
     >
-      <p className="chayva-eyebrow mb-3">{title}</p>
+      <p className="caayva-eyebrow mb-3">{title}</p>
       <ul className="space-y-2">
         {items.map((item) => (
           <li

@@ -19,7 +19,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { useTheme } from "@/lib/theme";
 import { useUser } from "@/lib/user-context";
-import { ChayvaLogo } from "@/components/ChayvaLogo";
+import { CaayvaLogo } from "@/components/CaayvaLogo";
 
 // ---------------------------------------------------------------------------
 // Centralized Navigation Architecture (Single Source of Truth)
@@ -146,8 +146,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ----------------------------------------------------------------- */}
       <header className="md:hidden fixed top-0 inset-x-0 z-30 glass-strong border-b border-border/60 px-4 py-3 flex items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2.5">
-          <ChayvaLogo className="h-7 w-7" />
-          <span className="text-lg font-bold tracking-tight text-gradient">Chayva</span>
+          <CaayvaLogo className="h-7 w-7" />
+          <span className="text-lg font-bold tracking-tight text-gradient">Caayva</span>
         </Link>
 
         {/* Theme toggle only */}
@@ -176,9 +176,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Brand */}
           <div className="px-5 pt-6 pb-4">
             <Link to="/dashboard" className="flex items-center gap-2.5">
-              <ChayvaLogo className="h-8 w-8" />
+              <CaayvaLogo className="h-8 w-8" />
               <div>
-                <span className="block text-base font-bold tracking-tight leading-none">Chayva</span>
+                <span className="block text-base font-bold tracking-tight leading-none">Caayva</span>
                 <span className="block text-[0.6rem] text-muted-foreground tracking-[0.14em] uppercase mt-0.5">
                   AI Companion
                 </span>

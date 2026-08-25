@@ -137,8 +137,8 @@ function ReflectPage() {
               <MoonStar className="h-4.5 w-4.5" />
             </span>
             <div>
-              <p className="chayva-eyebrow">Evening ritual</p>
-              <h1 className="chayva-headline text-2xl text-foreground">Reflect</h1>
+              <p className="caayva-eyebrow">Evening ritual</p>
+              <h1 className="caayva-headline text-2xl text-foreground">Reflect</h1>
             </div>
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground max-w-lg">
@@ -156,7 +156,7 @@ function ReflectPage() {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4"
           >
-            <p className="chayva-eyebrow mb-2">Something Chayva noticed</p>
+            <p className="caayva-eyebrow mb-2">Something Caayva noticed</p>
             <p className="text-sm leading-relaxed text-foreground/85">{aiSummary}</p>
             {(aiMood || aiTrigger) && (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -178,7 +178,7 @@ function ReflectPage() {
 
           {/* Mood — prominent */}
           <div>
-            <p className="chayva-eyebrow mb-3">How was your day?</p>
+            <p className="caayva-eyebrow mb-3">How was your day?</p>
             <div className="flex flex-wrap gap-2">
               {MOODS.map((m) => {
                 const active = mood === m.v;
@@ -204,7 +204,7 @@ function ReflectPage() {
           {/* Day rating */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="chayva-eyebrow">Day rating</p>
+              <p className="caayva-eyebrow">Day rating</p>
               <span className="text-lg font-bold tabular-nums">
                 {rating}
                 <span className="text-sm font-normal text-muted-foreground">/5</span>
@@ -238,7 +238,7 @@ function ReflectPage() {
 
           {/* Triggers */}
           <div>
-            <label className="chayva-eyebrow block mb-2" htmlFor="reflect-triggers">
+            <label className="caayva-eyebrow block mb-2" htmlFor="reflect-triggers">
               What drove today's choices?
             </label>
             <textarea
@@ -253,7 +253,7 @@ function ReflectPage() {
 
           {/* Tomorrow */}
           <div>
-            <label className="chayva-eyebrow block mb-2" htmlFor="reflect-tomorrow">
+            <label className="caayva-eyebrow block mb-2" htmlFor="reflect-tomorrow">
               One gentle intention for tomorrow
             </label>
             <textarea
@@ -312,7 +312,7 @@ function ReflectPage() {
           </motion.button>
 
           <p className="text-center text-xs italic text-muted-foreground">
-            Chayva is here to help you understand, not to judge.
+            Caayva is here to help you understand, not to judge.
           </p>
         </section>
 
@@ -325,7 +325,7 @@ function ReflectPage() {
           </div>
         ) : past.length > 0 ? (
           <section className="glass rounded-2xl p-6">
-            <p className="chayva-eyebrow mb-4">Recent reflections</p>
+            <p className="caayva-eyebrow mb-4">Recent reflections</p>
             <ul className="space-y-2.5">
               {past.slice(0, 7).map((r, i) => (
                 <motion.li

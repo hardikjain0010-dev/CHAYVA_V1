@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 
-_CHAYVA_ROOT = Path(__file__).resolve().parents[4]
-if str(_CHAYVA_ROOT) not in sys.path:
-    sys.path.insert(0, str(_CHAYVA_ROOT))
+_CAAYVA_ROOT = Path(__file__).resolve().parents[4]
+if str(_CAAYVA_ROOT) not in sys.path:
+    sys.path.insert(0, str(_CAAYVA_ROOT))
 
 from ai_engine import (  # noqa: E402
     analyze_expense as engine_analyze_expense,
@@ -192,7 +192,7 @@ Return ONLY plain text — no JSON, no markdown."""
     if tomorrow:
         parts.append(f"Tomorrow's intention — {tomorrow} — is now part of your coaching context.")
     if mood:
-        parts.append(f"Your mood today was {mood}, which helps Chayva read the emotional layer behind your spending.")
+        parts.append(f"Your mood today was {mood}, which helps Caayva read the emotional layer behind your spending.")
     return " ".join(parts) or "Your reflection is now shaping how your coach reads your spending patterns."
 
 

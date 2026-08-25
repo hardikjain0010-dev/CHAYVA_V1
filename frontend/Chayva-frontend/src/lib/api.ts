@@ -137,7 +137,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
     const msg = isOffline
       ? "You appear to be offline. Please check your internet connection."
-      : "Unable to reach Chayva server. The server may be waking up or temporarily unreachable. Please try again.";
+      : "Unable to reach Caayva server. The server may be waking up or temporarily unreachable. Please try again.";
     throw new ApiError(msg, { isNetworkError: true });
   } finally {
     clearTimeout(timeoutId);

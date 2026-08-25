@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     const isOnboarding = location.pathname === "/onboarding";
-    const skipKey = `chayva_onboarding_skip:${user.uid}`;
+    const skipKey = `caayva_onboarding_skip:${user.uid}`;
     const skippedForSession =
       typeof window !== "undefined" && window.sessionStorage.getItem(skipKey) === "true";
 

@@ -351,7 +351,7 @@ def _milestones(expenses: list[dict], moods: list[dict], personality: dict, trig
         milestones.append({
             "title": "First Insight",
             "date": first_insight.get("date"),
-            "description": "Chayva generated its first behavioral read.",
+            "description": "Caayva generated its first behavioral read.",
         })
     if personality.get("type") and personality.get("type") not in {"forming", "Exploring"}:
         milestones.append({

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-const THEME_KEY = "chayva_theme";
+const THEME_KEY = "caayva_theme";
 
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "dark";

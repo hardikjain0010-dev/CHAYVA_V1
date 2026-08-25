@@ -1,4 +1,4 @@
-"""Deterministic behavioral evidence builders for Chayva AI prompts.
+"""Deterministic behavioral evidence builders for Caayva AI prompts.
 
 This module deliberately does factual/statistical work before the LLM is
 called. The model should interpret and communicate evidence, not invent it.
@@ -744,7 +744,7 @@ def deterministic_insight_from_evidence(evidence: dict[str, Any]) -> dict[str, A
     reflection = (
         "A useful note next time: what was happening right before this spend?"
         if pattern_tag != "neutral"
-        else "Keep logging mood and notes so Chayva can separate routine from real patterns."
+        else "Keep logging mood and notes so Caayva can separate routine from real patterns."
     )
     insight = f"{observation} {interpretation}"
 

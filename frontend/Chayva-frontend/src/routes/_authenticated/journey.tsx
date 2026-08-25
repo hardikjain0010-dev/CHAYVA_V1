@@ -75,8 +75,8 @@ function JourneyPage() {
         {/* HEADER                                                             */}
         {/* ================================================================= */}
         <header>
-          <p className="chayva-eyebrow">Evolution</p>
-          <h1 className="chayva-headline mt-1 text-3xl text-foreground">Your Journey</h1>
+          <p className="caayva-eyebrow">Evolution</p>
+          <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Journey</h1>
           <p className="mt-1.5 text-sm text-muted-foreground max-w-lg">
             Track how your behavioral awareness evolves over time. Every entry is a step.
           </p>
@@ -108,7 +108,7 @@ function JourneyPage() {
           <EmptyLearningState
             icon={MapPin}
             title="Your journey is just beginning."
-            description="Chayva marks real behavioral milestones as you go — your first expense, a detected pattern, a completed reflection, or a noticeable shift in your spending behavior. Keep building your journal."
+            description="Caayva marks real behavioral milestones as you go — your first expense, a detected pattern, a completed reflection, or a noticeable shift in your spending behavior. Keep building your journal."
           />
         ) : (
           // ----------------------------------------------------------------
@@ -142,7 +142,7 @@ function JourneyPage() {
                   <div className="glass overflow-hidden rounded-2xl p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="chayva-eyebrow mb-1">{m.when}</p>
+                        <p className="caayva-eyebrow mb-1">{m.when}</p>
                         <h3 className="text-base font-semibold tracking-tight">{m.title}</h3>
                         <p className="mt-1.5 text-sm leading-relaxed text-foreground/75">{m.desc}</p>
                       </div>

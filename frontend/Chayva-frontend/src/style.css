@@ -60,7 +60,7 @@
   --popover: oklch(1 0 0 / 0.96);
   --popover-foreground: oklch(0.18 0.04 285);
 
-  /* Chayva violet identity */
+  /* Caayva violet identity */
   --primary: oklch(0.52 0.24 300);
   --primary-foreground: oklch(0.99 0.003 300);
 
@@ -330,7 +330,7 @@
 }
 
 /* Behavioral typography */
-@utility chayva-eyebrow {
+@utility caayva-eyebrow {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.18em;
@@ -338,21 +338,21 @@
   color: var(--color-accent);
 }
 
-@utility chayva-headline {
+@utility caayva-headline {
   font-family: "Outfit", sans-serif;
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: -0.02em;
 }
 
-@utility chayva-body {
+@utility caayva-body {
   font-size: 1rem;
   line-height: 1.65;
   color: var(--color-foreground);
   opacity: 0.88;
 }
 
-@utility chayva-caption {
+@utility caayva-caption {
   font-size: 0.75rem;
   line-height: 1.5;
   color: var(--color-muted-foreground);

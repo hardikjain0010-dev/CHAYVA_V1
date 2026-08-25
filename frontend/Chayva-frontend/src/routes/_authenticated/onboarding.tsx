@@ -5,13 +5,13 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { updateProfile, type UserProfilePayload } from "@/lib/profile";
 import { useUser } from "@/lib/user-context";
-import { ChayvaLogo } from "@/components/ChayvaLogo";
+import { CaayvaLogo } from "@/components/CaayvaLogo";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: OnboardingPage,
 });
 
-const SKIP_KEY = "chayva_onboarding_skip";
+const SKIP_KEY = "caayva_onboarding_skip";
 
 const lifeOptions = [
   { value: "student", label: "College student" },
@@ -177,11 +177,11 @@ function OnboardingPage() {
       if (user?.uid) {
         window.sessionStorage.removeItem(`${SKIP_KEY}:${user.uid}`);
       }
-      toast.success("Your Chayva profile is ready.");
+      toast.success("Your Caayva profile is ready.");
       setStep(TOTAL_QUESTIONS + 1);
     } catch {
       setError(
-        "Chayva could not save your profile right now. Your answers are still here, so you can retry.",
+        "Caayva could not save your profile right now. Your answers are still here, so you can retry.",
       );
     } finally {
       setSaving(false);
@@ -198,7 +198,7 @@ function OnboardingPage() {
       }
       navigate({ to: "/dashboard", replace: true });
     } catch {
-      setError("Chayva could not update your profile state right now. Please try again.");
+      setError("Caayva could not update your profile state right now. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -211,9 +211,9 @@ function OnboardingPage() {
           <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow)]">
             <Sparkles className="h-7 w-7" />
           </div>
-          <p className="chayva-eyebrow mb-3">Your profile is ready</p>
-          <h1 className="chayva-headline text-2xl text-foreground md:text-3xl">
-            Chayva now knows a little about you.
+          <p className="caayva-eyebrow mb-3">Your profile is ready</p>
+          <h1 className="caayva-headline text-2xl text-foreground md:text-3xl">
+            Caayva now knows a little about you.
           </h1>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm mx-auto">
             {completionSummary(savedProfile ?? buildPayload(answers))}
@@ -226,7 +226,7 @@ function OnboardingPage() {
             onClick={() => navigate({ to: "/dashboard", replace: true })}
             className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            Enter Chayva
+            Enter Caayva
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
@@ -243,7 +243,7 @@ function OnboardingPage() {
           <div className="glass rounded-2xl p-5 shadow-[var(--glass-shadow-strong)] md:p-7">
             <div className="mb-7">
               <div className="mb-3 flex items-center justify-between">
-                <p className="chayva-eyebrow">Step {step} of {TOTAL_QUESTIONS}</p>
+                <p className="caayva-eyebrow">Step {step} of {TOTAL_QUESTIONS}</p>
                 <span className="text-xs font-semibold text-primary">{progress}%</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-foreground/8" aria-label={`${progress}% complete`} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
@@ -308,8 +308,8 @@ function OnboardingFrame({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 w-full max-w-xl">
         {/* Brand mark */}
         <div className="mb-8 flex items-center gap-2.5 justify-center">
-          <ChayvaLogo className="h-8 w-8" />
-          <span className="text-base font-bold tracking-tight">Chayva</span>
+          <CaayvaLogo className="h-8 w-8" />
+          <span className="text-base font-bold tracking-tight">Caayva</span>
         </div>
         {children}
       </div>
@@ -331,12 +331,12 @@ function Welcome({
   return (
     <section className="glass rounded-2xl p-7 shadow-[var(--glass-shadow-strong)] md:p-9">
       <div className="mb-6">
-        <p className="chayva-eyebrow mb-3">The beginning of a relationship</p>
-        <h1 className="chayva-headline text-3xl text-foreground">
-          Let's make Chayva understand you.
+        <p className="caayva-eyebrow mb-3">The beginning of a relationship</p>
+        <h1 className="caayva-headline text-3xl text-foreground">
+          Let's make Caayva understand you.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm">
-          A few questions help Chayva recognize your spending patterns more personally. There are no right or wrong answers — only your context.
+          A few questions help Caayva recognize your spending patterns more personally. There are no right or wrong answers — only your context.
         </p>
       </div>
       {error ? (
@@ -408,7 +408,7 @@ function Question({
           ))}
         </OptionGrid>
         <label className="mt-5 block">
-          <span className="text-sm text-muted-foreground">Tell Chayva a little more</span>
+          <span className="text-sm text-muted-foreground">Tell Caayva a little more</span>
           <textarea
             value={answers.schedule_note}
             maxLength={120}
@@ -488,7 +488,7 @@ function Question({
 
   if (step === 6) {
     return (
-      <SingleQuestion title="What would you most like Chayva to help you understand?">
+      <SingleQuestion title="What would you most like Caayva to help you understand?">
         <OptionGrid>
           {goalOptions.map((option) => (
             <Choice
@@ -506,7 +506,7 @@ function Question({
 
   if (step === 7) {
     return (
-      <SingleQuestion title="How should Chayva talk to you?">
+      <SingleQuestion title="How should Caayva talk to you?">
         <div className="grid gap-3">
           {toneOptions.map((option) => (
             <Choice
@@ -524,7 +524,7 @@ function Question({
   }
 
   return (
-    <SingleQuestion title="How would you like Chayva to talk?">
+    <SingleQuestion title="How would you like Caayva to talk?">
       <OptionGrid>
         {languageOptions.map((option) => (
           <Choice
@@ -543,7 +543,7 @@ function Question({
 function SingleQuestion({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h1 className="chayva-headline text-xl text-foreground md:text-2xl">{title}</h1>
+      <h1 className="caayva-headline text-xl text-foreground md:text-2xl">{title}</h1>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -656,7 +656,7 @@ function completionSummary(profile: UserProfilePayload) {
 
   return parts.length
     ? `You told us ${parts.join(", ")}.`
-    : "You shared a little personal context with Chayva.";
+    : "You shared a little personal context with Caayva.";
 }
 
 function labelValues(values: string[], options: readonly { value: string; label: string }[]) {

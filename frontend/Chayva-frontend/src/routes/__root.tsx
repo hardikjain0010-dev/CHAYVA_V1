@@ -65,7 +65,7 @@ export const Route = createRootRouteWithContext<{
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       {
-        title: "Chayva — AI Behavioral Finance Companion",
+        title: "Caayva — AI Behavioral Finance Companion",
       },
       {
         name: "description",
@@ -89,11 +89,11 @@ export const Route = createRootRouteWithContext<{
       },
       {
         name: "apple-mobile-web-app-title",
-        content: "Chayva",
+        content: "Caayva",
       },
       {
         name: "application-name",
-        content: "Chayva",
+        content: "Caayva",
       },
     ],
     links: [

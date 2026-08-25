@@ -1,15 +1,15 @@
 import type { SVGProps } from "react";
 
-interface ChayvaLogoProps extends SVGProps<SVGSVGElement> {
+interface CaayvaLogoProps extends SVGProps<SVGSVGElement> {
   className?: string;
   size?: number | string;
 }
 
-export function ChayvaLogo({
+export function CaayvaLogo({
   className = "h-8 w-8",
   size,
   ...props
-}: ChayvaLogoProps) {
+}: CaayvaLogoProps) {
   const width = size ?? props.width;
   const height = size ?? props.height;
 
@@ -21,13 +21,13 @@ export function ChayvaLogo({
       className={className}
       width={width}
       height={height}
-      aria-label="Chayva Logo"
+      aria-label="Caayva Logo"
       {...props}
     >
       <defs>
         {/* Main Signature Purple -> Magenta Gradient for outer C */}
         <linearGradient
-          id="chayva-c-gradient"
+          id="caayva-c-gradient"
           x1="20"
           y1="12"
           x2="84"
@@ -42,7 +42,7 @@ export function ChayvaLogo({
 
         {/* Soft Lavender Flow Gradient for Inner Behavioral Stream */}
         <linearGradient
-          id="chayva-inner-flow"
+          id="caayva-inner-flow"
           x1="62"
           y1="34"
           x2="32"
@@ -57,7 +57,7 @@ export function ChayvaLogo({
 
         {/* Delicate Secondary Highlight Stream */}
         <linearGradient
-          id="chayva-inner-glow"
+          id="caayva-inner-glow"
           x1="55"
           y1="36"
           x2="40"
@@ -73,19 +73,19 @@ export function ChayvaLogo({
       {/* Internal Flow Layer 1 — Soft Lavender Behavioral Stream */}
       <path
         d="M 64 36 C 48 35 34 43 34 52 C 34 61 46 67 60 63 C 50 67 38 63 38 52 C 38 45 49 38 64 36 Z"
-        fill="url(#chayva-inner-flow)"
+        fill="url(#caayva-inner-flow)"
       />
 
       {/* Internal Flow Layer 2 — Gentle Dynamic Flow Arc */}
       <path
         d="M 60 40 C 47 40 37 46 37 53 C 37 59 45 63 56 61 C 46 62 40 58 40 53 C 40 48 48 43 60 40 Z"
-        fill="url(#chayva-inner-glow)"
+        fill="url(#caayva-inner-glow)"
       />
 
       {/* Main Hero C-Shape Body */}
       <path
         d="M 68 26 A 34 34 0 1 0 68 74"
-        stroke="url(#chayva-c-gradient)"
+        stroke="url(#caayva-c-gradient)"
         strokeWidth="12.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -94,4 +94,4 @@ export function ChayvaLogo({
   );
 }
 
-export default ChayvaLogo;
+export default CaayvaLogo;
