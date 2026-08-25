@@ -33,8 +33,6 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-
   // Sync mode with URL search parameters
   useEffect(() => {
     if (initialMode && initialMode !== mode) {
@@ -50,59 +48,6 @@ function AuthPage() {
     }
   }, [navigate, user, initialMode, loading]);
 
-  useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      console.error("VITE_GOOGLE_CLIENT_ID is missing.");
-      return;
-    }
-
-    const initGoogle = () => {
-      const google = (window as any).google;
-      if (google?.accounts?.id) {
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-
-        if (googleButtonRef.current) {
-          googleButtonRef.current.innerHTML = "";
-          google.accounts.id.renderButton(googleButtonRef.current, {
-            theme: "outline",
-            size: "large",
-            width: "384",
-            text: "continue_with",
-            shape: "rectangular",
-            logo_alignment: "center",
-          });
-        }
-      }
-    };
-
-    if ((window as any).google?.accounts?.id) {
-      initGoogle();
-      return;
-    }
-
-    const existingScript = document.getElementById("google-gsi-script");
-    if (existingScript) {
-      existingScript.addEventListener("load", initGoogle);
-      return () => {
-        existingScript.removeEventListener("load", initGoogle);
-      };
-    }
-
-    const script = document.createElement("script");
-    script.id = "google-gsi-script";
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = initGoogle;
-    document.body.appendChild(script);
-  }, []);
-
   function formatAuthError(err: unknown, fallback: string): string {
     if (err instanceof ApiError) {
       if (err.status === 401) {
@@ -110,9 +55,6 @@ function AuthPage() {
       }
       if (err.status === 409) {
         return "This email is already registered. Please sign in instead.";
-      }
-      if (err.status === 400 && err.message.includes("Google")) {
-        return "This account is linked with Google. Please use Google Sign-In.";
       }
       if (err.status === 403) {
         return "Access denied. Please check your account permissions.";
@@ -135,36 +77,9 @@ function AuthPage() {
       return err.message || fallback;
     }
     if (err instanceof Error) {
-      if (err.message.includes("Google token missing email")) {
-        return "Google account information is incomplete. Please try again.";
-      }
-      if (err.message.includes("Invalid Google token")) {
-        return "Google authentication failed. Please try again.";
-      }
-      if (err.message.includes("Google Sign-In is not configured")) {
-        return "Google authentication is not available right now. Please use email/password.";
-      }
       return err.message;
     }
     return fallback;
-  }
-
-  async function handleCredentialResponse(
-    response: google.accounts.id.CredentialResponse
-  ) {
-    isSubmittingRef.current = true;
-    setLoading(true);
-    try {
-      const res = await post<AuthResponse>("/auth/google", {
-        credential: response.credential,
-      });
-      await completeAuthentication(res, "Signed in with Google successfully!");
-    } catch (err) {
-      isSubmittingRef.current = false;
-      toast.error(formatAuthError(err, "Google sign-in failed. Please try again."));
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -244,22 +159,6 @@ function AuthPage() {
     
     navigate({ to: "/dashboard", replace: true });
   }
-function handleGoogle() {
-  const google = (window as any).google;
-
-  if (!google?.accounts?.id) {
-    toast.error("Google Sign-In is loading. Please try again in a moment.");
-    return;
-  }
-
-  const innerBtn = googleButtonRef.current?.querySelector('div[role="button"]') as HTMLElement;
-  if (innerBtn) {
-    innerBtn.click();
-    return;
-  }
-
-  google.accounts.id.prompt();
-}
 
 function validatePassword(password: string): {
   isValid: boolean;
@@ -329,31 +228,6 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
           onSubmit={handleSubmit}
           className="mt-6 space-y-4"
         >
-          <div ref={googleButtonRef} className="w-full flex justify-center min-h-[40px]">
-            <button
-              type="button"
-              onClick={handleGoogle}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium hover:bg-white/10 disabled:opacity-60"
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  fill="#EA4335"
-                  d="M12 10.2v3.9h5.5c-.2 1.4-1.6 4-5.5 4-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.9 1.5l2.6-2.5C16.9 3.5 14.7 2.5 12 2.5 6.8 2.5 2.6 6.7 2.6 12S6.8 21.5 12 21.5c6.9 0 9.4-4.9 9.4-8.9 0-.6-.1-1.1-.2-1.6H12z"
-                />
-              </svg>
-              Continue with Google
-            </button>
-          </div>
-<div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-white/10" />
-            or
-            <span className="h-px flex-1 bg-white/10" />
-          </div>
 
           <div>
             <label className="text-sm text-muted-foreground">
