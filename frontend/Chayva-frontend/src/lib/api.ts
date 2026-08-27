@@ -149,13 +149,22 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     if (response.status === 401 && !path.startsWith("/auth/sign")) {
       clearToken();
     }
-    const errorMessage = errorMessageFromPayload(
-      payload,
-      `Request failed with status ${response.status}`,
-    );
+    const isColdStart = [502, 503, 504].includes(response.status);
+    const defaultMsg = isColdStart
+      ? "Caayva server is waking up. Please try again in a few moments."
+      : `Request failed with status ${response.status}`;
+    const errorMessage = isColdStart ? defaultMsg : errorMessageFromPayload(payload, defaultMsg);
     throw new ApiError(errorMessage, {
       status: response.status,
       data: payload,
+      isNetworkError: isColdStart,
+      code: isColdStart
+        ? "BACKEND_UNAVAILABLE"
+        : response.status === 401
+          ? "AUTH_EXPIRED"
+          : response.status === 422
+            ? "VALIDATION_ERROR"
+            : "SERVER_ERROR",
     });
   }
 

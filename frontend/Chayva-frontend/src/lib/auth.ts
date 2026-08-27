@@ -1,4 +1,4 @@
-import { get } from "./api";
+import { get, ApiError } from "./api";
 
 const TOKEN_KEY = "caayva_access_token";
 
@@ -50,7 +50,9 @@ export async function getCurrentUser(): Promise<User | null> {
   try {
     return await get<User>("/auth/me");
   } catch (error) {
-    clearToken();
+    if (error instanceof ApiError && error.status === 401) {
+      clearToken();
+    }
     return null;
   }
 }

@@ -48,9 +48,9 @@ def _get_required_env(name: str, required: bool = True) -> str | None:
     return value
 
 
-GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL", required=False) or "gemini-2.0-flash-exp"
-GROQ_MODEL_NAME = _get_required_env("GROQ_MODEL", required=False) or "llama-3.3-70b-versatile"
-OPENROUTER_REASONING_MODEL_NAME = _get_required_env("OPENROUTER_REASONING_MODEL", required=False) or "deepseek/deepseek-r1"
+GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL", required=False) or "gemini-2.5-flash"
+GROQ_MODEL_NAME = _get_required_env("GROQ_MODEL", required=False) or "qwen/qwen3.8-27b"
+OPENROUTER_REASONING_MODEL_NAME = _get_required_env("OPENROUTER_REASONING_MODEL", required=False) or "deepseek/deepseek-chat"
 OPENROUTER_SUMMARY_MODEL_NAME = _get_required_env("OPENROUTER_SUMMARY_MODEL", required=False) or "deepseek/deepseek-chat"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ ROUTING_TABLE = {
 FALLBACK_CHAIN = {
     "gemini": ["groq", "openrouter"],
     "groq": ["gemini", "openrouter"],
-    "openrouter": [],
+    "openrouter": ["gemini", "groq"],
 }
 
 
@@ -285,6 +285,7 @@ def _call_gemini(model: str, prompt: str, temperature: float) -> str:
         model=model,
         max_retries=1,
         retry_delay=0.0,
+        timeout_ms=12000,
     )
     if not result.get("success", False):
         raise RuntimeError(result.get("error") or "Gemini call failed")
@@ -299,6 +300,7 @@ def _call_groq(model: str, prompt: str, temperature: float, system_override: Opt
         model=model,
         max_retries=1,
         retry_delay=0.0,
+        timeout_ms=12000,
     )
     if not result.get("success", False):
         raise RuntimeError(result.get("error") or "Groq call failed")
@@ -313,6 +315,7 @@ def _call_openrouter(model: str, prompt: str, temperature: float, system_overrid
         model=model,
         max_retries=1,
         retry_delay=0.0,
+        timeout_ms=12000,
     )
     if not result.get("success", False):
         raise RuntimeError(result.get("error") or "OpenRouter call failed")
