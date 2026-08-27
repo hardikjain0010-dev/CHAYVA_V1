@@ -4,12 +4,7 @@ import { motion } from "framer-motion";
 import { Sparkles, TrendingUp, ArrowRight } from "lucide-react";
 import { useExpenses } from "@/lib/expense-context";
 import { useCoaching } from "@/lib/coaching-context";
-import {
-  PageTransition,
-  EmptyLearningState,
-  LoadingSkeleton,
-  BehaviorTag,
-} from "@/lib/ui-helpers";
+import { PageTransition, EmptyLearningState, LoadingSkeleton, BehaviorTag } from "@/lib/ui-helpers";
 
 export const Route = createFileRoute("/_authenticated/week")({
   component: WeekPage,
@@ -21,12 +16,17 @@ function WeekPage() {
   const weekly = snapshot?.weekly;
   const isLoading = expensesLoading || dataLoading;
 
-  const metrics = useMemo(() => ({
-    totalSpend: snapshot?.stats.weekly_spend ?? 0,
-    topCategory: snapshot?.personality.favorite_category ?? snapshot?.spend_dna?.favorite_category ?? null,
-    topTrigger: weekly?.top_trigger ?? snapshot?.trigger.top_trigger ?? null,
-    mindfulness: snapshot?.personality.mindfulness_score ?? snapshot?.spend_dna?.mindfulness_score ?? null,
-  }), [snapshot, weekly]);
+  const metrics = useMemo(
+    () => ({
+      totalSpend: snapshot?.stats.weekly_spend ?? 0,
+      topCategory:
+        snapshot?.personality.favorite_category ?? snapshot?.spend_dna?.favorite_category ?? null,
+      topTrigger: weekly?.top_trigger ?? snapshot?.trigger.top_trigger ?? null,
+      mindfulness:
+        snapshot?.personality.mindfulness_score ?? snapshot?.spend_dna?.mindfulness_score ?? null,
+    }),
+    [snapshot, weekly],
+  );
 
   const behaviorTimeline = snapshot?.behavior_timeline ?? [];
 
@@ -35,7 +35,6 @@ function WeekPage() {
   return (
     <PageTransition>
       <div className="mx-auto max-w-3xl space-y-7">
-
         {/* ================================================================= */}
         {/* HEADER                                                             */}
         {/* ================================================================= */}
@@ -51,7 +50,12 @@ function WeekPage() {
         {error && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive">
             <span>{error}</span>
-            <button onClick={() => void refetch()} className="rounded-lg border border-destructive/30 px-3 py-1">Retry</button>
+            <button
+              onClick={() => void refetch()}
+              className="rounded-lg border border-destructive/30 px-3 py-1"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -90,7 +94,10 @@ function WeekPage() {
               className="relative overflow-hidden rounded-3xl border border-primary/15 p-7 md:p-9"
               style={{ background: "var(--gradient-hero)" }}
             >
-              <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl" />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl"
+              />
               <div className="relative">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-primary text-primary-foreground">
@@ -176,7 +183,7 @@ function WeekPage() {
                 <NarrativeBlock
                   eyebrow="Emotional context"
                   content={weekly.mood_changes}
-                  delay={0.10}
+                  delay={0.1}
                 />
               )}
 
@@ -220,7 +227,7 @@ function WeekPage() {
                     ₹{metrics.totalSpend.toFixed(0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {((metrics.totalSpend) / 7).toFixed(0)} avg per day
+                    {(metrics.totalSpend / 7).toFixed(0)} avg per day
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-muted-foreground/30" />
@@ -277,7 +284,9 @@ function NarrativeBlock({
       className="glass rounded-2xl p-5"
     >
       <p className="caayva-eyebrow">{eyebrow}</p>
-      <p className={`mt-3 text-sm leading-relaxed ${accent ? "text-foreground/90" : "text-foreground/80"}`}>
+      <p
+        className={`mt-3 text-sm leading-relaxed ${accent ? "text-foreground/90" : "text-foreground/80"}`}
+      >
         {content}
       </p>
     </motion.div>

@@ -1,15 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import {
-  MapPin,
-  Flag,
-  Sparkles,
-  Flame,
-  Compass,
-  Trophy,
-  Award,
-} from "lucide-react";
+import { MapPin, Flag, Sparkles, Flame, Compass, Trophy, Award } from "lucide-react";
 import { useExpenses } from "@/lib/expense-context";
 import { useCoaching } from "@/lib/coaching-context";
 import { PageTransition, EmptyLearningState, LoadingSkeleton } from "@/lib/ui-helpers";
@@ -42,7 +34,8 @@ function iconForTitle(title: string) {
   if (title.includes("Reflection") || title.includes("Reflect")) return Compass;
   if (title.includes("Insight") || title.includes("Noticed")) return Sparkles;
   if (title.includes("Personality") || title.includes("DNA")) return Trophy;
-  if (title.includes("Summary") || title.includes("Expenses") || title.includes("Week")) return Award;
+  if (title.includes("Summary") || title.includes("Expenses") || title.includes("Week"))
+    return Award;
   return MapPin;
 }
 
@@ -70,7 +63,6 @@ function JourneyPage() {
   return (
     <PageTransition>
       <div className="mx-auto max-w-2xl space-y-7">
-
         {/* ================================================================= */}
         {/* HEADER                                                             */}
         {/* ================================================================= */}
@@ -86,7 +78,12 @@ function JourneyPage() {
         {error && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive">
             <span>{error}</span>
-            <button onClick={() => void refetch()} className="rounded-lg border border-destructive/30 px-3 py-1">Retry</button>
+            <button
+              onClick={() => void refetch()}
+              className="rounded-lg border border-destructive/30 px-3 py-1"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -144,7 +141,9 @@ function JourneyPage() {
                       <div className="flex-1 min-w-0">
                         <p className="caayva-eyebrow mb-1">{m.when}</p>
                         <h3 className="text-base font-semibold tracking-tight">{m.title}</h3>
-                        <p className="mt-1.5 text-sm leading-relaxed text-foreground/75">{m.desc}</p>
+                        <p className="mt-1.5 text-sm leading-relaxed text-foreground/75">
+                          {m.desc}
+                        </p>
                       </div>
                       {m.date && (
                         <span className="shrink-0 text-[0.65rem] text-muted-foreground tabular-nums">
@@ -165,9 +164,7 @@ function JourneyPage() {
               <span className="flex h-10 w-10 -ml-[3.35rem] items-center justify-center rounded-full border border-dashed border-foreground/20">
                 <span className="h-2.5 w-2.5 rounded-full bg-foreground/20" />
               </span>
-              <p className="text-sm italic text-muted-foreground">
-                The next milestone is forming.
-              </p>
+              <p className="text-sm italic text-muted-foreground">The next milestone is forming.</p>
             </div>
           </section>
         )}

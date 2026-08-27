@@ -17,6 +17,7 @@ import os
 import time
 import json
 from typing import Any, Optional
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 from google import genai
 from dotenv import load_dotenv
@@ -28,18 +29,20 @@ logger = get_logger(__name__)
 
 
 # ── Module-level client (created once, reused across calls) ──────────────────
-def _get_required_env(name: str) -> str:
+def _get_optional_env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name)
     if value is None or not value.strip():
-        raise EnvironmentError(f"{name} not found in environment.")
+        return default
     return value.strip()
 
 
-def _build_client() -> genai.Client:
-    """Configure the Gemini SDK and return a ready-to-use client."""
-    api_key = _get_required_env("GEMINI_API_KEY")
-    model_name = _get_required_env("GEMINI_MODEL")
-    logger.info(f"Gemini client initialised with model: {model_name}")
+def _build_client() -> genai.Client | None:
+    """Configure the Gemini SDK and return a ready-to-use client, or None if API key is missing."""
+    api_key = _get_optional_env("GEMINI_API_KEY")
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not configured - Gemini provider unavailable")
+        return None
+    logger.info("Gemini client initialised")
     return genai.Client(api_key=api_key)
 
 
@@ -47,7 +50,7 @@ def _build_client() -> genai.Client:
 _client: Optional[genai.Client] = None
 
 
-def _get_client() -> genai.Client:
+def _get_client() -> genai.Client | None:
     global _client
     if _client is None:
         _client = _build_client()
@@ -62,6 +65,7 @@ def call_gemini(
     model: Optional[str] = None,
     max_retries: int = 3,
     retry_delay: float = 2.0,
+    timeout_ms: int = 30000,
 ) -> dict:
     """
     Send a prompt to Gemini Flash and return a structured response dict.
@@ -89,7 +93,18 @@ def call_gemini(
         structure is preserved for compatibility with the router interface.
     """
     client = _get_client()
-    model_name = (model or _get_required_env("GEMINI_MODEL")).strip()
+    if client is None:
+        logger.warning("Gemini provider unavailable - API key not configured")
+        return {
+            "text": "",
+            "model": model or "unknown",
+            "provider": "gemini",
+            "latency_ms": 0,
+            "success": False,
+            "error": "Provider unavailable - API key not configured"
+        }
+
+    model_name = (model or _get_optional_env("GEMINI_MODEL") or "gemini-2.0-flash-exp").strip()
 
     # Combine system + user prompt (Gemini SDK style)
     full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
@@ -99,10 +114,26 @@ def call_gemini(
             logger.info(f"Gemini call attempt {attempt}/{max_retries}")
             start = time.time()
 
-            response = client.models.generate_content(
-                model=model_name,
-                contents=full_prompt,
-            )
+            # Use ThreadPoolExecutor to enforce actual timeout on the SDK call
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    client.models.generate_content,
+                    model=model_name,
+                    contents=full_prompt,
+                )
+                try:
+                    response = future.result(timeout=timeout_ms / 1000.0)
+                except FutureTimeoutError:
+                    latency_ms = int((time.time() - start) * 1000)
+                    logger.error(f"Gemini timeout after {latency_ms}ms (enforced)")
+                    return {
+                        "text": "",
+                        "model": model_name,
+                        "provider": "gemini",
+                        "latency_ms": latency_ms,
+                        "success": False,
+                        "error": "Request timeout"
+                    }
 
             latency_ms = int((time.time() - start) * 1000)
             text = _extract_text(response)
@@ -119,6 +150,7 @@ def call_gemini(
             }
 
         except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
             logger.warning(f"Gemini attempt {attempt} failed: {e}")
             if attempt < max_retries:
                 time.sleep(retry_delay)

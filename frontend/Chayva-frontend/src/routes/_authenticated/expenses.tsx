@@ -24,11 +24,7 @@ export const Route = createFileRoute("/_authenticated/expenses")({
 // Helpers
 // ---------------------------------------------------------------------------
 
-function nestedString(
-  value: Record<string, unknown> | null,
-  key: string,
-  child: string
-) {
+function nestedString(value: Record<string, unknown> | null, key: string, child: string) {
   const nested = value?.[key];
   if (!nested || typeof nested !== "object") return null;
   const childValue = (nested as Record<string, unknown>)[child];
@@ -71,7 +67,7 @@ function ExpensesPage() {
 
   const categories = useMemo(
     () => Array.from(new Set(expenses.map((e) => e.category))),
-    [expenses]
+    [expenses],
   );
 
   const filteredExpenses = useMemo(() => {
@@ -80,8 +76,7 @@ function ExpensesPage() {
       if (query.trim()) {
         const q = query.toLowerCase();
         return (
-          expense.category.toLowerCase().includes(q) ||
-          expense.notes?.toLowerCase().includes(q)
+          expense.category.toLowerCase().includes(q) || expense.notes?.toLowerCase().includes(q)
         );
       }
       return true;
@@ -94,7 +89,6 @@ function ExpensesPage() {
   return (
     <PageTransition>
       <div className="mx-auto max-w-3xl space-y-6">
-
         {/* ================================================================= */}
         {/* HEADER                                                             */}
         {/* ================================================================= */}
@@ -238,9 +232,7 @@ function ExpensesPage() {
                           expense={expense}
                           expanded={expandedId === expense.id}
                           onToggle={() =>
-                            setExpandedId(
-                              expandedId === expense.id ? null : expense.id
-                            )
+                            setExpandedId(expandedId === expense.id ? null : expense.id)
                           }
                           onDelete={() => deleteExpense(expense.id)}
                         />
@@ -284,16 +276,12 @@ function JournalEntry({
     nestedString(
       expense as unknown as Record<string, unknown>,
       "expense_classification",
-      "classification"
+      "classification",
     );
 
   const significance =
     nestedString(insight, "behavioral_significance", "level") ??
-    nestedString(
-      expense as unknown as Record<string, unknown>,
-      "behavioral_significance",
-      "level"
-    );
+    nestedString(expense as unknown as Record<string, unknown>, "behavioral_significance", "level");
 
   const spendingType = insight?.spending_type ? String(insight.spending_type) : null;
 
@@ -320,10 +308,7 @@ function JournalEntry({
         </button>
 
         {/* Content */}
-        <button
-          onClick={onToggle}
-          className="flex flex-1 min-w-0 flex-col text-left"
-        >
+        <button onClick={onToggle} className="flex flex-1 min-w-0 flex-col text-left">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold">{expense.category}</span>
             {expense.notes && (
@@ -338,9 +323,7 @@ function JournalEntry({
             <TimeWindowBadge dateStr={expense.date} />
             <MoodBadge mood={expense.mood} />
             {/* Classification — neutral display, no judgment */}
-            {classification && (
-              <BehaviorTag label={classification} />
-            )}
+            {classification && <BehaviorTag label={classification} />}
             {spendingType && spendingType !== classification && (
               <BehaviorTag label={spendingType} />
             )}
@@ -355,9 +338,7 @@ function JournalEntry({
 
         {/* Amount + actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-sm font-bold tabular-nums">
-            ₹{expense.amount.toFixed(0)}
-          </span>
+          <span className="text-sm font-bold tabular-nums">₹{expense.amount.toFixed(0)}</span>
           <button
             onClick={onToggle}
             className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-foreground/8 hover:text-foreground"
@@ -407,17 +388,13 @@ function JournalEntry({
                         ? `Emotional state logged: ${String(insight.emotion)}`
                         : null,
                       // LEVEL 4: Reflection
-                      reflection: insight?.suggestion
-                        ? String(insight.suggestion)
-                        : null,
+                      reflection: insight?.suggestion ? String(insight.suggestion) : null,
                     }}
                   />
 
                   {/* Behavioral metadata — neutral tags */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {significance && (
-                      <BehaviorTag label={`significance: ${significance}`} />
-                    )}
+                    {significance && <BehaviorTag label={`significance: ${significance}`} />}
                     {insight?.confidence != null && (
                       <BehaviorTag
                         label={`confidence: ${Math.round(Number(insight.confidence) * 100)}%`}

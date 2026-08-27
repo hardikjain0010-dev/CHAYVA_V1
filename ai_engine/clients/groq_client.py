@@ -19,6 +19,7 @@ Day 10 task: test this file, compare latency with Gemini.
 import os
 import time
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 from groq import Groq
 from dotenv import load_dotenv
@@ -29,10 +30,10 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
-def _get_required_env(name: str) -> str:
+def _get_optional_env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name)
     if value is None or not value.strip():
-        raise EnvironmentError(f"{name} not found in environment.")
+        return default
     return value.strip()
 
 
@@ -40,10 +41,13 @@ def _get_required_env(name: str) -> str:
 _client: Optional[Groq] = None
 
 
-def _get_client() -> Groq:
+def _get_client() -> Groq | None:
     global _client
     if _client is None:
-        api_key = _get_required_env("GROQ_API_KEY")
+        api_key = _get_optional_env("GROQ_API_KEY")
+        if not api_key:
+            logger.warning("GROQ_API_KEY not configured - Groq provider unavailable")
+            return None
         _client = Groq(api_key=api_key)
         logger.info("Groq client initialised")
     return _client
@@ -57,6 +61,7 @@ def call_groq(
     model: Optional[str] = None,
     max_retries: int = 3,
     retry_delay: float = 2.0,
+    timeout_ms: int = 30000,
 ) -> dict:
     """
     Send a prompt to Groq (LLaMA 3) and return a structured response dict.
@@ -83,7 +88,18 @@ def call_groq(
         combined prompt approach.
     """
     client = _get_client()
-    model_name = (model or _get_required_env("GROQ_MODEL")).strip()
+    if client is None:
+        logger.warning("Groq provider unavailable - API key not configured")
+        return {
+            "text": "",
+            "model": model or "unknown",
+            "provider": "groq",
+            "latency_ms": 0,
+            "success": False,
+            "error": "Provider unavailable - API key not configured"
+        }
+
+    model_name = (model or _get_optional_env("GROQ_MODEL") or "llama-3.3-70b-versatile").strip()
 
     messages = [
         {"role": "system",  "content": system_prompt},
@@ -95,12 +111,28 @@ def call_groq(
             logger.info(f"Groq call attempt {attempt}/{max_retries}")
             start = time.time()
 
-            completion = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                temperature=0.7,      # Slightly creative but consistent
-                max_tokens=512,       # Nudges and WhatsApp replies are short
-            )
+            # Use ThreadPoolExecutor to enforce actual timeout on the SDK call
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    client.chat.completions.create,
+                    model=model_name,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=512,
+                )
+                try:
+                    completion = future.result(timeout=timeout_ms / 1000.0)
+                except FutureTimeoutError:
+                    latency_ms = int((time.time() - start) * 1000)
+                    logger.error(f"Groq timeout after {latency_ms}ms (enforced)")
+                    return {
+                        "text": "",
+                        "model": model_name,
+                        "provider": "groq",
+                        "latency_ms": latency_ms,
+                        "success": False,
+                        "error": "Request timeout"
+                    }
 
             latency_ms = int((time.time() - start) * 1000)
             text = completion.choices[0].message.content.strip()
@@ -117,6 +149,7 @@ def call_groq(
             }
 
         except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
             logger.warning(f"Groq attempt {attempt} failed: {e}")
             if attempt < max_retries:
                 time.sleep(retry_delay)

@@ -29,7 +29,7 @@ export function registerServiceWorker() {
 
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
+    typeof navigator !== "undefined" ? navigator.onLine : true,
   );
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export function usePWAInstall() {
     // Also check if already running in standalone mode
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
     if (isStandalone) {
       setIsInstallable(false);
@@ -106,7 +106,9 @@ export function usePWAInstall() {
     setIsDismissed(true);
     try {
       localStorage.setItem("caayva_pwa_dismissed", "true");
-    } catch {}
+    } catch {
+      // Ignore storage errors in restricted iframe environments
+    }
   }
 
   return {

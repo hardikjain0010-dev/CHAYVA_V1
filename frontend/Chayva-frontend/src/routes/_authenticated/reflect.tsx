@@ -66,11 +66,11 @@ function ReflectPage() {
       try {
         const list = await get<Reflection[]>("/moods");
         const sorted = [...(list ?? [])].sort((a, b) =>
-          (b.timestamp ?? "").localeCompare(a.timestamp ?? "")
+          (b.timestamp ?? "").localeCompare(a.timestamp ?? ""),
         );
         setPast(sorted);
         const todayRow = sorted.find(
-          (entry) => (entry.day ?? entry.timestamp?.slice(0, 10)) === today
+          (entry) => (entry.day ?? entry.timestamp?.slice(0, 10)) === today,
         );
         if (todayRow) {
           setMood(todayRow.mood ?? "okay");
@@ -106,7 +106,7 @@ function ReflectPage() {
       });
       const list = await get<Reflection[]>("/moods");
       const sorted = [...(list ?? [])].sort((a, b) =>
-        (b.timestamp ?? "").localeCompare(a.timestamp ?? "")
+        (b.timestamp ?? "").localeCompare(a.timestamp ?? ""),
       );
       setPast(sorted);
       setSaved(true);
@@ -127,7 +127,6 @@ function ReflectPage() {
   return (
     <PageTransition>
       <div className="mx-auto max-w-2xl space-y-7">
-
         {/* ================================================================= */}
         {/* HEADER                                                             */}
         {/* ================================================================= */}
@@ -160,12 +159,8 @@ function ReflectPage() {
             <p className="text-sm leading-relaxed text-foreground/85">{aiSummary}</p>
             {(aiMood || aiTrigger) && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {aiMood && (
-                  <span className="behavior-tag">Latest mood: {aiMood}</span>
-                )}
-                {aiTrigger && (
-                  <span className="behavior-tag">Trigger noted: {aiTrigger}</span>
-                )}
+                {aiMood && <span className="behavior-tag">Latest mood: {aiMood}</span>}
+                {aiTrigger && <span className="behavior-tag">Trigger noted: {aiTrigger}</span>}
               </div>
             )}
           </motion.div>
@@ -175,7 +170,6 @@ function ReflectPage() {
         {/* REFLECTION FORM                                                    */}
         {/* ================================================================= */}
         <section className="glass rounded-3xl p-6 md:p-8 space-y-6">
-
           {/* Mood — prominent */}
           <div>
             <p className="caayva-eyebrow mb-3">How was your day?</p>
@@ -231,7 +225,9 @@ function ReflectPage() {
             />
             <div className="flex justify-between mt-1">
               {["1", "2", "3", "4", "5"].map((n) => (
-                <span key={n} className="text-[0.6rem] text-muted-foreground opacity-50">{n}</span>
+                <span key={n} className="text-[0.6rem] text-muted-foreground opacity-50">
+                  {n}
+                </span>
               ))}
             </div>
           </div>
@@ -267,9 +263,7 @@ function ReflectPage() {
           </div>
 
           {/* Error */}
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           {/* Save button */}
           <motion.button
@@ -336,16 +330,14 @@ function ReflectPage() {
                   className="rounded-xl border border-foreground/8 bg-foreground/[0.03] p-4"
                 >
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                    <span className="font-medium">
-                      {r.day ?? r.timestamp?.slice(0, 10)}
-                    </span>
+                    <span className="font-medium">{r.day ?? r.timestamp?.slice(0, 10)}</span>
                     <span className="flex items-center gap-1.5">
-                      {r.mood && (
-                        <span>{MOODS.find((m) => m.v === r.mood)?.e ?? "•"}</span>
-                      )}
+                      {r.mood && <span>{MOODS.find((m) => m.v === r.mood)?.e ?? "•"}</span>}
                       <span className="capitalize">{r.mood}</span>
                       {r.day_rating != null && (
-                        <span className="ml-1 text-muted-foreground opacity-60">· {r.day_rating}/5</span>
+                        <span className="ml-1 text-muted-foreground opacity-60">
+                          · {r.day_rating}/5
+                        </span>
                       )}
                     </span>
                   </div>

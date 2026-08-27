@@ -7,10 +7,7 @@ type SignInOptions = {
 };
 
 export const auth = {
-  async signInWithOAuth(
-    provider: "google" | "apple" | "microsoft",
-    opts?: SignInOptions
-  ) {
+  async signInWithOAuth(provider: "google" | "apple" | "microsoft", opts?: SignInOptions) {
     if (provider !== "google" || !opts?.credential) {
       return { error: new Error("Google credential is required.") };
     }

@@ -18,7 +18,10 @@ console.error = (...args: unknown[]) => {
 const runtimeProcess = (
   globalThis as {
     process?: {
-      on?: (event: "uncaughtException" | "unhandledRejection", handler: (error: unknown) => void) => void;
+      on?: (
+        event: "uncaughtException" | "unhandledRejection",
+        handler: (error: unknown) => void,
+      ) => void;
     };
   }
 ).process;

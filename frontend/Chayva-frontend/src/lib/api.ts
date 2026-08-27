@@ -18,7 +18,7 @@ export class ApiError extends Error {
       data?: unknown;
       isNetworkError?: boolean;
       isTimeout?: boolean;
-    }
+    },
   ) {
     super(message);
     this.name = "ApiError";
@@ -46,7 +46,7 @@ export function getApiBaseUrl() {
     }
   }
 
-  return (import.meta.env.PROD || import.meta.env.MODE === "production")
+  return import.meta.env.PROD || import.meta.env.MODE === "production"
     ? PRODUCTION_API_BASE_URL
     : DEFAULT_API_BASE_URL;
 }
@@ -131,7 +131,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     if (err instanceof Error && (err.name === "AbortError" || err.message?.includes("aborted"))) {
       throw new ApiError(
         "Server is waking up from sleep and took too long to respond. Please try again in a few seconds.",
-        { isTimeout: true, isNetworkError: true }
+        { isTimeout: true, isNetworkError: true },
       );
     }
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
@@ -151,7 +151,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     }
     const errorMessage = errorMessageFromPayload(
       payload,
-      `Request failed with status ${response.status}`
+      `Request failed with status ${response.status}`,
     );
     throw new ApiError(errorMessage, {
       status: response.status,

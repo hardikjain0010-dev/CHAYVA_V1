@@ -238,15 +238,32 @@ function OnboardingPage() {
     <OnboardingFrame>
       <div className="mx-auto w-full max-w-xl">
         {step === 0 ? (
-          <Welcome onBegin={() => { setError(null); setStep(1); }} onSkip={skipForNow} saving={saving} error={error} />
+          <Welcome
+            onBegin={() => {
+              setError(null);
+              setStep(1);
+            }}
+            onSkip={skipForNow}
+            saving={saving}
+            error={error}
+          />
         ) : (
           <div className="glass rounded-2xl p-5 shadow-[var(--glass-shadow-strong)] md:p-7">
             <div className="mb-7">
               <div className="mb-3 flex items-center justify-between">
-                <p className="caayva-eyebrow">Step {step} of {TOTAL_QUESTIONS}</p>
+                <p className="caayva-eyebrow">
+                  Step {step} of {TOTAL_QUESTIONS}
+                </p>
                 <span className="text-xs font-semibold text-primary">{progress}%</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-foreground/8" aria-label={`${progress}% complete`} role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+              <div
+                className="h-1.5 overflow-hidden rounded-full bg-foreground/8"
+                aria-label={`${progress}% complete`}
+                role="progressbar"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
                 <div
                   className="h-full rounded-full bg-gradient-primary transition-all duration-500"
                   style={{ width: `${progress}%` }}
@@ -265,7 +282,10 @@ function OnboardingPage() {
             <div className="mt-7 flex items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={() => { setError(null); setStep((current) => Math.max(0, current - 1)); }}
+                onClick={() => {
+                  setError(null);
+                  setStep((current) => Math.max(0, current - 1));
+                }}
                 className="inline-flex items-center gap-2 rounded-xl border border-foreground/10 px-4 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -303,8 +323,14 @@ function OnboardingFrame({ children }: { children: React.ReactNode }) {
       style={{ background: "var(--gradient-app)", backgroundAttachment: "fixed" }}
     >
       {/* Ambient glow */}
-      <div aria-hidden className="pointer-events-none fixed -top-32 -left-20 h-[480px] w-[480px] rounded-full bg-primary/10 blur-[120px]" />
-      <div aria-hidden className="pointer-events-none fixed bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-accent/8 blur-[100px]" />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed -top-32 -left-20 h-[480px] w-[480px] rounded-full bg-primary/10 blur-[120px]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-accent/8 blur-[100px]"
+      />
       <div className="relative z-10 w-full max-w-xl">
         {/* Brand mark */}
         <div className="mb-8 flex items-center gap-2.5 justify-center">
@@ -336,7 +362,8 @@ function Welcome({
           Let's make Caayva understand you.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm">
-          A few questions help Caayva recognize your spending patterns more personally. There are no right or wrong answers — only your context.
+          A few questions help Caayva recognize your spending patterns more personally. There are no
+          right or wrong answers — only your context.
         </p>
       </div>
       {error ? (

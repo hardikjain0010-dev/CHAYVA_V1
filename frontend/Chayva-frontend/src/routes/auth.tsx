@@ -5,12 +5,7 @@ import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { CaayvaLogo } from "@/components/CaayvaLogo";
 import { post, ApiError } from "@/lib/api";
-import {
-  type AuthResponse,
-  clearToken,
-  extractAccessToken,
-  setToken,
-} from "@/lib/auth";
+import { type AuthResponse, clearToken, extractAccessToken, setToken } from "@/lib/auth";
 import { useUser } from "@/lib/user-context";
 
 const searchSchema = z.object({
@@ -26,9 +21,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { user, refreshUser } = useUser();
 
-  const [mode, setMode] = useState<"signin" | "signup">(
-    initialMode ?? "signin"
-  );
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -85,7 +78,7 @@ function AuthPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     if (!normalizedEmail) {
       toast.error("Please enter a valid email address.");
       return;
@@ -95,7 +88,9 @@ function AuthPage() {
       // Validate password strength
       const validation = validatePassword(password);
       if (!validation.isValid) {
-        toast.error("Password must be at least 8 characters with uppercase, lowercase, and a number.");
+        toast.error(
+          "Password must be at least 8 characters with uppercase, lowercase, and a number.",
+        );
         return;
       }
       // Validate password confirmation
@@ -104,7 +99,7 @@ function AuthPage() {
         return;
       }
     }
-    
+
     isSubmittingRef.current = true;
     setLoading(true);
     try {
@@ -124,16 +119,15 @@ function AuthPage() {
     } catch (err) {
       isSubmittingRef.current = false;
       clearToken();
-      toast.error(formatAuthError(err, "Authentication failed. Please check your connection or credentials."));
+      toast.error(
+        formatAuthError(err, "Authentication failed. Please check your connection or credentials."),
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function completeAuthentication(
-    response: AuthResponse,
-    successMessage: string
-  ) {
+  async function completeAuthentication(response: AuthResponse, successMessage: string) {
     const token = extractAccessToken(response);
     setToken(token);
     const user = await refreshUser();
@@ -143,7 +137,7 @@ function AuthPage() {
       throw new Error("Could not verify your session. Please sign in again.");
     }
     toast.success(successMessage);
-    
+
     // Check if user has completed onboarding
     const { getProfile } = await import("@/lib/profile");
     try {
@@ -156,144 +150,116 @@ function AuthPage() {
       // If profile fetch fails, proceed to dashboard
       console.warn("Could not fetch profile, proceeding to dashboard", error);
     }
-    
+
     navigate({ to: "/dashboard", replace: true });
   }
 
-function validatePassword(password: string): {
-  isValid: boolean;
-  strength: "weak" | "fair" | "strong";
-  requirements: {
-    length: boolean;
-    uppercase: boolean;
-    lowercase: boolean;
-    number: boolean;
-    special: boolean;
-  };
-} {
-  const requirements = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    lowercase: /[a-z]/.test(password),
-    number: /[0-9]/.test(password),
-    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
-  };
+  function validatePassword(password: string): {
+    isValid: boolean;
+    strength: "weak" | "fair" | "strong";
+    requirements: {
+      length: boolean;
+      uppercase: boolean;
+      lowercase: boolean;
+      number: boolean;
+      special: boolean;
+    };
+  } {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+    };
 
-  const metCount = Object.values(requirements).filter(Boolean).length;
-  
-  let strength: "weak" | "fair" | "strong" = "weak";
-  if (metCount >= 4) strength = "strong";
-  else if (metCount >= 2) strength = "fair";
+    const metCount = Object.values(requirements).filter(Boolean).length;
 
-  const isValid = metCount >= 3 && requirements.length;
+    let strength: "weak" | "fair" | "strong" = "weak";
+    if (metCount >= 4) strength = "strong";
+    else if (metCount >= 2) strength = "fair";
 
-  return { isValid, strength, requirements };
-}
+    const isValid = metCount >= 3 && requirements.length;
 
-function RequirementItem({ met, label }: { met: boolean; label: string }) {
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      {met ? (
-        <Check className="h-3.5 w-3.5 text-green-400" />
-      ) : (
-        <X className="h-3.5 w-3.5 text-muted-foreground/50" />
-      )}
-      <span className={met ? "text-foreground" : "text-muted-foreground/70"}>
-        {label}
-      </span>
-    </div>
-  );
-}
+    return { isValid, strength, requirements };
+  }
+
+  function RequirementItem({ met, label }: { met: boolean; label: string }) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        {met ? (
+          <Check className="h-3.5 w-3.5 text-green-400" />
+        ) : (
+          <X className="h-3.5 w-3.5 text-muted-foreground/50" />
+        )}
+        <span className={met ? "text-foreground" : "text-muted-foreground/70"}>{label}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="glass w-full max-w-md rounded-2xl p-8">
         <div className="mb-6 flex items-center gap-2.5">
           <CaayvaLogo className="h-9 w-9" />
-          <span className="text-xl font-bold tracking-tight">
-            Caayva
-          </span>
+          <span className="text-xl font-bold tracking-tight">Caayva</span>
         </div>
         <h1 className="text-2xl font-semibold">
-          {mode === "signup"
-            ? "Create your account"
-            : "Welcome back"}
+          {mode === "signup" ? "Create your account" : "Welcome back"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {mode === "signup"
             ? "Start understanding your money in seconds."
             : "Sign in to continue."}
         </p>
-        <form
-          onSubmit={handleSubmit}
-          className="mt-6 space-y-4"
-        >
-
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="text-sm text-muted-foreground">
-              Email
-            </label>
-             <input
+            <label className="text-sm text-muted-foreground">Email</label>
+            <input
               type="email"
               required
               value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             />
           </div>
           <div>
-            <label className="text-sm text-muted-foreground">
-              Password
-            </label>
-<input
+            <label className="text-sm text-muted-foreground">Password</label>
+            <input
               type="password"
               required
               minLength={8}
               value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="8+ characters"
               className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             />
           </div>
           {mode === "signup" && (
             <div>
-              <label className="text-sm text-muted-foreground">
-                Confirm password
-              </label>
+              <label className="text-sm text-muted-foreground">Confirm password</label>
               <input
                 type="password"
                 required
                 value={confirmPassword}
-                onChange={(e) =>
-                  setConfirmPassword(e.target.value)
-                }
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
                 className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
               />
             </div>
           )}
-           <button
+          <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-gradient-primary px-4 py-2.5 font-medium text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60"
           >
-           {loading
-              ? "Please wait..."
-              : mode === "signup"
-              ? "Create account"
-              : "Sign in"}
+            {loading ? "Please wait..." : mode === "signup" ? "Create account" : "Sign in"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          {mode === "signup"
-            ? "Already have an account?"
-            : "New to Caayva?"}{" "}
+          {mode === "signup" ? "Already have an account?" : "New to Caayva?"}{" "}
           <button
             type="button"
             onClick={() => {
@@ -303,9 +269,7 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
             }}
             className="font-medium text-foreground underline underline-offset-4"
           >
-            {mode === "signup"
-              ? "Sign in"
-              : "Create one"}
+            {mode === "signup" ? "Sign in" : "Create one"}
           </button>
         </p>
       </div>

@@ -195,9 +195,7 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
   }, [refetch, expenseSignature]);
 
   return (
-    <CoachingContext.Provider value={{ ...state, refetch }}>
-      {children}
-    </CoachingContext.Provider>
+    <CoachingContext.Provider value={{ ...state, refetch }}>{children}</CoachingContext.Provider>
   );
 }
 

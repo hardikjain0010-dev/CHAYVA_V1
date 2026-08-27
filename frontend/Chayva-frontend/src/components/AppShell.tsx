@@ -86,9 +86,7 @@ export const DESKTOP_NAV_GROUPS = [
   },
   {
     label: "You",
-    items: [
-      { to: "/profile" as const, label: "Profile", icon: UserRound },
-    ],
+    items: [{ to: "/profile" as const, label: "Profile", icon: UserRound }],
   },
 ];
 
@@ -135,8 +133,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMoreSheetOpen(false);
   }, [pathname]);
 
-  const displayName = (user as any)?.display_name ?? (user as any)?.email?.split("@")[0] ?? "You";
-  const userEmail = (user as any)?.email ?? "";
+  const userObj = user as { display_name?: string; email?: string } | null;
+  const displayName = userObj?.display_name ?? userObj?.email?.split("@")[0] ?? "You";
+  const userEmail = userObj?.email ?? "";
   const isMoreActive = SECONDARY_PATHS.includes(pathname);
 
   return (
@@ -178,7 +177,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link to="/dashboard" className="flex items-center gap-2.5">
               <CaayvaLogo className="h-8 w-8" />
               <div>
-                <span className="block text-base font-bold tracking-tight leading-none">Caayva</span>
+                <span className="block text-base font-bold tracking-tight leading-none">
+                  Caayva
+                </span>
                 <span className="block text-[0.6rem] text-muted-foreground tracking-[0.14em] uppercase mt-0.5">
                   AI Companion
                 </span>
@@ -249,9 +250,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* MAIN CONTENT                                                       */}
         {/* ----------------------------------------------------------------- */}
         <main className="min-w-0 flex-1 pt-14 pb-28 md:pt-0 md:pb-0">
-          <AnimatePresence mode="wait">
-            {children}
-          </AnimatePresence>
+          <AnimatePresence mode="wait">{children}</AnimatePresence>
         </main>
       </div>
 
@@ -307,9 +306,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => setMoreSheetOpen((prev) => !prev)}
             aria-label="Open more options"
             className={`relative flex min-h-[44px] min-w-[3.5rem] flex-col items-center justify-center gap-0.5 rounded-xl px-2.5 py-1 text-[0.65rem] font-medium transition-colors ${
-              isMoreActive || moreSheetOpen
-                ? "text-primary font-semibold"
-                : "text-muted-foreground"
+              isMoreActive || moreSheetOpen ? "text-primary font-semibold" : "text-muted-foreground"
             }`}
           >
             {(isMoreActive || moreSheetOpen) && (
@@ -405,9 +402,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                           <div className="flex items-center gap-3 min-w-0">
                             <div
                               className={`grid h-8 w-8 place-items-center rounded-xl shrink-0 ${
-                                active
-                                  ? "bg-white/20 text-white"
-                                  : "bg-primary/10 text-primary"
+                                active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
                               }`}
                             >
                               <Icon className="h-4 w-4" />
@@ -456,9 +451,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                           <div className="flex items-center gap-3 min-w-0">
                             <div
                               className={`grid h-8 w-8 place-items-center rounded-xl shrink-0 ${
-                                active
-                                  ? "bg-white/20 text-white"
-                                  : "bg-primary/10 text-primary"
+                                active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
                               }`}
                             >
                               <Icon className="h-4 w-4" />

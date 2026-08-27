@@ -1,13 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import {
-  HeartPulse,
-  Sparkles,
-  MoonStar,
-  Dna,
-  Compass,
-  Brain,
-} from "lucide-react";
+import { HeartPulse, Sparkles, MoonStar, Dna, Compass, Brain } from "lucide-react";
 import { CaayvaLogo } from "@/components/CaayvaLogo";
 
 export const Route = createFileRoute("/")({
@@ -73,21 +66,13 @@ function Landing() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-        <Link
-          to="/"
-          className="flex items-center gap-2.5"
-        >
+        <Link to="/" className="flex items-center gap-2.5">
           <CaayvaLogo className="h-8 w-8" />
-          <span className="text-2xl font-bold tracking-tight text-gradient">
-            Caayva
-          </span>
+          <span className="text-2xl font-bold tracking-tight text-gradient">Caayva</span>
         </Link>
 
         <div className="flex items-center gap-4">
-          <Link
-            to="/auth"
-            className="text-sm font-medium hover:text-primary"
-          >
+          <Link to="/auth" className="text-sm font-medium hover:text-primary">
             Sign In
           </Link>
 
@@ -112,14 +97,12 @@ function Landing() {
           <h1 className="mt-4 text-5xl font-bold leading-tight md:text-7xl">
             Understand the
             <br />
-            <span className="text-gradient">Why</span>
-            {" "}Behind Your Money
+            <span className="text-gradient">Why</span> Behind Your Money
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground">
-            Caayva is your AI behavioural finance coach. Discover why you spend,
-            understand emotional triggers, and build healthier financial habits
-            with confidence.
+            Caayva is your AI behavioural finance coach. Discover why you spend, understand
+            emotional triggers, and build healthier financial habits with confidence.
           </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -161,13 +144,9 @@ function Landing() {
                 <Icon className="h-6 w-6" />
               </div>
 
-              <h3 className="mt-5 text-xl font-semibold">
-                {title}
-              </h3>
+              <h3 className="mt-5 text-xl font-semibold">{title}</h3>
 
-              <p className="mt-2 leading-relaxed text-muted-foreground">
-                {body}
-              </p>
+              <p className="mt-2 leading-relaxed text-muted-foreground">{body}</p>
             </motion.div>
           ))}
         </section>
@@ -203,10 +182,30 @@ function Landing() {
                 Product
               </p>
               <nav className="mt-4 flex flex-col gap-2.5">
-                <Link to="/dashboard" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Dashboard</Link>
-                <Link to="/add" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Add Expense</Link>
-                <Link to="/week" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Weekly Insights</Link>
-                <Link to="/dna" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Spend DNA</Link>
+                <Link
+                  to="/dashboard"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/add"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Add Expense
+                </Link>
+                <Link
+                  to="/week"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Weekly Insights
+                </Link>
+                <Link
+                  to="/dna"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Spend DNA
+                </Link>
               </nav>
             </div>
 
@@ -216,10 +215,30 @@ function Landing() {
                 Experience
               </p>
               <nav className="mt-4 flex flex-col gap-2.5">
-                <Link to="/reflect" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Reflect</Link>
-                <Link to="/journey" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Journey</Link>
-                <Link to="/expenses" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Expense Journal</Link>
-                <Link to="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Profile</Link>
+                <Link
+                  to="/reflect"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Reflect
+                </Link>
+                <Link
+                  to="/journey"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Journey
+                </Link>
+                <Link
+                  to="/expenses"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Expense Journal
+                </Link>
+                <Link
+                  to="/profile"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Profile
+                </Link>
               </nav>
             </div>
 
@@ -229,8 +248,19 @@ function Landing() {
                 Account
               </p>
               <nav className="mt-4 flex flex-col gap-2.5">
-                <Link to="/auth" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Login</Link>
-                <Link to="/auth" search={{ mode: "signup" }} className="text-sm text-muted-foreground transition-colors hover:text-foreground">Get Started</Link>
+                <Link
+                  to="/auth"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Get Started
+                </Link>
               </nav>
             </div>
           </div>
@@ -244,11 +274,11 @@ function Landing() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
           <div className="flex items-center gap-2">
             <CaayvaLogo className="h-5 w-5" />
-            <span className="text-xs text-muted-foreground/70">Behavioral finance, reimagined.</span>
+            <span className="text-xs text-muted-foreground/70">
+              Behavioral finance, reimagined.
+            </span>
           </div>
-          <p className="text-xs text-muted-foreground/50">
-            © {new Date().getFullYear()} Caayva
-          </p>
+          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} Caayva</p>
         </div>
       </footer>
     </div>

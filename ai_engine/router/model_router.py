@@ -32,22 +32,26 @@ from ai_engine.clients.openrouter_client import call_openrouter
 load_dotenv()
 
 
-def _get_required_env(name: str) -> str:
+def _get_required_env(name: str, required: bool = True) -> str | None:
     value = os.getenv(name)
     if value is None or not value.strip():
-        raise EnvironmentError(f"{name} not found in environment.")
+        if required:
+            raise EnvironmentError(f"{name} not found in environment.")
+        return None
     value = str(value).strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
         value = value[1:-1].strip()
     if not value:
-        raise EnvironmentError(f"{name} not found in environment.")
+        if required:
+            raise EnvironmentError(f"{name} not found in environment.")
+        return None
     return value
 
 
-GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL")
-GROQ_MODEL_NAME = _get_required_env("GROQ_MODEL")
-OPENROUTER_REASONING_MODEL_NAME = _get_required_env("OPENROUTER_REASONING_MODEL")
-OPENROUTER_SUMMARY_MODEL_NAME = _get_required_env("OPENROUTER_SUMMARY_MODEL")
+GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL", required=False) or "gemini-2.0-flash-exp"
+GROQ_MODEL_NAME = _get_required_env("GROQ_MODEL", required=False) or "llama-3.3-70b-versatile"
+OPENROUTER_REASONING_MODEL_NAME = _get_required_env("OPENROUTER_REASONING_MODEL", required=False) or "deepseek/deepseek-r1"
+OPENROUTER_SUMMARY_MODEL_NAME = _get_required_env("OPENROUTER_SUMMARY_MODEL", required=False) or "deepseek/deepseek-chat"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LAZY SINGLETON CLIENTS
@@ -103,6 +107,18 @@ def _get_openrouter():
     if _openrouter_client is None:
         _openrouter_client = "openrouter"
     return _openrouter_client
+
+
+def _get_model_for_provider(provider: str) -> str:
+    """Return the appropriate model name for a given provider."""
+    if provider == "gemini":
+        return GEMINI_MODEL_NAME
+    elif provider == "groq":
+        return GROQ_MODEL_NAME
+    elif provider == "openrouter":
+        return OPENROUTER_REASONING_MODEL_NAME
+    else:
+        raise ValueError(f"Unknown provider: {provider}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -162,11 +178,11 @@ def route_prompt(
         raise ValueError(f"Unknown AI task_type: {task_type}")
 
     config = ROUTING_TABLE[task_type]
-    provider = config["provider"]
+    primary_provider = config["provider"]
 
     # Try primary provider
     result = _call_provider(
-        provider=provider,
+        provider=primary_provider,
         model=config["model"],
         prompt=prompt,
         temperature=config["temperature"],
@@ -179,17 +195,33 @@ def route_prompt(
         return _record_route_result(result)
 
     # Primary failed — try fallback chain
+    fallback_providers = FALLBACK_CHAIN.get(primary_provider, [])
+    for fallback_provider in fallback_providers:
+        # Use provider-specific model for fallback
+        fallback_model = _get_model_for_provider(fallback_provider)
+        fallback_result = _call_provider(
+            provider=fallback_provider,
+            model=fallback_model,
+            prompt=prompt,
+            temperature=config["temperature"],
+            system_override=system_override
+        )
+        if fallback_result["success"]:
+            fallback_result["fallback_used"] = True
+            fallback_result["backup_model_used"] = False
+            return _record_route_result(fallback_result)
+
     # All providers failed — return structured failure
     return _record_route_result({
         "success": False,
         "raw_text": "",
         "parsed": None,
-        "provider": provider,
+        "provider": primary_provider,
         "model": config["model"],
         "latency_ms": result.get("latency_ms", 0),
         "fallback_used": True,
         "backup_model_used": False,
-        "error": result.get("error", "Provider failed")
+        "error": result.get("error", "All providers failed")
     })
 
 

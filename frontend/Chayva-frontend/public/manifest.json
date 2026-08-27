@@ -8,11 +8,7 @@
   "orientation": "portrait",
   "background_color": "#FAFAFE",
   "theme_color": "#7C3AED",
-  "categories": [
-    "finance",
-    "lifestyle",
-    "productivity"
-  ],
+  "categories": ["finance", "lifestyle", "productivity"],
   "icons": [
     {
       "src": "/pwa-192x192.png",

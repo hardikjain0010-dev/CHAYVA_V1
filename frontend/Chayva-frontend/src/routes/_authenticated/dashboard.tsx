@@ -1,20 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
-import {
-  RefreshCw,
-  ChevronDown,
-  Sparkles,
-  Plus,
-  ArrowRight,
-} from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { RefreshCw, ChevronDown, Sparkles, Plus, ArrowRight } from "lucide-react";
 import { useExpenses } from "@/lib/expense-context";
 import { useCoaching } from "@/lib/coaching-context";
 import {
@@ -99,17 +87,20 @@ function DashboardPage() {
 
   const localTotals = useMemo(() => localSpendTotals(expenses), [expenses]);
 
-  const totals = useMemo(() => ({
-    all: snapshot?.stats.total_spent ?? expenses.reduce((s, e) => s + e.amount, 0),
-    today: snapshot?.stats.today_spend ?? localTotals.todaySpend,
-    week: snapshot?.stats.weekly_spend ?? localTotals.weekSpend,
-    count: snapshot?.stats.expense_count ?? expenses.length,
-  }), [expenses, localTotals, snapshot]);
+  const totals = useMemo(
+    () => ({
+      all: snapshot?.stats.total_spent ?? expenses.reduce((s, e) => s + e.amount, 0),
+      today: snapshot?.stats.today_spend ?? localTotals.todaySpend,
+      week: snapshot?.stats.weekly_spend ?? localTotals.weekSpend,
+      count: snapshot?.stats.expense_count ?? expenses.length,
+    }),
+    [expenses, localTotals, snapshot],
+  );
 
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
     Object.entries(snapshot?.analytics.categories ?? {}).forEach(([category, amount]) =>
-      map.set(category, amount)
+      map.set(category, amount),
     );
     if (map.size === 0) {
       expenses.forEach((e) => map.set(e.category, (map.get(e.category) ?? 0) + e.amount));
@@ -120,7 +111,8 @@ function DashboardPage() {
   const coachObservation = snapshot?.coach.headline ?? snapshot?.coach.behavior_insight ?? null;
   const coachEvidence = snapshot?.coach.detected_pattern ?? null;
   const coachPrediction = snapshot?.coach.today_prediction ?? null;
-  const coachSuggestion = snapshot?.coach.coach_suggestion ?? snapshot?.nudge?.suggested_action ?? null;
+  const coachSuggestion =
+    snapshot?.coach.coach_suggestion ?? snapshot?.nudge?.suggested_action ?? null;
 
   const recentExpenses = expenses.slice(0, 4);
   const behaviorTimeline = snapshot?.behavior_timeline ?? [];
@@ -132,7 +124,6 @@ function DashboardPage() {
   return (
     <PageTransition>
       <div className="space-y-7 max-w-5xl">
-
         {/* ================================================================= */}
         {/* HEADER — Greeting                                                  */}
         {/* ================================================================= */}
@@ -143,9 +134,7 @@ function DashboardPage() {
               {getGreeting()} {getGreetingEmoji()}
             </h1>
             <p className="mt-1.5 text-base text-muted-foreground">
-              {isFirstUser
-                ? "Welcome to Caayva."
-                : "Here's what Caayva noticed."}
+              {isFirstUser ? "Welcome to Caayva." : "Here's what Caayva noticed."}
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -174,7 +163,9 @@ function DashboardPage() {
           <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-foreground/80 shadow-sm">
             <div className="flex items-center gap-2 min-w-0">
               <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
-              <span className="truncate">Caayva is reconnecting to server. Displaying cached insights.</span>
+              <span className="truncate">
+                Caayva is reconnecting to server. Displaying cached insights.
+              </span>
             </div>
             <button
               onClick={() => void refetch()}
@@ -215,8 +206,14 @@ function DashboardPage() {
             style={{ background: "var(--gradient-hero)" }}
           >
             {/* Ambient background glow */}
-            <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/15 blur-3xl" />
-            <div aria-hidden className="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-accent/10 blur-2xl" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/15 blur-3xl"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-accent/10 blur-2xl"
+            />
 
             <div className="relative">
               {/* Eyebrow */}
@@ -250,7 +247,9 @@ function DashboardPage() {
               {/* Prediction — cautious framing */}
               {coachPrediction && (
                 <div className="mt-5 rounded-2xl border border-foreground/10 bg-foreground/[0.03] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground mb-1">What this may mean</p>
+                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground mb-1">
+                    What this may mean
+                  </p>
                   <p className="text-sm leading-relaxed text-foreground/80">{coachPrediction}</p>
                 </div>
               )}
@@ -266,7 +265,8 @@ function DashboardPage() {
               {/* Learning state — not enough data yet */}
               {hasNoInsight && (
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-lg">
-                  Keep logging expenses with mood and notes. Caayva learns with every entry and will start noticing patterns in your behavior.
+                  Keep logging expenses with mood and notes. Caayva learns with every entry and will
+                  start noticing patterns in your behavior.
                 </p>
               )}
             </div>
@@ -291,8 +291,13 @@ function DashboardPage() {
                 const maxH = 56;
                 const h = Math.max(12, maxH * 0.6); // base height; all same since we don't have magnitude
                 return (
-                  <div key={entry.date ?? entry.day} className="flex flex-1 flex-col items-center gap-1.5">
-                    <span className="text-lg leading-none" title={entry.label}>{entry.emoji}</span>
+                  <div
+                    key={entry.date ?? entry.day}
+                    className="flex flex-1 flex-col items-center gap-1.5"
+                  >
+                    <span className="text-lg leading-none" title={entry.label}>
+                      {entry.emoji}
+                    </span>
                     <div
                       className="w-full rounded-t-md bg-gradient-primary opacity-60"
                       style={{ height: h }}
@@ -341,7 +346,9 @@ function DashboardPage() {
           <section className="glass rounded-2xl p-6">
             <div className="mb-5">
               <p className="caayva-eyebrow">Where your money went</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Supporting context for the behavioral read</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Supporting context for the behavioral read
+              </p>
             </div>
             <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
               {/* Category list — compact */}
@@ -356,10 +363,7 @@ function DashboardPage() {
                         className="h-2 w-2 shrink-0 rounded-full"
                         style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
                       />
-                      <CategoryIcon
-                        name={c.name}
-                        className="h-3.5 w-3.5 text-muted-foreground"
-                      />
+                      <CategoryIcon name={c.name} className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-sm font-medium">{c.name}</span>
                     </span>
                     <span className="text-sm tabular-nums text-muted-foreground">
@@ -380,11 +384,7 @@ function DashboardPage() {
                       paddingAngle={2}
                     >
                       {byCategory.map((_, i) => (
-                        <Cell
-                          key={i}
-                          fill={CHART_COLORS[i % CHART_COLORS.length]}
-                          opacity={0.85}
-                        />
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} opacity={0.85} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -411,7 +411,9 @@ function DashboardPage() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <p className="caayva-eyebrow">Recent journal</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Latest moments Caayva is reading</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Latest moments Caayva is reading
+                </p>
               </div>
               <Link
                 to="/expenses"
@@ -431,8 +433,13 @@ function DashboardPage() {
                 const expanded = expandedExpenseId === expense.id;
                 const insightText = insight?.insight ? String(insight.insight) : null;
                 const behavior = insight?.behavior ?? insight?.spending_type;
-                const classificationObj = insight?.expense_classification as Record<string, unknown> | null;
-                const classification = classificationObj?.classification ? String(classificationObj.classification) : null;
+                const classificationObj = insight?.expense_classification as Record<
+                  string,
+                  unknown
+                > | null;
+                const classification = classificationObj?.classification
+                  ? String(classificationObj.classification)
+                  : null;
 
                 return (
                   <div
@@ -441,17 +448,12 @@ function DashboardPage() {
                   >
                     {/* Collapsed row */}
                     <button
-                      onClick={() =>
-                        setExpandedExpenseId(expanded ? null : expense.id)
-                      }
+                      onClick={() => setExpandedExpenseId(expanded ? null : expense.id)}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-foreground/[0.03]"
                     >
                       {/* Category icon */}
                       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/8">
-                        <CategoryIcon
-                          name={expense.category}
-                          className="h-4 w-4 text-primary"
-                        />
+                        <CategoryIcon name={expense.category} className="h-4 w-4 text-primary" />
                       </span>
 
                       <div className="flex-1 min-w-0">
@@ -466,9 +468,7 @@ function DashboardPage() {
                         <div className="flex items-center gap-2.5 mt-0.5 flex-wrap">
                           <TimeWindowBadge dateStr={expense.date} />
                           <MoodBadge mood={expense.mood} />
-                          {classification && (
-                            <BehaviorTag label={classification} />
-                          )}
+                          {classification && <BehaviorTag label={classification} />}
                         </div>
                       </div>
 

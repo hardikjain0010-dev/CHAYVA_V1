@@ -1,7 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Save, UserRound, Clock, Target, MessageSquare, AlertCircle, Sun, Moon, LogOut } from "lucide-react";
+import {
+  Save,
+  UserRound,
+  Clock,
+  Target,
+  MessageSquare,
+  AlertCircle,
+  Sun,
+  Moon,
+  LogOut,
+} from "lucide-react";
 import { PageTransition, LoadingSkeleton } from "@/lib/ui-helpers";
 import { getProfile, updateProfile, type UserProfilePayload } from "@/lib/profile";
 import { useTheme } from "@/lib/theme";
@@ -50,14 +60,15 @@ function ProfilePage() {
         setSelfReportedTriggers(data.self_reported_spending_triggers ?? []);
         setSelfReportedContexts(data.self_reported_spending_contexts ?? []);
       } catch (err) {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Unable to load profile.");
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load profile.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -89,7 +100,6 @@ function ProfilePage() {
   return (
     <PageTransition>
       <div className="mx-auto max-w-2xl space-y-7">
-
         {/* ================================================================= */}
         {/* HEADER                                                             */}
         {/* ================================================================= */}
@@ -97,7 +107,8 @@ function ProfilePage() {
           <p className="caayva-eyebrow">Context</p>
           <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Context</h1>
           <p className="mt-1.5 text-sm text-muted-foreground max-w-lg">
-            Help Caayva understand you better. This context shapes how it interprets your spending — it's not a survey, it's a conversation.
+            Help Caayva understand you better. This context shapes how it interprets your spending —
+            it's not a survey, it's a conversation.
           </p>
         </header>
 
@@ -108,23 +119,16 @@ function ProfilePage() {
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-5">
-
             {/* ============================================================= */}
             {/* SECTION: About You                                             */}
             {/* ============================================================= */}
-            <ProfileSection
-              icon={UserRound}
-              title="About You"
-              delay={0}
-            >
+            <ProfileSection icon={UserRound} title="About You" delay={0}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Name">
                   <input
                     id="profile-name"
                     value={profile.display_name ?? ""}
-                    onChange={(e) =>
-                      setProfile((p) => ({ ...p, display_name: e.target.value }))
-                    }
+                    onChange={(e) => setProfile((p) => ({ ...p, display_name: e.target.value }))}
                     maxLength={60}
                     className="profile-input"
                     placeholder="How should Caayva address you?"
@@ -200,7 +204,7 @@ function ProfilePage() {
               icon={Target}
               title="Goals"
               subtitle="What you're working toward — comma-separated."
-              delay={0.10}
+              delay={0.1}
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Spending priorities">
@@ -237,11 +241,7 @@ function ProfilePage() {
             {/* ============================================================= */}
             {/* SECTION: How Caayva Talks to You                               */}
             {/* ============================================================= */}
-            <ProfileSection
-              icon={MessageSquare}
-              title="How Caayva Talks to You"
-              delay={0.15}
-            >
+            <ProfileSection icon={MessageSquare} title="How Caayva Talks to You" delay={0.15}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="AI tone">
                   <select
@@ -250,7 +250,8 @@ function ProfilePage() {
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
-                        preferred_ai_tone: e.target.value as UserProfilePayload["preferred_ai_tone"],
+                        preferred_ai_tone: e.target
+                          .value as UserProfilePayload["preferred_ai_tone"],
                       }))
                     }
                     className="profile-input"
@@ -269,7 +270,8 @@ function ProfilePage() {
                     onChange={(e) =>
                       setProfile((p) => ({
                         ...p,
-                        preferred_language: e.target.value as UserProfilePayload["preferred_language"],
+                        preferred_language: e.target
+                          .value as UserProfilePayload["preferred_language"],
                       }))
                     }
                     className="profile-input"
@@ -287,14 +289,12 @@ function ProfilePage() {
             {/* CRITICAL: explicitly labeled as user-reported, not proven fact */}
             {/* ============================================================= */}
             {(selfReportedTriggers.length > 0 || selfReportedContexts.length > 0) && (
-              <ProfileSection
-                icon={AlertCircle}
-                title="What You've Told Caayva"
-                delay={0.20}
-              >
+              <ProfileSection icon={AlertCircle} title="What You've Told Caayva" delay={0.2}>
                 <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 mb-4">
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    <span className="font-medium text-foreground/70">Note:</span> This is what you reported during onboarding — not what Caayva has observed from your actual expenses. Observed patterns may differ and will take precedence in AI analysis.
+                    <span className="font-medium text-foreground/70">Note:</span> This is what you
+                    reported during onboarding — not what Caayva has observed from your actual
+                    expenses. Observed patterns may differ and will take precedence in AI analysis.
                   </p>
                 </div>
 
@@ -305,7 +305,9 @@ function ProfilePage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {selfReportedTriggers.map((t) => (
-                        <span key={t} className="behavior-tag">{t}</span>
+                        <span key={t} className="behavior-tag">
+                          {t}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -318,7 +320,9 @@ function ProfilePage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {selfReportedContexts.map((c) => (
-                        <span key={c} className="behavior-tag">{c}</span>
+                        <span key={c} className="behavior-tag">
+                          {c}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -334,12 +338,8 @@ function ProfilePage() {
             {/* ============================================================= */}
             {/* FEEDBACK + SAVE                                                */}
             {/* ============================================================= */}
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-            {message && (
-              <p className="text-sm text-primary">{message}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {message && <p className="text-sm text-primary">{message}</p>}
 
             <button
               type="submit"
@@ -370,7 +370,7 @@ function ProfilePreferencesSection() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const userEmail = (user as any)?.email ?? "";
+  const userEmail = (user as { email?: string } | null)?.email ?? "";
 
   return (
     <motion.div
@@ -395,7 +395,8 @@ function ProfilePreferencesSection() {
           <div>
             <p className="text-sm font-medium text-foreground">Theme</p>
             <p className="text-xs text-muted-foreground">
-              Currently using <span className="font-semibold text-primary capitalize">{theme} mode</span>
+              Currently using{" "}
+              <span className="font-semibold text-primary capitalize">{theme} mode</span>
             </p>
           </div>
 
@@ -423,7 +424,9 @@ function ProfilePreferencesSection() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-foreground/8 bg-foreground/[0.02] p-3.5">
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Signed In As</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[14rem] sm:max-w-xs">{userEmail}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[14rem] sm:max-w-xs">
+              {userEmail}
+            </p>
           </div>
 
           <button
@@ -470,9 +473,7 @@ function ProfileSection({
         </span>
         <div>
           <h2 className="text-sm font-semibold">{title}</h2>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
         </div>
       </div>
       {children}

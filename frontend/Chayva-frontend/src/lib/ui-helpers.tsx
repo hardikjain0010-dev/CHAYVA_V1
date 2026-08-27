@@ -72,30 +72,41 @@ export function CountUp({
     return () => window.cancelAnimationFrame(id);
   }, [value]);
 
-  return <>{prefix}{displayValue.toFixed(decimals)}</>;
+  return (
+    <>
+      {prefix}
+      {displayValue.toFixed(decimals)}
+    </>
+  );
 }
 
 // ---------------------------------------------------------------------------
 // CategoryIcon
 // ---------------------------------------------------------------------------
 
-export function CategoryIcon({
-  name,
-  ...props
-}: { name: string } & LucideProps) {
+export function CategoryIcon({ name, ...props }: { name: string } & LucideProps) {
   const key = name.toLowerCase();
-  const Icon =
-    key.includes("food") ? Utensils :
-    key.includes("grocery") ? ShoppingCart :
-    key.includes("transport") ? Car :
-    key.includes("rent") ? Home :
-    key.includes("utilit") ? Plug :
-    key.includes("shopping") ? ShoppingBag :
-    key.includes("entertain") ? Film :
-    key.includes("health") ? HeartPulse :
-    key.includes("travel") ? Plane :
-    key.includes("subscription") ? Receipt :
-    CircleDollarSign;
+  const Icon = key.includes("food")
+    ? Utensils
+    : key.includes("grocery")
+      ? ShoppingCart
+      : key.includes("transport")
+        ? Car
+        : key.includes("rent")
+          ? Home
+          : key.includes("utilit")
+            ? Plug
+            : key.includes("shopping")
+              ? ShoppingBag
+              : key.includes("entertain")
+                ? Film
+                : key.includes("health")
+                  ? HeartPulse
+                  : key.includes("travel")
+                    ? Plane
+                    : key.includes("subscription")
+                      ? Receipt
+                      : CircleDollarSign;
 
   return <Icon {...props} />;
 }
@@ -118,13 +129,9 @@ export function SectionHeading({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        {eyebrow && (
-          <p className="caayva-eyebrow mb-1">{eyebrow}</p>
-        )}
+        {eyebrow && <p className="caayva-eyebrow mb-1">{eyebrow}</p>}
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        {subtitle && (
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-        )}
+        {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -156,17 +163,13 @@ export function BehaviorTag({
 // EvidenceRow — compact behavioral evidence line
 // ---------------------------------------------------------------------------
 
-export function EvidenceRow({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null;
-}) {
+export function EvidenceRow({ label, value }: { label: string; value?: string | null }) {
   if (!value || value === "—") return null;
   return (
     <div className="flex items-start gap-2 text-sm">
-      <span className="mt-0.5 shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground opacity-70 w-20 pt-0.5">{label}</span>
+      <span className="mt-0.5 shrink-0 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground opacity-70 w-20 pt-0.5">
+        {label}
+      </span>
       <span className="text-foreground/85 leading-relaxed">{value}</span>
     </div>
   );
@@ -178,19 +181,13 @@ export function EvidenceRow({
 // ---------------------------------------------------------------------------
 
 export type InsightData = {
-  observation?: string | null;       // What Caayva noticed
-  evidence?: string | null;          // Supporting data point
-  interpretation?: string | null;    // What it may mean (cautious)
-  reflection?: string | null;        // What to consider
+  observation?: string | null; // What Caayva noticed
+  evidence?: string | null; // Supporting data point
+  interpretation?: string | null; // What it may mean (cautious)
+  reflection?: string | null; // What to consider
 };
 
-export function InsightFlow({
-  data,
-  compact = false,
-}: {
-  data: InsightData;
-  compact?: boolean;
-}) {
+export function InsightFlow({ data, compact = false }: { data: InsightData; compact?: boolean }) {
   const levels = [
     {
       icon: Eye,
@@ -225,10 +222,15 @@ export function InsightFlow({
     return (
       <div className="space-y-2">
         {visible.map((level) => (
-          <div key={level.label} className={`flex gap-2.5 rounded-xl border px-3 py-2 ${level.border} ${level.bg}`}>
+          <div
+            key={level.label}
+            className={`flex gap-2.5 rounded-xl border px-3 py-2 ${level.border} ${level.bg}`}
+          >
             <level.icon className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${level.color}`} />
             <div>
-              <span className={`text-[0.6rem] font-semibold uppercase tracking-[0.14em] ${level.color}`}>
+              <span
+                className={`text-[0.6rem] font-semibold uppercase tracking-[0.14em] ${level.color}`}
+              >
                 {level.label}
               </span>
               <p className="text-xs leading-relaxed text-foreground/80 mt-0.5">{level.text}</p>
@@ -256,7 +258,9 @@ export function InsightFlow({
         >
           <level.icon className={`mt-0.5 h-4 w-4 shrink-0 ${level.color}`} />
           <div>
-            <span className={`text-[0.65rem] font-semibold uppercase tracking-[0.16em] ${level.color}`}>
+            <span
+              className={`text-[0.65rem] font-semibold uppercase tracking-[0.16em] ${level.color}`}
+            >
               {level.label}
             </span>
             <p className="mt-1 text-sm leading-relaxed text-foreground/85">{level.text}</p>
@@ -433,7 +437,13 @@ export function QuickCaptureButton({ onClick }: { onClick?: () => void }) {
 // LoadingSkeleton — uniform skeleton for loading states
 // ---------------------------------------------------------------------------
 
-export function LoadingSkeleton({ lines = 3, className = "" }: { lines?: number; className?: string }) {
+export function LoadingSkeleton({
+  lines = 3,
+  className = "",
+}: {
+  lines?: number;
+  className?: string;
+}) {
   return (
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -451,13 +461,7 @@ export function LoadingSkeleton({ lines = 3, className = "" }: { lines?: number;
 // JournalDateHeader — day group header in expense journal
 // ---------------------------------------------------------------------------
 
-export function JournalDateHeader({
-  date,
-  total,
-}: {
-  date: string;
-  total?: number;
-}) {
+export function JournalDateHeader({ date, total }: { date: string; total?: number }) {
   const d = new Date(date);
   const today = new Date();
   const yesterday = new Date(today);
@@ -469,8 +473,8 @@ export function JournalDateHeader({
   const label = isToday
     ? "Today"
     : isYesterday
-    ? "Yesterday"
-    : d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+      ? "Yesterday"
+      : d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <div className="flex items-center justify-between py-3 px-1">
@@ -481,9 +485,7 @@ export function JournalDateHeader({
         </span>
       </div>
       {total != null && (
-        <span className="text-xs text-muted-foreground tabular-nums">
-          ₹{total.toFixed(0)}
-        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">₹{total.toFixed(0)}</span>
       )}
     </div>
   );
@@ -548,13 +550,7 @@ export function MoodBadge({ mood }: { mood?: string | null }) {
 // InlineLink — inline navigation shortcut
 // ---------------------------------------------------------------------------
 
-export function InlineLink({
-  label,
-  href,
-}: {
-  label: string;
-  href: string;
-}) {
+export function InlineLink({ label, href }: { label: string; href: string }) {
   return (
     <a
       href={href}
@@ -571,13 +567,7 @@ export function InlineLink({
 // Used for behavioral mindfulness score. Purely decorative, no judgment.
 // ---------------------------------------------------------------------------
 
-export function CircularScore({
-  value,
-  size = 96,
-}: {
-  value: number;
-  size?: number;
-}) {
+export function CircularScore({ value, size = 96 }: { value: number; size?: number }) {
   const radius = (size - 12) / 2;
   const circ = 2 * Math.PI * radius;
   const fill = Math.min(1, Math.max(0, value / 100));

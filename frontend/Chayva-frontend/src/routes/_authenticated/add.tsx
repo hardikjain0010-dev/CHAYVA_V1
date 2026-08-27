@@ -4,11 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useExpenses } from "@/lib/expense-context";
-import {
-  PageTransition,
-  CategoryIcon,
-  AIInsightReveal,
-} from "@/lib/ui-helpers";
+import { PageTransition, CategoryIcon, AIInsightReveal } from "@/lib/ui-helpers";
 
 export const Route = createFileRoute("/_authenticated/add")({
   component: AddExpensePage,
@@ -92,15 +88,23 @@ function AddExpensePage() {
 
       setSavedInsight(insightPayload);
       setShowInsight(true);
-      toast.success("Expense logged.");
+
+      if (insightPayload) {
+        toast.success("Expense logged. Chayva is reflecting on this moment...");
+      } else {
+        toast.success("Expense logged. Chayva couldn't generate an insight right now.");
+      }
 
       // Navigate after showing insight briefly
-      setTimeout(() => {
-        navigate({ to: "/expenses" });
-      }, insightPayload ? 3500 : 1200);
+      setTimeout(
+        () => {
+          navigate({ to: "/expenses" });
+        },
+        insightPayload ? 3500 : 2000,
+      );
     } catch (error) {
       console.error(error);
-      toast.error("Failed to save expense.");
+      toast.error("Failed to save expense. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -109,18 +113,14 @@ function AddExpensePage() {
   // Build insight data for AIInsightReveal from the expense.insight object
   const insightData = savedInsight
     ? {
-        observation:
-          savedInsight.insight ? String(savedInsight.insight) : null,
-        evidence:
-          savedInsight.detected_trigger
-            ? `Detected trigger: ${String(savedInsight.detected_trigger)}`
-            : null,
-        interpretation:
-          savedInsight.behavior
-            ? `Spending type: ${String(savedInsight.behavior)}`
-            : null,
-        suggestion:
-          savedInsight.suggestion ? String(savedInsight.suggestion) : null,
+        observation: savedInsight.insight ? String(savedInsight.insight) : null,
+        evidence: savedInsight.detected_trigger
+          ? `Detected trigger: ${String(savedInsight.detected_trigger)}`
+          : null,
+        interpretation: savedInsight.behavior
+          ? `Spending type: ${String(savedInsight.behavior)}`
+          : null,
+        suggestion: savedInsight.suggestion ? String(savedInsight.suggestion) : null,
         tags: [
           savedInsight.spending_type && {
             label: String(savedInsight.spending_type),
@@ -131,15 +131,12 @@ function AddExpensePage() {
           (savedInsight.expense_classification as Record<string, unknown> | null)
             ?.classification && {
             label: String(
-              (savedInsight.expense_classification as Record<string, unknown>)
-                .classification
+              (savedInsight.expense_classification as Record<string, unknown>).classification,
             ),
           },
-          (savedInsight.behavioral_significance as Record<string, unknown> | null)
-            ?.level && {
+          (savedInsight.behavioral_significance as Record<string, unknown> | null)?.level && {
             label: `significance: ${String(
-              (savedInsight.behavioral_significance as Record<string, unknown>)
-                .level
+              (savedInsight.behavioral_significance as Record<string, unknown>).level,
             )}`,
           },
         ].filter(Boolean) as Array<{ label: string }>,
@@ -159,9 +156,7 @@ function AddExpensePage() {
             Back
           </button>
           <p className="caayva-eyebrow">Capture</p>
-          <h1 className="caayva-headline mt-1 text-3xl text-foreground">
-            What did you spend on?
-          </h1>
+          <h1 className="caayva-headline mt-1 text-3xl text-foreground">What did you spend on?</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Every entry helps Caayva understand the why behind your spending.
           </p>
@@ -185,7 +180,9 @@ function AddExpensePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold">₹{amount} logged</p>
-                  <p className="text-xs text-muted-foreground">{category} · {mood}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {category} · {mood}
+                  </p>
                 </div>
               </div>
 
@@ -298,7 +295,10 @@ function AddExpensePage() {
               {/* ----------------------------------------------------------- */}
               <div>
                 <label className="caayva-eyebrow block mb-2" htmlFor="expense-note">
-                  Note <span className="normal-case tracking-normal text-muted-foreground opacity-70">(optional)</span>
+                  Note{" "}
+                  <span className="normal-case tracking-normal text-muted-foreground opacity-70">
+                    (optional)
+                  </span>
                 </label>
                 <textarea
                   id="expense-note"

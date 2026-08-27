@@ -9,6 +9,7 @@ providers.
 import os
 import time
 from typing import Any, Optional
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -19,15 +20,15 @@ load_dotenv()
 logger = get_logger(__name__)
 
 
-def _get_required_env(name: str) -> str:
+def _get_optional_env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name)
     if value is None or not value.strip():
-        raise EnvironmentError(f"{name} not found in environment.")
+        return default
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
         value = value[1:-1].strip()
     if not value:
-        raise EnvironmentError(f"{name} not found in environment.")
+        return default
     return value
 
 
@@ -42,11 +43,13 @@ def _clean_model(value: str) -> str:
 _client: Optional[OpenAI] = None
 
 
-def _get_client() -> OpenAI:
+def _get_client() -> OpenAI | None:
     global _client
     if _client is None:
-        api_key = _get_required_env("OPENROUTER_API_KEY")
-
+        api_key = _get_optional_env("OPENROUTER_API_KEY")
+        if not api_key:
+            logger.warning("OPENROUTER_API_KEY not configured - OpenRouter provider unavailable")
+            return None
         _client = OpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1",
@@ -142,6 +145,7 @@ def call_openrouter(
     model: Optional[str] = None,
     max_retries: int = 3,
     retry_delay: float = 2.0,
+    timeout_ms: int = 30000,
 ) -> dict:
     """
     Send a prompt to OpenRouter and return a structured response dict.
@@ -163,7 +167,19 @@ def call_openrouter(
             "error":         str | None
         }
     """
-    model_name = _clean_model(model) if model else _get_required_env("OPENROUTER_REASONING_MODEL")
+    client = _get_client()
+    if client is None:
+        logger.warning("OpenRouter provider unavailable - API key not configured")
+        return {
+            "text": "",
+            "model": model or "unknown",
+            "provider": "openrouter",
+            "latency_ms": 0,
+            "success": False,
+            "error": "Provider unavailable - API key not configured"
+        }
+
+    model_name = _clean_model(model) if model else (_get_optional_env("OPENROUTER_REASONING_MODEL") or "deepseek/deepseek-r1")
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -183,12 +199,29 @@ def call_openrouter(
             start = time.time()
 
             client = _get_client()
-            completion = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                temperature=0.7,
-                max_tokens=1500,
-            )
+
+            # Use ThreadPoolExecutor to enforce actual timeout on the SDK call
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    client.chat.completions.create,
+                    model=model_name,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=1500,
+                )
+                try:
+                    completion = future.result(timeout=timeout_ms / 1000.0)
+                except FutureTimeoutError:
+                    latency_ms = int((time.time() - start) * 1000)
+                    logger.error(f"OpenRouter timeout after {latency_ms}ms (enforced)")
+                    return {
+                        "text": "",
+                        "model": model_name,
+                        "provider": "openrouter",
+                        "latency_ms": latency_ms,
+                        "success": False,
+                        "error": "Request timeout"
+                    }
 
             latency_ms = int((time.time() - start) * 1000)
             text = _extract_text_from_completion(completion)
@@ -209,6 +242,7 @@ def call_openrouter(
             }
 
         except Exception as exc:
+            latency_ms = int((time.time() - start) * 1000)
             last_error = f"{type(exc).__name__}: {exc}"
             logger.warning(
                 "OpenRouter attempt %s/%s failed for model %s: %s",

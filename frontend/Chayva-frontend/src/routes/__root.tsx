@@ -1,10 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  createRootRouteWithContext,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { Outlet, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster, toast } from "sonner";
 import { UserProvider } from "@/lib/user-context";
@@ -19,9 +14,7 @@ function NotFoundComponent() {
       <div className="glass max-w-md rounded-2xl p-8 text-center">
         <h1 className="text-gradient text-7xl font-bold">404</h1>
 
-        <p className="mt-3 text-muted-foreground">
-          This page could not be found.
-        </p>
+        <p className="mt-3 text-muted-foreground">This page could not be found.</p>
 
         <a
           href="/"
@@ -40,9 +33,7 @@ function ErrorComponent({ error }: { error: Error }) {
       <div className="glass max-w-md rounded-2xl p-8 text-center">
         <h1 className="text-xl font-semibold">Something went wrong</h1>
 
-        <p className="mt-3 text-muted-foreground">
-          {error.message}
-        </p>
+        <p className="mt-3 text-muted-foreground">{error.message}</p>
         <button
           onClick={() => window.location.reload()}
           className="mt-6 rounded-lg bg-gradient-primary px-4 py-2 text-primary-foreground"

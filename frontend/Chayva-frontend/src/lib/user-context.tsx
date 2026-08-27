@@ -7,14 +7,7 @@
  *
  * All components call `useUser()` to read the current user.
  */
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { type User, getCurrentUser, clearToken } from "./auth";
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +42,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loading: true,
     error: null,
   });
-const fetchUser = useCallback(async () => {
+  const fetchUser = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const user = await getCurrentUser();
@@ -57,7 +50,7 @@ const fetchUser = useCallback(async () => {
       setState({ user, loading: false, error: null });
       return user;
     } catch (err) {
-          // Token was invalid or expired — clear it and treat as unauthenticated.
+      // Token was invalid or expired — clear it and treat as unauthenticated.
       clearToken();
       setState({
         user: null,
@@ -67,7 +60,7 @@ const fetchUser = useCallback(async () => {
       return null;
     }
   }, []);
- // On mount: check if there is a stored token and validate it.
+  // On mount: check if there is a stored token and validate it.
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);

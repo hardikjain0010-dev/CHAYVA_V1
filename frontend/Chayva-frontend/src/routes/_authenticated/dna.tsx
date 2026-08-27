@@ -32,9 +32,14 @@ function DimensionBar({
 
   // Map descriptive labels to a visual intensity (not a fake score)
   const intensity: Record<string, number> = {
-    high: 0.85, strong: 0.85, very: 0.90,
-    moderate: 0.55, medium: 0.55,
-    low: 0.30, weak: 0.30, emerging: 0.20,
+    high: 0.85,
+    strong: 0.85,
+    very: 0.9,
+    moderate: 0.55,
+    medium: 0.55,
+    low: 0.3,
+    weak: 0.3,
+    emerging: 0.2,
   };
   const rawVal = value.toLowerCase();
   const fill = Object.entries(intensity).find(([k]) => rawVal.includes(k))?.[1] ?? 0.5;
@@ -70,8 +75,10 @@ function SpendDnaPage() {
   const personality = snapshot?.personality ?? {};
   const mindfulness = dna.mindfulness_score ?? personality.mindfulness_score ?? null;
 
-  const archetypeName = dna.personality_type ?? personality.type ?? personality.personality_type ?? null;
-  const archetypeDesc = personality.description ?? personality.behavior_narrative ?? dna.coach_advice ?? null;
+  const archetypeName =
+    dna.personality_type ?? personality.type ?? personality.personality_type ?? null;
+  const archetypeDesc =
+    personality.description ?? personality.behavior_narrative ?? dna.coach_advice ?? null;
   const confidenceLevel = dna.confidence ?? personality.confidence ?? null;
 
   // Is the evidence strong enough to present confidently?
@@ -82,21 +89,32 @@ function SpendDnaPage() {
   const strengths = dna.strengths ?? personality.strengths ?? [];
   const growthAreas = dna.growth_areas ?? personality.growth_areas ?? [];
 
-  const dimensions = useMemo(() => [
-    { label: "Personality type", value: archetypeName },
-    { label: "Dominant trigger", value: dna.dominant_trigger ?? personality.dominant_trigger ?? null },
-    { label: "Favorite category", value: dna.favorite_category ?? personality.favorite_category ?? null },
-    { label: "Most active time", value: dna.most_active_time ?? personality.most_active_time ?? null },
-    { label: "Risk level", value: dna.risk_level ?? personality.risk_level ?? null },
-    { label: "Behavior trend", value: dna.behavior_pattern ?? null },
-  ], [dna, personality, archetypeName]);
+  const dimensions = useMemo(
+    () => [
+      { label: "Personality type", value: archetypeName },
+      {
+        label: "Dominant trigger",
+        value: dna.dominant_trigger ?? personality.dominant_trigger ?? null,
+      },
+      {
+        label: "Favorite category",
+        value: dna.favorite_category ?? personality.favorite_category ?? null,
+      },
+      {
+        label: "Most active time",
+        value: dna.most_active_time ?? personality.most_active_time ?? null,
+      },
+      { label: "Risk level", value: dna.risk_level ?? personality.risk_level ?? null },
+      { label: "Behavior trend", value: dna.behavior_pattern ?? null },
+    ],
+    [dna, personality, archetypeName],
+  );
 
   const hasData = !loading && (archetypeName || traits.length > 0 || strengths.length > 0);
 
   return (
     <PageTransition>
       <div className="mx-auto max-w-4xl space-y-7">
-
         {/* ================================================================= */}
         {/* HEADER                                                             */}
         {/* ================================================================= */}
@@ -112,7 +130,12 @@ function SpendDnaPage() {
         {error && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive">
             <span>{error}</span>
-            <button onClick={() => void refetch()} className="rounded-lg border border-destructive/30 px-3 py-1">Retry</button>
+            <button
+              onClick={() => void refetch()}
+              className="rounded-lg border border-destructive/30 px-3 py-1"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -146,8 +169,14 @@ function SpendDnaPage() {
               className="relative overflow-hidden rounded-3xl border border-primary/15 p-7 md:p-9"
               style={{ background: "var(--gradient-hero)" }}
             >
-              <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/12 blur-3xl" />
-              <div aria-hidden className="pointer-events-none absolute -left-12 -bottom-12 h-36 w-36 rounded-full bg-accent/10 blur-2xl" />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/12 blur-3xl"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -left-12 -bottom-12 h-36 w-36 rounded-full bg-accent/10 blur-2xl"
+              />
 
               <div className="relative flex flex-col gap-6 md:flex-row md:items-start">
                 {/* Mindfulness arc — supporting metric */}
@@ -156,7 +185,9 @@ function SpendDnaPage() {
                     <CircularScore value={mindfulness} size={120} />
                     <div className="text-center">
                       <p className="text-2xl font-bold tabular-nums">{Math.round(mindfulness)}</p>
-                      <p className="text-[0.6rem] uppercase tracking-[0.14em] text-muted-foreground">Mindfulness</p>
+                      <p className="text-[0.6rem] uppercase tracking-[0.14em] text-muted-foreground">
+                        Mindfulness
+                      </p>
                     </div>
                   </div>
                 )}
@@ -187,7 +218,8 @@ function SpendDnaPage() {
                     <div className="mt-4">
                       {isVeryLowConfidence ? (
                         <p className="text-xs text-muted-foreground italic">
-                          Early signal — Caayva is still learning your pattern. These observations will strengthen with more data.
+                          Early signal — Caayva is still learning your pattern. These observations
+                          will strengthen with more data.
                         </p>
                       ) : isLowConfidence ? (
                         <p className="text-xs text-muted-foreground">
@@ -213,12 +245,7 @@ function SpendDnaPage() {
                 <p className="caayva-eyebrow mb-5">What shapes your DNA</p>
                 <div className="space-y-4">
                   {dimensions.map((d, i) => (
-                    <DimensionBar
-                      key={d.label}
-                      label={d.label}
-                      value={d.value}
-                      delay={i * 0.07}
-                    />
+                    <DimensionBar key={d.label} label={d.label} value={d.value} delay={i * 0.07} />
                   ))}
                 </div>
               </section>
@@ -229,26 +256,12 @@ function SpendDnaPage() {
             {/* ============================================================= */}
             {(traits.length > 0 || strengths.length > 0 || growthAreas.length > 0) && (
               <div className="grid gap-4 md:grid-cols-3">
-                {traits.length > 0 && (
-                  <DnaList
-                    title="Traits"
-                    items={traits}
-                    delay={0}
-                  />
-                )}
+                {traits.length > 0 && <DnaList title="Traits" items={traits} delay={0} />}
                 {strengths.length > 0 && (
-                  <DnaList
-                    title="Strengths"
-                    items={strengths}
-                    delay={0.08}
-                  />
+                  <DnaList title="Strengths" items={strengths} delay={0.08} />
                 )}
                 {growthAreas.length > 0 && (
-                  <DnaList
-                    title="Growth areas"
-                    items={growthAreas}
-                    delay={0.16}
-                  />
+                  <DnaList title="Growth areas" items={growthAreas} delay={0.16} />
                 )}
               </div>
             )}
@@ -256,14 +269,15 @@ function SpendDnaPage() {
             {/* ============================================================= */}
             {/* COACH ADVICE — from real AI output                             */}
             {/* ============================================================= */}
-            {(dna.coach_advice || personality.coach_advice) && archetypeDesc !== (dna.coach_advice ?? personality.coach_advice) && (
-              <div className="rounded-2xl border border-primary/15 bg-primary/5 px-6 py-5">
-                <p className="caayva-eyebrow mb-2">Coach perspective</p>
-                <p className="text-sm leading-relaxed text-foreground/85">
-                  {dna.coach_advice ?? personality.coach_advice}
-                </p>
-              </div>
-            )}
+            {(dna.coach_advice || personality.coach_advice) &&
+              archetypeDesc !== (dna.coach_advice ?? personality.coach_advice) && (
+                <div className="rounded-2xl border border-primary/15 bg-primary/5 px-6 py-5">
+                  <p className="caayva-eyebrow mb-2">Coach perspective</p>
+                  <p className="text-sm leading-relaxed text-foreground/85">
+                    {dna.coach_advice ?? personality.coach_advice}
+                  </p>
+                </div>
+              )}
 
             {/* ============================================================= */}
             {/* BEHAVIOR EVOLUTION                                             */}
@@ -291,15 +305,7 @@ function SpendDnaPage() {
 // DnaList — traits / strengths / growth areas
 // ---------------------------------------------------------------------------
 
-function DnaList({
-  title,
-  items,
-  delay = 0,
-}: {
-  title: string;
-  items: string[];
-  delay?: number;
-}) {
+function DnaList({ title, items, delay = 0 }: { title: string; items: string[]; delay?: number }) {
   if (!items.length) return null;
   return (
     <motion.div
@@ -311,10 +317,7 @@ function DnaList({
       <p className="caayva-eyebrow mb-3">{title}</p>
       <ul className="space-y-2">
         {items.map((item) => (
-          <li
-            key={item}
-            className="flex items-start gap-2 text-sm text-foreground/80"
-          >
+          <li key={item} className="flex items-start gap-2 text-sm text-foreground/80">
             <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60" />
             {item}
           </li>

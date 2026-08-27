@@ -5,11 +5,7 @@ interface CaayvaLogoProps extends SVGProps<SVGSVGElement> {
   size?: number | string;
 }
 
-export function CaayvaLogo({
-  className = "h-8 w-8",
-  size,
-  ...props
-}: CaayvaLogoProps) {
+export function CaayvaLogo({ className = "h-8 w-8", size, ...props }: CaayvaLogoProps) {
   const width = size ?? props.width;
   const height = size ?? props.height;
 
