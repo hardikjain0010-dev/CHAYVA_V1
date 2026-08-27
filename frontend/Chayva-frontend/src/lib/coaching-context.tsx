@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   type ReactNode,
@@ -163,6 +164,8 @@ type CoachingContextValue = State & {
 
 const CoachingContext = createContext<CoachingContextValue | null>(null);
 
+let _coachingReqCounter = 0;
+
 export function CoachingProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const { expenses, loading: expensesLoading } = useExpenses();
@@ -177,76 +180,130 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
   const snapshotRef = useRef<CoachingSnapshot | null>(state.snapshot);
   snapshotRef.current = state.snapshot;
 
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  const expenseSignatureRef = useRef(expenseSignature);
+  expenseSignatureRef.current = expenseSignature;
+
   const inFlightPromiseRef = useRef<Promise<void> | null>(null);
   const lastFetchedSignatureRef = useRef<string | null>(null);
 
   const getCachedSnapshot = useCallback((): CoachingSnapshot | null => {
-    if (!user?.uid || typeof window === "undefined") return null;
+    const uid = userRef.current?.uid;
+    if (!uid || typeof window === "undefined") return null;
     try {
-      const stored = window.sessionStorage.getItem(`caayva_coaching_${user.uid}`);
+      const stored = window.sessionStorage.getItem(`caayva_coaching_${uid}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
-  }, [user?.uid]);
+  }, []);
+
+  const executeFetch = useCallback(
+    async (sig: string, force: boolean, reason: string): Promise<void> => {
+      const currentUser = userRef.current;
+      if (!currentUser?.uid) {
+        dispatch({ type: "CLEAR" });
+        lastFetchedSignatureRef.current = null;
+        return;
+      }
+
+      // If a request is already running and this is not a forced user action, join the running request
+      if (inFlightPromiseRef.current && !force) {
+        if (import.meta.env.DEV) {
+          console.debug(`[COACHING] joined in-flight request | reason=${reason}`);
+        }
+        return inFlightPromiseRef.current;
+      }
+
+      // Synchronously record signature BEFORE network call to immediately prevent effect loops
+      lastFetchedSignatureRef.current = sig;
+      const reqId = ++_coachingReqCounter;
+
+      if (import.meta.env.DEV) {
+        console.debug(
+          `[COACHING] request started | id=${reqId} | reason=${reason} | signature=${sig.slice(0, 30)}...`,
+        );
+      }
+
+      // Hydrate from cache immediately if state is empty to prevent UI flicker
+      const cached = getCachedSnapshot();
+      if (cached && !snapshotRef.current) {
+        dispatch({ type: "SUCCESS", payload: cached });
+      }
+
+      dispatch({ type: "LOAD" });
+
+      const fetchPromise = (async () => {
+        try {
+          const snapshot = await get<CoachingSnapshot>("/insights/coaching");
+          if (typeof window !== "undefined") {
+            window.sessionStorage.setItem(
+              `caayva_coaching_${currentUser.uid}`,
+              JSON.stringify(snapshot),
+            );
+          }
+          dispatch({ type: "SUCCESS", payload: snapshot });
+          if (import.meta.env.DEV) {
+            console.debug(`[COACHING] request completed | id=${reqId}`);
+          }
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn(`[COACHING] request failed | id=${reqId} | error=`, error);
+          }
+          const fallback = cached ?? snapshotRef.current;
+          if (fallback) {
+            dispatch({ type: "SUCCESS", payload: fallback });
+          } else {
+            dispatch({
+              type: "ERROR",
+              payload: error instanceof Error ? error.message : "Unable to load AI coaching.",
+            });
+          }
+        } finally {
+          inFlightPromiseRef.current = null;
+        }
+      })();
+
+      inFlightPromiseRef.current = fetchPromise;
+      return fetchPromise;
+    },
+    [getCachedSnapshot],
+  );
 
   const refetch = useCallback(async () => {
-    if (!user?.uid) {
-      dispatch({ type: "CLEAR" });
-      lastFetchedSignatureRef.current = null;
-      return;
-    }
-
-    if (inFlightPromiseRef.current) {
-      return inFlightPromiseRef.current;
-    }
-
-    const cached = getCachedSnapshot();
-    if (cached && !snapshotRef.current) {
-      dispatch({ type: "SUCCESS", payload: cached });
-    }
-
-    dispatch({ type: "LOAD" });
-
-    const fetchPromise = (async () => {
-      try {
-        const snapshot = await get<CoachingSnapshot>("/insights/coaching");
-        if (typeof window !== "undefined") {
-          window.sessionStorage.setItem(`caayva_coaching_${user.uid}`, JSON.stringify(snapshot));
-        }
-        dispatch({ type: "SUCCESS", payload: snapshot });
-        lastFetchedSignatureRef.current = expenseSignature;
-      } catch (error) {
-        const fallback = cached ?? snapshotRef.current;
-        if (fallback) {
-          dispatch({ type: "SUCCESS", payload: fallback });
-        } else {
-          dispatch({
-            type: "ERROR",
-            payload: error instanceof Error ? error.message : "Unable to load AI coaching.",
-          });
-        }
-      } finally {
-        inFlightPromiseRef.current = null;
-      }
-    })();
-
-    inFlightPromiseRef.current = fetchPromise;
-    return fetchPromise;
-  }, [user?.uid, getCachedSnapshot, expenseSignature]);
+    return executeFetch(expenseSignatureRef.current, true, "manual_refetch");
+  }, [executeFetch]);
 
   useEffect(() => {
     if (!user?.uid) return;
+
+    // While initial expenses are actively loading, wait until they finish to have the real signature
     if (expensesLoading && !snapshotRef.current && !getCachedSnapshot()) {
       return;
     }
+
+    // Only fire if the expenseSignature actually changed
     if (lastFetchedSignatureRef.current !== expenseSignature) {
-      void refetch();
+      void executeFetch(
+        expenseSignature,
+        false,
+        lastFetchedSignatureRef.current === null ? "initial_mount" : "expense_signature_changed",
+      );
     }
-  }, [user?.uid, expensesLoading, expenseSignature, refetch, getCachedSnapshot]);
+  }, [user?.uid, expensesLoading, expenseSignature, executeFetch, getCachedSnapshot]);
+
+  const contextValue = useMemo(
+    () => ({
+      ...state,
+      refetch,
+    }),
+    [state, refetch],
+  );
 
   return (
-    <CoachingContext.Provider value={{ ...state, refetch }}>{children}</CoachingContext.Provider>
+    <CoachingContext.Provider value={contextValue}>{children}</CoachingContext.Provider>
   );
 }
 

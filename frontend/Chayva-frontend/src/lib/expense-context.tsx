@@ -17,6 +17,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   type ReactNode,
 } from "react";
@@ -168,16 +169,20 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
   const clearExpenses = useCallback(() => {
     dispatch({ type: "CLEAR_EXPENSES" });
   }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      ...state,
+      addExpense,
+      removeExpense,
+      clearExpenses,
+      refetch: fetchExpenses,
+    }),
+    [state, addExpense, removeExpense, clearExpenses, fetchExpenses],
+  );
+
   return (
-    <ExpenseContext.Provider
-      value={{
-        ...state,
-        addExpense,
-        removeExpense,
-        clearExpenses,
-        refetch: fetchExpenses,
-      }}
-    >
+    <ExpenseContext.Provider value={contextValue}>
       {children}
     </ExpenseContext.Provider>
   );
