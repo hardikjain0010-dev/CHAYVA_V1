@@ -104,7 +104,9 @@ def call_gemini(
             "error": "Provider unavailable - API key not configured"
         }
 
-    model_name = (model or _get_optional_env("GEMINI_MODEL") or "gemini-2.0-flash-exp").strip()
+    model_name = (model or _get_optional_env("GEMINI_MODEL") or "gemini-3.6-flash").strip()
+    if model_name in ("gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-2.0-flash"):
+        model_name = "gemini-3.6-flash"
 
     # Combine system + user prompt (Gemini SDK style)
     full_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"

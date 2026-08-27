@@ -166,6 +166,17 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const { expenses } = useExpenses();
   const expenseSignature = expenses.map((e) => `${e.id}:${e.amount}`).join("|");
+
+  const getCachedSnapshot = useCallback((): CoachingSnapshot | null => {
+    if (!user?.uid || typeof window === "undefined") return null;
+    try {
+      const stored = window.sessionStorage.getItem(`caayva_coaching_${user.uid}`);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, [user?.uid]);
+
   const [state, dispatch] = useReducer(reducer, {
     snapshot: null,
     loading: false,
@@ -178,17 +189,32 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Hydrate from cache immediately if state is empty to prevent UI flicker
+    const cached = getCachedSnapshot();
+    if (cached && !state.snapshot) {
+      dispatch({ type: "SUCCESS", payload: cached });
+    }
+
     dispatch({ type: "LOAD" });
     try {
       const snapshot = await get<CoachingSnapshot>("/insights/coaching");
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(`caayva_coaching_${user.uid}`, JSON.stringify(snapshot));
+      }
       dispatch({ type: "SUCCESS", payload: snapshot });
     } catch (error) {
-      dispatch({
-        type: "ERROR",
-        payload: error instanceof Error ? error.message : "Unable to load AI coaching.",
-      });
+      // If we have cached data, don't wipe it out on transient cold-start errors
+      const fallback = cached ?? state.snapshot;
+      if (fallback) {
+        dispatch({ type: "SUCCESS", payload: fallback });
+      } else {
+        dispatch({
+          type: "ERROR",
+          payload: error instanceof Error ? error.message : "Unable to load AI coaching.",
+        });
+      }
     }
-  }, [user?.uid]);
+  }, [user?.uid, state.snapshot, getCachedSnapshot]);
 
   useEffect(() => {
     void refetch();

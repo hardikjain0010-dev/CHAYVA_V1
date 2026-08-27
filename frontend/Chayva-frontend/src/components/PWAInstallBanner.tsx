@@ -11,10 +11,10 @@ export function PWAInstallBanner() {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className="fixed top-3 inset-x-3 z-50 mx-auto max-w-md rounded-2xl glass-strong border border-border/80 p-3.5 shadow-xl md:top-4"
+        exit={{ opacity: 0, y: 20 }}
+        className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-md rounded-2xl glass-strong border border-border/80 p-3.5 shadow-2xl md:bottom-6 md:right-6 md:left-auto md:max-w-sm"
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">

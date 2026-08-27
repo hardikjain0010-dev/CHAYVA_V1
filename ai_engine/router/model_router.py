@@ -48,7 +48,7 @@ def _get_required_env(name: str, required: bool = True) -> str | None:
     return value
 
 
-GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL", required=False) or "gemini-2.5-flash"
+GEMINI_MODEL_NAME = _get_required_env("GEMINI_MODEL", required=False) or "gemini-3.6-flash"
 GROQ_MODEL_NAME = _get_required_env("GROQ_MODEL", required=False) or "qwen/qwen3.8-27b"
 OPENROUTER_REASONING_MODEL_NAME = _get_required_env("OPENROUTER_REASONING_MODEL", required=False) or "deepseek/deepseek-chat"
 OPENROUTER_SUMMARY_MODEL_NAME = _get_required_env("OPENROUTER_SUMMARY_MODEL", required=False) or "deepseek/deepseek-chat"
@@ -127,8 +127,8 @@ def _get_model_for_provider(provider: str) -> str:
 
 ROUTING_TABLE = {
     "insight": {"provider": "gemini", "model": GEMINI_MODEL_NAME, "temperature": 0.7},
-    "summary": {"provider": "openrouter", "model": OPENROUTER_REASONING_MODEL_NAME, "temperature": 0.7},
-    "personality": {"provider": "openrouter", "model": OPENROUTER_SUMMARY_MODEL_NAME, "temperature": 0.3},
+    "summary": {"provider": "gemini", "model": GEMINI_MODEL_NAME, "temperature": 0.7},
+    "personality": {"provider": "gemini", "model": GEMINI_MODEL_NAME, "temperature": 0.3},
     "hindi": {"provider": "gemini", "model": GEMINI_MODEL_NAME, "temperature": 0.7},
     "reasoning": {"provider": "groq", "model": GROQ_MODEL_NAME, "temperature": 0.2},
     "fast": {"provider": "groq", "model": GROQ_MODEL_NAME, "temperature": 0.4},
