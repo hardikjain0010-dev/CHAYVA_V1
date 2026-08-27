@@ -179,7 +179,9 @@ def call_openrouter(
             "error": "Provider unavailable - API key not configured"
         }
 
-    model_name = _clean_model(model) if model else (_get_optional_env("OPENROUTER_REASONING_MODEL") or "deepseek/deepseek-r1")
+    model_name = _clean_model(model) if model else (_get_optional_env("OPENROUTER_REASONING_MODEL") or "deepseek/deepseek-chat")
+    if model_name in ("deepseek/deepseek-r1", "meta-llama/llama-3.3-70b-instruct:free", "deepseek/deepseek-r1:free"):
+        model_name = "deepseek/deepseek-chat"
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
