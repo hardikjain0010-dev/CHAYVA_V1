@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useExpenses } from "@/lib/expense-context";
-import { PageTransition, CategoryIcon, AIInsightReveal } from "@/lib/ui-helpers";
+import { PageTransition, CategoryIcon, AIInsightReveal, buildInsightFlowData } from "@/lib/ui-helpers";
 
 export const Route = createFileRoute("/_authenticated/add")({
   component: AddExpensePage,
@@ -110,33 +110,27 @@ function AddExpensePage() {
     }
   }
 
-  // Build insight data for AIInsightReveal from the expense.insight object
-  const insightData = savedInsight
+  // Build insight data for AIInsightReveal from the canonical expense.insight object
+  const flowData = buildInsightFlowData(savedInsight);
+  const insightData = flowData
     ? {
-        observation: savedInsight.insight ? String(savedInsight.insight) : null,
-        evidence: savedInsight.detected_trigger
-          ? `Detected trigger: ${String(savedInsight.detected_trigger)}`
-          : null,
-        interpretation: savedInsight.behavior
-          ? `Spending type: ${String(savedInsight.behavior)}`
-          : null,
-        suggestion: savedInsight.suggestion ? String(savedInsight.suggestion) : null,
+        ...flowData,
         tags: [
-          savedInsight.spending_type && {
+          savedInsight?.spending_type && {
             label: String(savedInsight.spending_type),
           },
-          savedInsight.pattern_tag && {
+          savedInsight?.pattern_tag && {
             label: String(savedInsight.pattern_tag),
           },
-          (savedInsight.expense_classification as Record<string, unknown> | null)
+          (savedInsight?.expense_classification as Record<string, unknown> | null)
             ?.classification && {
             label: String(
-              (savedInsight.expense_classification as Record<string, unknown>).classification,
+              (savedInsight?.expense_classification as Record<string, unknown>).classification,
             ),
           },
-          (savedInsight.behavioral_significance as Record<string, unknown> | null)?.level && {
+          (savedInsight?.behavioral_significance as Record<string, unknown> | null)?.level && {
             label: `significance: ${String(
-              (savedInsight.behavioral_significance as Record<string, unknown>).level,
+              (savedInsight?.behavioral_significance as Record<string, unknown>).level,
             )}`,
           },
         ].filter(Boolean) as Array<{ label: string }>,

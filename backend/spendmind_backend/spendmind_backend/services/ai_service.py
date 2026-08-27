@@ -46,7 +46,14 @@ def analyze_expense(expense: dict, user_profile: dict | None = None) -> dict:
         classification_override=adapted.get("classification_override"),
         user_profile=user_profile,
     )
-    return _enrich_expense_insight(_without_meta(result), adapted, adapted_recent, user_profile)
+    meta = result.get("_meta", {}) if isinstance(result, dict) else {}
+    enriched = _enrich_expense_insight(result, adapted, adapted_recent, user_profile)
+    enriched["provider"] = meta.get("provider", "unknown")
+    enriched["model"] = meta.get("model", "unknown")
+    enriched["fallback_used"] = bool(meta.get("fallback_used", False))
+    enriched["is_ai_generated"] = not bool(meta.get("fallback_used", False))
+    enriched["generated_at"] = utc_now_iso()
+    return enriched
 
 
 def apply_classification_fields(expense_doc: dict, insight: dict | None) -> dict:

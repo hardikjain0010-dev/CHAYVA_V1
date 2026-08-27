@@ -10,6 +10,7 @@ import {
   CategoryIcon,
   CountUp,
   InsightFlow,
+  buildInsightFlowData,
   EmptyLearningState,
   BehaviorTag,
   MoodBadge,
@@ -430,9 +431,8 @@ function DashboardPage() {
                   expense.insight && typeof expense.insight === "object"
                     ? (expense.insight as Record<string, unknown>)
                     : null;
+                const flowData = buildInsightFlowData(insight);
                 const expanded = expandedExpenseId === expense.id;
-                const insightText = insight?.insight ? String(insight.insight) : null;
-                const behavior = insight?.behavior ?? insight?.spending_type;
                 const classificationObj = insight?.expense_classification as Record<
                   string,
                   unknown
@@ -496,19 +496,8 @@ function DashboardPage() {
                           className="overflow-hidden"
                         >
                           <div className="border-t border-foreground/8 px-4 pb-4 pt-3">
-                            {insightText ? (
-                              <InsightFlow
-                                compact
-                                data={{
-                                  observation: insightText,
-                                  evidence: insight?.detected_trigger
-                                    ? `Trigger: ${String(insight.detected_trigger)}`
-                                    : null,
-                                  interpretation: insight?.suggestion
-                                    ? String(insight.suggestion)
-                                    : null,
-                                }}
-                              />
+                            {flowData?.observation ? (
+                              <InsightFlow compact data={flowData} />
                             ) : (
                               <p className="text-xs text-muted-foreground italic">
                                 Caayva is still processing this expense.

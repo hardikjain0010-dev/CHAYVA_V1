@@ -187,6 +187,43 @@ export type InsightData = {
   reflection?: string | null; // What to consider
 };
 
+export function buildInsightFlowData(
+  insight: Record<string, unknown> | null | undefined,
+): InsightData | null {
+  if (!insight || typeof insight !== "object") return null;
+
+  const observation = insight.insight
+    ? String(insight.insight)
+    : insight.observation
+      ? String(insight.observation)
+      : null;
+
+  const evidence = insight.detected_trigger
+    ? `Detected trigger: ${String(insight.detected_trigger)}`
+    : null;
+
+  const interpretation = insight.behavior
+    ? `Spending pattern: ${String(insight.behavior)}`
+    : insight.interpretation
+      ? String(insight.interpretation)
+      : null;
+
+  const reflection = insight.suggestion
+    ? String(insight.suggestion)
+    : insight.reflection
+      ? String(insight.reflection)
+      : null;
+
+  if (!observation && !evidence && !interpretation && !reflection) return null;
+
+  return {
+    observation,
+    evidence,
+    interpretation,
+    reflection,
+  };
+}
+
 export function InsightFlow({ data, compact = false }: { data: InsightData; compact?: boolean }) {
   const levels = [
     {

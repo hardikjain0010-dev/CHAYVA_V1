@@ -8,6 +8,7 @@ import {
   CategoryIcon,
   PageTransition,
   InsightFlow,
+  buildInsightFlowData,
   BehaviorTag,
   MoodBadge,
   TimeWindowBadge,
@@ -269,7 +270,8 @@ function JournalEntry({
       ? (expense.insight as Record<string, unknown>)
       : null;
 
-  const insightText = insight?.insight ? String(insight.insight) : null;
+  const flowData = buildInsightFlowData(insight);
+  const hasInsight = !!flowData?.observation;
 
   const classification =
     nestedString(insight, "expense_classification", "classification") ??
@@ -284,8 +286,6 @@ function JournalEntry({
     nestedString(expense as unknown as Record<string, unknown>, "behavioral_significance", "level");
 
   const spendingType = insight?.spending_type ? String(insight.spending_type) : null;
-
-  const hasInsight = !!insightText;
 
   return (
     <motion.li
@@ -372,25 +372,9 @@ function JournalEntry({
             className="overflow-hidden"
           >
             <div className="border-t border-foreground/8 px-4 pb-5 pt-4 space-y-3">
-              {hasInsight ? (
+              {hasInsight && flowData ? (
                 <>
-                  <InsightFlow
-                    compact
-                    data={{
-                      // LEVEL 1: What Caayva noticed
-                      observation: insightText,
-                      // LEVEL 2: Evidence
-                      evidence: insight?.detected_trigger
-                        ? `Trigger observed: ${String(insight.detected_trigger)}`
-                        : null,
-                      // LEVEL 3: Interpretation (cautious)
-                      interpretation: insight?.emotion
-                        ? `Emotional state logged: ${String(insight.emotion)}`
-                        : null,
-                      // LEVEL 4: Reflection
-                      reflection: insight?.suggestion ? String(insight.suggestion) : null,
-                    }}
-                  />
+                  <InsightFlow compact data={flowData} />
 
                   {/* Behavioral metadata — neutral tags */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
