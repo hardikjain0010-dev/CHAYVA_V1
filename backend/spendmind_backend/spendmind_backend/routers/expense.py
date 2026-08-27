@@ -1,12 +1,12 @@
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from core.datetime_utils import parse_utc_datetime, utc_now
+from core.security import get_current_user_id
 from models.expense_model import ExpenseCreate, ExpenseOut
-from services.firebase_service import db_client, now_iso
+from routers.profile import load_profile_for_user
 from services.ai_service import analyze_expense, apply_classification_fields
 from services.cache_service import delete as delete_cache
-from core.security import get_current_user_id
-from routers.profile import load_profile_for_user
+from services.firebase_service import db_client, now_iso
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
@@ -32,7 +32,10 @@ def create_expense(
     insight = None
     try:
         recent = db_client.query(COLLECTION, user_id=doc["user_id"])
-        recent.sort(key=lambda r: r.get("date", ""), reverse=True)
+        recent.sort(
+            key=lambda r: (parse_utc_datetime(r.get("date") or r.get("timestamp")) or utc_now()).timestamp(),
+            reverse=True,
+        )
         doc["recent_expenses"] = recent[:30]
         insight = analyze_expense(doc, user_profile=load_profile_for_user(authenticated_user_id))
     except Exception:
@@ -81,13 +84,25 @@ def list_expenses(
     results = db_client.query(COLLECTION, user_id=authenticated_user_id, category=category, mood=mood)
 
     if date_from:
-        results = [r for r in results if r.get("date", "") >= date_from]
+        df = parse_utc_datetime(date_from)
+        if df is not None:
+            results = [r for r in results if (parse_utc_datetime(r.get("date") or r.get("timestamp")) or df) >= df]
+        else:
+            results = [r for r in results if str(r.get("date", "")) >= date_from]
     if date_to:
-        results = [r for r in results if r.get("date", "") <= date_to]
+        dt = parse_utc_datetime(date_to)
+        if dt is not None:
+            results = [r for r in results if (parse_utc_datetime(r.get("date") or r.get("timestamp")) or dt) <= dt]
+        else:
+            results = [r for r in results if str(r.get("date", "")) <= date_to]
 
-    reverse = True
-    key = "amount" if sort_by == "amount" else "date"
-    results.sort(key=lambda r: r.get(key, 0), reverse=reverse)
+    if sort_by == "amount":
+        results.sort(key=lambda r: float(r.get("amount") or 0), reverse=True)
+    else:
+        results.sort(
+            key=lambda r: (parse_utc_datetime(r.get("date") or r.get("timestamp")) or utc_now()).timestamp(),
+            reverse=True,
+        )
     return results
 
 

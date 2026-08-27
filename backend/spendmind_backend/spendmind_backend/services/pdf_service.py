@@ -14,6 +14,9 @@ from reportlab.platypus import (
 )
 
 
+from core.datetime_utils import utc_now
+
+
 def weekly_report_data(user_id: str, expenses: list[dict], summary: dict, triggers: list[dict]) -> dict:
     """
     Gathers everything needed for the PDF: weekly totals, top categories,
@@ -29,7 +32,7 @@ def weekly_report_data(user_id: str, expenses: list[dict], summary: dict, trigge
 
     return {
         "user_id": user_id,
-        "generated_at": datetime.utcnow().strftime("%d %b %Y, %H:%M UTC"),
+        "generated_at": utc_now().strftime("%d %b %Y, %H:%M UTC"),
         "total_spent": total,
         "expense_count": len(expenses),
         "top_categories": top_categories,
@@ -45,7 +48,7 @@ def generate_weekly_pdf(report_data: dict) -> str:
     returns the file path. Caller is responsible for cleanup after sending.
     """
     tmp_dir = tempfile.gettempdir()
-    file_path = os.path.join(tmp_dir, f"spendmind_report_{report_data['user_id']}_{int(datetime.utcnow().timestamp())}.pdf")
+    file_path = os.path.join(tmp_dir, f"spendmind_report_{report_data['user_id']}_{int(utc_now().timestamp())}.pdf")
 
     doc = SimpleDocTemplate(file_path, pagesize=A4, topMargin=2 * cm, bottomMargin=2 * cm)
     styles = getSampleStyleSheet()

@@ -213,7 +213,8 @@ def _build_client():
 db_client = _build_client()
 
 
-# ---- convenience helpers used throughout the routers/services ----
+from core.datetime_utils import utc_now_iso
+
 
 def now_iso() -> str:
-    return datetime.utcnow().isoformat()
+    return utc_now_iso()

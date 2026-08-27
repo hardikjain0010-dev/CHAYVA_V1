@@ -3,21 +3,32 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
 
-from services.firebase_service import db_client
-from services.ai_service import (
-    generate_weekly_summary,
-    classify_personality,
-    detect_triggers,
-    predict_nudge,
-    build_nudge_payload,
-    generate_spend_dna,
-    generate_reflection_summary,
-)
-from services.cache_service import get_or_set
 from core.config import settings
+from core.datetime_utils import (
+    filter_within_days,
+    is_within_days,
+    parse_utc_datetime,
+    safe_day_name,
+    safe_hour,
+    safe_iso_date,
+    time_of_day_bucket,
+    utc_now,
+    utc_now_iso,
+)
 from core.limiter import limiter
 from core.security import get_current_user_id
 from routers.profile import load_profile_for_user
+from services.ai_service import (
+    build_nudge_payload,
+    classify_personality,
+    detect_triggers,
+    generate_reflection_summary,
+    generate_spend_dna,
+    generate_weekly_summary,
+    predict_nudge,
+)
+from services.cache_service import get_or_set
+from services.firebase_service import db_client
 
 router = APIRouter(tags=["Insights & Analytics"])
 
@@ -33,36 +44,17 @@ def _user_moods(user_id: str) -> list[dict]:
 
 
 def _within_days(expenses: list[dict], days: int) -> list[dict]:
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    out = []
-    for e in expenses:
-        try:
-            d = datetime.fromisoformat(e.get("date", ""))
-        except Exception:
-            continue
-        if d >= cutoff:
-            out.append(e)
-    return out
+    return filter_within_days(expenses, days, date_keys=("date", "timestamp", "created_at"))
 
 
 def _within_days_moods(moods: list[dict], days: int) -> list[dict]:
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    out = []
-    for entry in moods:
-        try:
-            d = datetime.fromisoformat(entry.get("timestamp", entry.get("day", "")))
-        except Exception:
-            continue
-        if d >= cutoff:
-            out.append(entry)
-    return out
+    return filter_within_days(moods, days, date_keys=("timestamp", "day", "date", "created_at"))
 
 
 def _expense_stats(expenses: list[dict]) -> dict:
-    now = datetime.utcnow()
-    today = now.date().isoformat()
+    today = utc_now().date().isoformat()
     week = _within_days(expenses, 7)
-    today_expenses = [e for e in expenses if str(e.get("date", "")).startswith(today)]
+    today_expenses = [e for e in expenses if safe_iso_date(e.get("date") or e.get("timestamp")) == today]
     return {
         "total_spent": round(sum(e.get("amount", 0) for e in expenses), 2),
         "today_spend": round(sum(e.get("amount", 0) for e in today_expenses), 2),
@@ -80,14 +72,11 @@ def _category_totals(expenses: list[dict]) -> dict[str, float]:
 
 def _day_totals(expenses: list[dict], days: int = 30) -> dict[str, float]:
     totals: dict[str, float] = defaultdict(float)
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    for expense in expenses:
-        try:
-            date = datetime.fromisoformat(expense.get("date", ""))
-        except Exception:
-            continue
-        if date >= cutoff:
-            totals[date.date().isoformat()] += expense.get("amount", 0)
+    recent = _within_days(expenses, days)
+    for expense in recent:
+        day_str = safe_iso_date(expense.get("date") or expense.get("timestamp"))
+        if day_str:
+            totals[day_str] += expense.get("amount", 0)
     return dict(sorted(totals.items()))
 
 
@@ -123,8 +112,8 @@ def _profile_from_expenses(expenses: list[dict], moods: list[dict]) -> dict:
             cleaned = word.strip(".!?;:()[]")
             if len(cleaned) > 2 and cleaned not in {"the", "and", "for", "with", "from", "this", "that"}:
                 notes_counter[cleaned] += 1
-        try:
-            dt = datetime.fromisoformat(expense.get("date", ""))
+        dt = parse_utc_datetime(expense.get("date") or expense.get("timestamp"))
+        if dt is not None:
             if dt.hour >= 22 or dt.hour < 5:
                 night_count += 1
             if dt.weekday() >= 5:
@@ -137,8 +126,6 @@ def _profile_from_expenses(expenses: list[dict], moods: list[dict]) -> dict:
                 time_period_counter["evening"] += 1
             else:
                 time_period_counter["night"] += 1
-        except Exception:
-            pass
 
     for entry in moods:
         if entry.get("mood"):
@@ -203,7 +190,7 @@ def _personality_confidence(total_expenses: int, ai_type: str) -> tuple[float, s
 def _evolve_personality(total_expenses: int, personality: dict, profile: dict | None = None) -> dict:
     ai_type = personality.get("type") or "forming"
     confidence, confidence_reason = _personality_confidence(total_expenses, ai_type)
-    updated_at = datetime.utcnow().isoformat()
+    updated_at = utc_now_iso()
     impulse_count = (profile or {}).get("impulse_count", 0)
     impulse_ratio = impulse_count / max(total_expenses, 1)
 
@@ -255,14 +242,14 @@ def _behavior_timeline(expenses: list[dict], days: int = 7) -> list[dict]:
     }
 
     timeline = []
-    today = datetime.utcnow().date()
+    today = utc_now().date()
     for offset in range(days - 1, -1, -1):
         day = today - timedelta(days=offset)
         day_key = day.isoformat()
         day_name = day.strftime("%A")
         day_expenses = [
             expense for expense in expenses
-            if str(expense.get("date", "")).startswith(day_key)
+            if safe_iso_date(expense.get("date") or expense.get("timestamp")) == day_key
         ]
         if not day_expenses:
             timeline.append({
@@ -333,16 +320,20 @@ def _behavior_evolution(expenses: list[dict]) -> str:
 def _milestones(expenses: list[dict], moods: list[dict], personality: dict, triggers: list[dict], weekly: dict, mindfulness: int, prior_mindfulness: int | None = None) -> list[dict]:
     if not expenses:
         return []
-    chronological = sorted(expenses, key=lambda e: e.get("date", ""))
+    chronological = sorted(
+        expenses,
+        key=lambda e: (parse_utc_datetime(e.get("date") or e.get("timestamp")) or utc_now()).timestamp(),
+    )
+    first_date = safe_iso_date(chronological[0].get("date") or chronological[0].get("timestamp")) or utc_now_iso()
     milestones = [
         {
             "title": "Started Tracking",
-            "date": chronological[0].get("date"),
+            "date": first_date,
             "description": "You began turning spending moments into behavioral evidence.",
         },
         {
             "title": "First Expense",
-            "date": chronological[0].get("date"),
+            "date": first_date,
             "description": f"Your first logged purchase was ₹{chronological[0].get('amount', 0)} on {chronological[0].get('category', 'an expense')}.",
         },
     ]
@@ -350,39 +341,40 @@ def _milestones(expenses: list[dict], moods: list[dict], personality: dict, trig
     if first_insight:
         milestones.append({
             "title": "First Insight",
-            "date": first_insight.get("date"),
+            "date": first_insight.get("date") or first_insight.get("timestamp"),
             "description": "Caayva generated its first behavioral read.",
         })
     if personality.get("type") and personality.get("type") not in {"forming", "Exploring"}:
         milestones.append({
             "title": "Personality Found",
-            "date": datetime.utcnow().isoformat(),
+            "date": utc_now_iso(),
             "description": f"Your current profile is {personality.get('type')}.",
         })
     if triggers and triggers[0].get("trigger") not in {"Insufficient data", "Keep logging", "Almost there"}:
-        milestones.append({"title": "First Trigger", "date": datetime.utcnow().isoformat(), "description": triggers[0].get("trigger")})
+        milestones.append({"title": "First Trigger", "date": utc_now_iso(), "description": triggers[0].get("trigger")})
     if weekly.get("headline"):
-        milestones.append({"title": "Weekly Summary Generated", "date": datetime.utcnow().isoformat(), "description": weekly.get("headline")})
+        milestones.append({"title": "Weekly Summary Generated", "date": utc_now_iso(), "description": weekly.get("headline")})
     for count in (30, 100):
         if len(expenses) >= count:
-            milestones.append({"title": f"{count} Expenses", "date": datetime.utcnow().isoformat(), "description": "Your pattern map is becoming more reliable."})
-    days = sorted({str(e.get("date", ""))[:10] for e in expenses if e.get("date")})
+            milestones.append({"title": f"{count} Expenses", "date": utc_now_iso(), "description": "Your pattern map is becoming more reliable."})
+    days = sorted({safe_iso_date(e.get("date") or e.get("timestamp")) for e in expenses if (e.get("date") or e.get("timestamp"))})
+    days = [d for d in days if d]
     streak = 1
     best = 1 if days else 0
     for index in range(1, len(days)):
-        prev = datetime.fromisoformat(days[index - 1]).date()
-        current = datetime.fromisoformat(days[index]).date()
-        if (current - prev).days == 1:
+        prev_dt = parse_utc_datetime(days[index - 1])
+        curr_dt = parse_utc_datetime(days[index])
+        if prev_dt and curr_dt and (curr_dt.date() - prev_dt.date()).days == 1:
             streak += 1
             best = max(best, streak)
         else:
             streak = 1
     if best >= 7:
-        milestones.append({"title": "7 Day Streak", "date": datetime.utcnow().isoformat(), "description": "You built a consistent awareness rhythm."})
+        milestones.append({"title": "7 Day Streak", "date": utc_now_iso(), "description": "You built a consistent awareness rhythm."})
     if moods:
-        milestones.append({"title": "Reflection Added", "date": moods[0].get("timestamp"), "description": "Reflection is now influencing your AI context."})
+        milestones.append({"title": "Reflection Added", "date": moods[0].get("timestamp") or moods[0].get("day") or utc_now_iso(), "description": "Reflection is now influencing your AI context."})
     if prior_mindfulness is not None and mindfulness > prior_mindfulness + 5:
-        milestones.append({"title": "Mindfulness Improved", "date": datetime.utcnow().isoformat(), "description": f"Your mindfulness score moved toward {mindfulness}/100."})
+        milestones.append({"title": "Mindfulness Improved", "date": utc_now_iso(), "description": f"Your mindfulness score moved toward {mindfulness}/100."})
     return milestones
 
 
@@ -403,10 +395,7 @@ def analytics_weekly(authenticated_user_id: str = Depends(get_current_user_id)):
     by_day: dict[str, float] = defaultdict(float)
     for e in expenses:
         by_category[e.get("category", "other")] += e.get("amount", 0)
-        try:
-            day_name = datetime.fromisoformat(e["date"]).strftime("%a")
-        except Exception:
-            day_name = "Unknown"
+        day_name = safe_day_name(e.get("date") or e.get("timestamp"), full=False)
         by_day[day_name] += e.get("amount", 0)
 
     return {
@@ -436,10 +425,7 @@ def analytics_summary(authenticated_user_id: str = Depends(get_current_user_id))
     by_day: dict[str, float] = defaultdict(float)
     for e in expenses:
         by_category[e.get("category", "other")] += e.get("amount", 0)
-        try:
-            day_name = datetime.fromisoformat(e["date"]).strftime("%A")
-        except Exception:
-            day_name = "Unknown"
+        day_name = safe_day_name(e.get("date") or e.get("timestamp"), full=True)
         by_day[day_name] += e.get("amount", 0)
 
     top_category = max(by_category, key=by_category.get)
@@ -482,7 +468,7 @@ def insights_weekly(
                 "category": "reflection",
                 "mood": entry.get("mood", "neutral"),
                 "notes": note_text or "reflection",
-                "date": entry.get("timestamp") or entry.get("day") or datetime.utcnow().isoformat(),
+                "date": entry.get("timestamp") or entry.get("day") or utc_now_iso(),
                 "time_of_day": "evening",
             })
         summary = generate_weekly_summary(expenses + reflection_context, user_profile=user_profile)
@@ -556,7 +542,7 @@ def nudges_current(
     user_id = authenticated_user_id
     expenses = _within_days(_user_expenses(user_id), 30)
     triggers = detect_triggers(expenses)
-    nudge = predict_nudge(user_id, datetime.utcnow(), triggers)
+    nudge = predict_nudge(user_id, utc_now(), triggers)
     return {"nudge": nudge}
 
 
@@ -575,7 +561,7 @@ def coaching_snapshot(
     def compute():
         user_profile = load_profile_for_user(user_id)
         expenses = _user_expenses(user_id)
-        expenses.sort(key=lambda item: item.get("date", ""), reverse=True)
+        expenses.sort(key=lambda item: str(item.get("date") or item.get("timestamp") or ""), reverse=True)
         moods = _user_moods(user_id)
         recent_30 = _within_days(expenses, 30)
         recent_7 = _within_days(expenses, 7)
@@ -589,7 +575,7 @@ def coaching_snapshot(
                 "category": "reflection",
                 "mood": entry.get("mood", "neutral"),
                 "notes": note_text or "reflection",
-                "date": entry.get("timestamp") or entry.get("day") or datetime.utcnow().isoformat(),
+                "date": entry.get("timestamp") or entry.get("day") or utc_now_iso(),
                 "time_of_day": "evening",
             })
 
@@ -598,7 +584,7 @@ def coaching_snapshot(
         personality = _evolve_personality(len(expenses), raw_personality, profile)
         triggers = detect_triggers(recent_30)
         weekly = generate_weekly_summary(recent_7 + reflection_context, user_profile=user_profile)
-        nudge_message = predict_nudge(user_id, datetime.utcnow(), triggers)
+        nudge_message = predict_nudge(user_id, utc_now(), triggers)
         nudge_payload = build_nudge_payload(nudge_message, triggers)
         mindfulness = _mindfulness_score(recent_30, mood_30)
         prior_mindfulness = None
@@ -612,10 +598,9 @@ def coaching_snapshot(
 
         hour_counter = Counter()
         for expense in recent_30:
-            try:
-                hour_counter[datetime.fromisoformat(expense.get("date", "")).hour] += 1
-            except Exception:
-                pass
+            h = safe_hour(expense.get("date") or expense.get("timestamp"))
+            if h is not None:
+                hour_counter[h] += 1
         most_active_time = f"{hour_counter.most_common(1)[0][0]:02d}:00" if hour_counter else "evening"
 
         spend_dna = generate_spend_dna({
@@ -697,7 +682,7 @@ def coaching_snapshot(
             "spend_dna": spend_dna,
             "recent_expenses": expenses[:5],
         }
-        db_client.add("ai_results", {"user_id": user_id, **snapshot, "updated_at": datetime.utcnow().isoformat()}, doc_id=f"{user_id}_latest")
+        db_client.add("ai_results", {"user_id": user_id, **snapshot, "updated_at": utc_now_iso()}, doc_id=f"{user_id}_latest")
         return snapshot
 
     return get_or_set(f"coaching:{user_id}", 10 * 60, compute)

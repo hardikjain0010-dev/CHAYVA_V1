@@ -421,15 +421,11 @@ def _without_meta(value: Any) -> Any:
     return value
 
 
+from core.datetime_utils import parse_utc_datetime, utc_now, utc_now_iso
+
+
 def _parse_datetime(value: Any) -> Optional[datetime]:
-    if isinstance(value, datetime):
-        return value
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value))
-    except ValueError:
-        return None
+    return parse_utc_datetime(value)
 
 
 def _time_of_day(dt: Optional[datetime], has_time: bool = True) -> str:

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from services.firebase_service import db_client
 from services.ai_service import generate_spend_dna, detect_triggers
 from core.config import settings
+from core.datetime_utils import filter_within_days, safe_hour
 from core.limiter import limiter
 from core.security import get_current_user_id
 from routers.profile import load_profile_for_user
@@ -31,20 +32,12 @@ def spend_dna(
     request: Request,
     authenticated_user_id: str = Depends(get_current_user_id),
 ):
-    cutoff = datetime.utcnow() - timedelta(days=30)
-
     all_expenses = db_client.query(
         EXPENSE_COLLECTION,
         user_id=authenticated_user_id,
     )
 
-    expenses = []
-    for e in all_expenses:
-        try:
-            if datetime.fromisoformat(e.get("date", "")) >= cutoff:
-                expenses.append(e)
-        except Exception:
-            continue
+    expenses = filter_within_days(all_expenses, 30, date_keys=("date", "timestamp", "created_at"))
 
     category_totals: dict[str, float] = defaultdict(float)
     mood_counter = Counter()
@@ -58,8 +51,8 @@ def spend_dna(
         if e.get("mood"):
             mood_counter[e["mood"]] += 1
 
-        try:
-            hour = datetime.fromisoformat(e["date"]).hour
+        hour = safe_hour(e.get("date") or e.get("timestamp"))
+        if hour is not None:
             hour_counter[hour] += 1
             if 5 <= hour < 12:
                 time_period_counter["morning"] += 1
@@ -69,8 +62,6 @@ def spend_dna(
                 time_period_counter["evening"] += 1
             else:
                 time_period_counter["night"] += 1
-        except Exception:
-            pass
         for word in str(e.get("notes") or "").lower().replace(",", " ").split():
             cleaned = word.strip(".!?;:()[]")
             if len(cleaned) > 2 and cleaned not in {"the", "and", "for", "with", "from", "this", "that"}:

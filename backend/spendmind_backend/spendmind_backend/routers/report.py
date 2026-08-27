@@ -1,13 +1,12 @@
-from datetime import datetime, timedelta
-
 from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
-from services.firebase_service import db_client
-from services.ai_service import generate_weekly_summary, detect_triggers
-from services.pdf_service import weekly_report_data, generate_weekly_pdf
+from core.datetime_utils import filter_within_days
 from core.security import get_current_user_id
 from routers.profile import load_profile_for_user
+from services.ai_service import detect_triggers, generate_weekly_summary
+from services.firebase_service import db_client
+from services.pdf_service import generate_weekly_pdf, weekly_report_data
 
 router = APIRouter(prefix="/report", tags=["PDF Reports"])
 
@@ -15,16 +14,8 @@ EXPENSE_COLLECTION = "expenses"
 
 
 def _week_expenses(user_id: str) -> list[dict]:
-    cutoff = datetime.utcnow() - timedelta(days=7)
     all_expenses = db_client.query(EXPENSE_COLLECTION, user_id=user_id)
-    out = []
-    for e in all_expenses:
-        try:
-            if datetime.fromisoformat(e.get("date", "")) >= cutoff:
-                out.append(e)
-        except Exception:
-            continue
-    return out
+    return filter_within_days(all_expenses, 7, date_keys=("date", "timestamp", "created_at"))
 
 
 @router.get(

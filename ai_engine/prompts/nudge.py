@@ -5,9 +5,9 @@ Model: Groq LLaMA 3.3 70B (fastest — nudges need real-time response).
 Called by Person B's GET /nudges/current endpoint.
 """
 
-from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
+from ai_engine.utils.datetime_utils import parse_utc_datetime, utc_now
 from ai_engine.router.model_router import route_prompt
 from ai_engine.prompts.nudge_prompt import build_nudge_prompt, should_attempt_nudge
 from ai_engine.prompts.base import GRACEFUL_DEFAULTS
@@ -15,7 +15,7 @@ from ai_engine.prompts.base import GRACEFUL_DEFAULTS
 
 def predict_nudge(
     user_id: str,
-    current_dt: Optional[datetime] = None,
+    current_dt: Optional[Any] = None,
     trigger_patterns: Optional[list] = None
 ) -> dict:
     """
@@ -23,7 +23,7 @@ def predict_nudge(
 
     Args:
         user_id: user identifier (for logging/rate limiting)
-        current_dt: datetime object — defaults to datetime.now() if None
+        current_dt: datetime object — defaults to utc_now() if None
         trigger_patterns: list of trigger dicts from detect_triggers()
                           [{trigger, behavior, frequency, emotion}]
 
@@ -44,12 +44,11 @@ def predict_nudge(
     if not trigger_patterns:
         return no_nudge_response
 
-    # Use current time if not provided
-    if current_dt is None:
-        current_dt = datetime.now()
+    # Use current UTC time if not provided
+    dt = parse_utc_datetime(current_dt) or utc_now()
 
-    current_time = current_dt.strftime("%H:%M")
-    current_day = current_dt.strftime("%A")  # "Friday", "Monday", etc.
+    current_time = dt.strftime("%H:%M")
+    current_day = dt.strftime("%A")  # "Friday", "Monday", etc.
 
     # ── Fast pre-check (Python, no API call) ──────────────────────────────
     # This prevents unnecessary API calls when no pattern is plausibly active.

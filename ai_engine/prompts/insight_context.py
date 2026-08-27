@@ -51,15 +51,11 @@ DISCRETIONARY_NOTE_KEYWORDS = {
 }
 
 
+from ai_engine.utils.datetime_utils import is_within_days, parse_utc_datetime, utc_now
+
+
 def parse_expense_datetime(value: Any) -> Optional[datetime]:
-    if isinstance(value, datetime):
-        return value
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value))
-    except ValueError:
-        return None
+    return parse_utc_datetime(value)
 
 
 def has_recorded_time(value: Any) -> bool:
@@ -330,11 +326,9 @@ def build_evidence_bundle(
         if tag:
             previous_tags[tag] += 1
 
-    week_cutoff = datetime.utcnow() - timedelta(days=7)
     week_same_category = 0
     for item in recent:
-        item_dt = parse_expense_datetime(item.get("date"))
-        if item_dt and item_dt >= week_cutoff and item["category"].strip().lower() == category_key:
+        if is_within_days(item.get("date"), 7) and str(item.get("category", "")).strip().lower() == category_key:
             week_same_category += 1
 
     overall_baseline = _amount_baseline(float(amount or 0), recent)
