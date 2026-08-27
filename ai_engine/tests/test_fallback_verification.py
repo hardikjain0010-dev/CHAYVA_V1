@@ -64,6 +64,7 @@ class TestTimeoutEnforcement:
         mock_executor_instance = MagicMock()
         mock_executor_instance.__enter__.return_value = mock_executor_instance
         mock_executor_instance.submit.return_value = mock_future
+        mock_executor.return_value = mock_executor_instance
         mock_executor.return_value.__enter__.return_value = mock_executor_instance
         
         # This should return a timeout error, not hang
@@ -83,6 +84,7 @@ class TestTimeoutEnforcement:
         mock_executor_instance = MagicMock()
         mock_executor_instance.__enter__.return_value = mock_executor_instance
         mock_executor_instance.submit.return_value = mock_future
+        mock_executor.return_value = mock_executor_instance
         mock_executor.return_value.__enter__.return_value = mock_executor_instance
         
         result = call_groq("test", "test", timeout_ms=1000)
@@ -101,6 +103,7 @@ class TestTimeoutEnforcement:
         mock_executor_instance = MagicMock()
         mock_executor_instance.__enter__.return_value = mock_executor_instance
         mock_executor_instance.submit.return_value = mock_future
+        mock_executor.return_value = mock_executor_instance
         mock_executor.return_value.__enter__.return_value = mock_executor_instance
         
         result = call_openrouter("test", "test", timeout_ms=1000)

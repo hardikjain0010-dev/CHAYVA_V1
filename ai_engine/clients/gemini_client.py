@@ -69,28 +69,6 @@ def call_gemini(
 ) -> dict:
     """
     Send a prompt to Gemini Flash and return a structured response dict.
-
-    Args:
-        system_prompt: Defines the AI persona and output rules (e.g., "You are
-                       a warm behavioral finance coach for Indian students…")
-        user_prompt:   The actual expense data or question to analyze.
-        max_retries:   How many times to retry on transient failure.
-        retry_delay:   Seconds to wait between retries.
-
-    Returns:
-        {
-            "text":          str,   # Raw text response from Gemini
-            "model":         str,   # Model name used
-            "provider":      str,   # Always "gemini"
-            "latency_ms":    int,   # Round-trip time in milliseconds
-            "success":       bool,  # True if call succeeded
-            "error":         str | None  # Error message on failure, else None
-        }
-
-    Design note:
-        We combine system_prompt and user_prompt into one message because
-        Gemini's Python SDK uses a simpler single-turn API. The two-part
-        structure is preserved for compatibility with the router interface.
     """
     client = _get_client()
     if client is None:
@@ -116,26 +94,28 @@ def call_gemini(
             logger.info(f"Gemini call attempt {attempt}/{max_retries}")
             start = time.time()
 
-            # Use ThreadPoolExecutor to enforce actual timeout on the SDK call
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    client.models.generate_content,
-                    model=model_name,
-                    contents=full_prompt,
-                )
-                try:
-                    response = future.result(timeout=timeout_ms / 1000.0)
-                except FutureTimeoutError:
-                    latency_ms = int((time.time() - start) * 1000)
-                    logger.error(f"Gemini timeout after {latency_ms}ms (enforced)")
-                    return {
-                        "text": "",
-                        "model": model_name,
-                        "provider": "gemini",
-                        "latency_ms": latency_ms,
-                        "success": False,
-                        "error": "Request timeout"
-                    }
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(
+                client.models.generate_content,
+                model=model_name,
+                contents=full_prompt,
+            )
+            try:
+                response = future.result(timeout=timeout_ms / 1000.0)
+            except FutureTimeoutError:
+                latency_ms = int((time.time() - start) * 1000)
+                logger.error(f"Gemini timeout after {latency_ms}ms (enforced non-blocking)")
+                executor.shutdown(wait=False, cancel_futures=True)
+                return {
+                    "text": "",
+                    "model": model_name,
+                    "provider": "gemini",
+                    "latency_ms": latency_ms,
+                    "success": False,
+                    "error": "Request timeout"
+                }
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
 
             latency_ms = int((time.time() - start) * 1000)
             text = _extract_text(response)

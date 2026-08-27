@@ -137,6 +137,10 @@ def _extract_text_from_completion(completion: Any) -> str:
     return ""
 
 
+# Persistent module-level executor to prevent shutdown(wait=True) blocking on timeout
+_OPENROUTER_EXECUTOR = ThreadPoolExecutor(max_workers=16, thread_name_prefix="openrouter_worker")
+
+
 # ── Public function ───────────────────────────────────────────────────────────
 
 def call_openrouter(
@@ -149,23 +153,6 @@ def call_openrouter(
 ) -> dict:
     """
     Send a prompt to OpenRouter and return a structured response dict.
-
-    Args:
-        system_prompt: Persona and rules.
-        user_prompt:   The expense data or question.
-        model:         Model string selected by the router, or OPENROUTER_REASONING_MODEL.
-        max_retries:   Retry attempts.
-        retry_delay:   Seconds between retries.
-
-    Returns:
-        {
-            "text":          str,
-            "model":         str,
-            "provider":      str,   # "openrouter"
-            "latency_ms":    int,
-            "success":       bool,
-            "error":         str | None
-        }
     """
     client = _get_client()
     if client is None:
@@ -200,30 +187,30 @@ def call_openrouter(
             logger.info("OpenRouter latency will be measured for model: %s", model_name)
             start = time.time()
 
-            client = _get_client()
-
-            # Use ThreadPoolExecutor to enforce actual timeout on the SDK call
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    client.chat.completions.create,
-                    model=model_name,
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=1500,
-                )
-                try:
-                    completion = future.result(timeout=timeout_ms / 1000.0)
-                except FutureTimeoutError:
-                    latency_ms = int((time.time() - start) * 1000)
-                    logger.error(f"OpenRouter timeout after {latency_ms}ms (enforced)")
-                    return {
-                        "text": "",
-                        "model": model_name,
-                        "provider": "openrouter",
-                        "latency_ms": latency_ms,
-                        "success": False,
-                        "error": "Request timeout"
-                    }
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(
+                client.chat.completions.create,
+                model=model_name,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1500,
+            )
+            try:
+                completion = future.result(timeout=timeout_ms / 1000.0)
+            except FutureTimeoutError:
+                latency_ms = int((time.time() - start) * 1000)
+                logger.error(f"OpenRouter timeout after {latency_ms}ms (enforced non-blocking)")
+                executor.shutdown(wait=False, cancel_futures=True)
+                return {
+                    "text": "",
+                    "model": model_name,
+                    "provider": "openrouter",
+                    "latency_ms": latency_ms,
+                    "success": False,
+                    "error": "Request timeout"
+                }
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
 
             latency_ms = int((time.time() - start) * 1000)
             text = _extract_text_from_completion(completion)

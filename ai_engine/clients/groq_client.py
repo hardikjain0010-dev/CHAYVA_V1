@@ -53,6 +53,10 @@ def _get_client() -> Groq | None:
     return _client
 
 
+# Persistent module-level executor to prevent shutdown(wait=True) blocking on timeout
+_GROQ_EXECUTOR = ThreadPoolExecutor(max_workers=16, thread_name_prefix="groq_worker")
+
+
 # ── Public function ───────────────────────────────────────────────────────────
 
 def call_groq(
@@ -113,28 +117,30 @@ def call_groq(
             logger.info(f"Groq call attempt {attempt}/{max_retries}")
             start = time.time()
 
-            # Use ThreadPoolExecutor to enforce actual timeout on the SDK call
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(
-                    client.chat.completions.create,
-                    model=model_name,
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=512,
-                )
-                try:
-                    completion = future.result(timeout=timeout_ms / 1000.0)
-                except FutureTimeoutError:
-                    latency_ms = int((time.time() - start) * 1000)
-                    logger.error(f"Groq timeout after {latency_ms}ms (enforced)")
-                    return {
-                        "text": "",
-                        "model": model_name,
-                        "provider": "groq",
-                        "latency_ms": latency_ms,
-                        "success": False,
-                        "error": "Request timeout"
-                    }
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(
+                client.chat.completions.create,
+                model=model_name,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=512,
+            )
+            try:
+                completion = future.result(timeout=timeout_ms / 1000.0)
+            except FutureTimeoutError:
+                latency_ms = int((time.time() - start) * 1000)
+                logger.error(f"Groq timeout after {latency_ms}ms (enforced non-blocking)")
+                executor.shutdown(wait=False, cancel_futures=True)
+                return {
+                    "text": "",
+                    "model": model_name,
+                    "provider": "groq",
+                    "latency_ms": latency_ms,
+                    "success": False,
+                    "error": "Request timeout"
+                }
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
 
             latency_ms = int((time.time() - start) * 1000)
             text = completion.choices[0].message.content.strip()

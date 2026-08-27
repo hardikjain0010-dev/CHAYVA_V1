@@ -196,10 +196,11 @@ Return ONLY plain text — no JSON, no markdown."""
     return " ".join(parts) or "Your reflection is now shaping how your coach reads your spending patterns."
 
 
-def generate_spend_dna(user_month_data: dict) -> dict:
+def generate_spend_dna(user_month_data: dict, personality: Optional[dict] = None) -> dict:
     profile = _adapt_spending_profile(user_month_data.get("profile", {}))
     user_profile = user_month_data.get("user_profile")
-    personality = classify_personality(profile, user_profile=user_profile)
+    if personality is None:
+        personality = user_month_data.get("personality") or classify_personality(profile, user_profile=user_profile)
     triggers = user_month_data.get("triggers", [])
     top_trigger = triggers[0].get("trigger") if triggers else "no clear pattern yet"
     category_totals = profile.get("category_totals", {})

@@ -39,16 +39,57 @@ function iconForTitle(title: string) {
   return MapPin;
 }
 
+function localMilestones(expenses: Array<{ amount: number; category: string; date: string; insight?: Record<string, unknown> | null }>) {
+  if (!expenses || expenses.length === 0) return [];
+  const sorted = [...expenses].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+  const first = sorted[0];
+  const list: Array<{ title: string; date?: string | null; description?: string | null }> = [
+    {
+      title: "Started Tracking",
+      date: first.date,
+      description: "You began turning spending moments into behavioral evidence.",
+    },
+    {
+      title: "First Expense",
+      date: first.date,
+      description: `Your first logged purchase was ₹${first.amount} on ${first.category || "an expense"}.`,
+    },
+  ];
+  const firstInsight = sorted.find((e) => e.insight && Object.keys(e.insight).length > 0);
+  if (firstInsight) {
+    list.push({
+      title: "First Insight",
+      date: firstInsight.date,
+      description: "Chayva generated its first behavioral read.",
+    });
+  }
+  if (sorted.length >= 5) {
+    list.push({
+      title: "Building Habit",
+      date: sorted[sorted.length - 1].date,
+      description: `${sorted.length} spending moments logged and tracked.`,
+    });
+  }
+  return list;
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 function JourneyPage() {
-  const { loading: expensesLoading } = useExpenses();
+  const { expenses, loading: expensesLoading } = useExpenses();
   const { snapshot, loading, error, refetch } = useCoaching();
 
+  const rawMilestones = useMemo(() => {
+    if (snapshot?.journey?.milestones && snapshot.journey.milestones.length > 0) {
+      return snapshot.journey.milestones;
+    }
+    return localMilestones(expenses);
+  }, [snapshot, expenses]);
+
   const milestones = useMemo(() => {
-    return (snapshot?.journey.milestones ?? []).map((milestone, index) => ({
+    return rawMilestones.map((milestone, index) => ({
       icon: iconForTitle(milestone.title),
       when: milestone.date ? bucketLabel(daysAgo(milestone.date)) : "Now",
       date: milestone.date ?? null,
@@ -56,9 +97,9 @@ function JourneyPage() {
       desc: milestone.description ?? "A step in your behavioral journey.",
       index,
     }));
-  }, [snapshot]);
+  }, [rawMilestones]);
 
-  const isLoading = expensesLoading || loading;
+  const isLoading = expensesLoading && rawMilestones.length === 0;
 
   return (
     <PageTransition>

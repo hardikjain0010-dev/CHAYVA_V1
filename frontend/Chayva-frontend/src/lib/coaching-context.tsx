@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
   type ReactNode,
 } from "react";
 import { get } from "./api";
@@ -164,8 +165,20 @@ const CoachingContext = createContext<CoachingContextValue | null>(null);
 
 export function CoachingProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
-  const { expenses } = useExpenses();
+  const { expenses, loading: expensesLoading } = useExpenses();
   const expenseSignature = expenses.map((e) => `${e.id}:${e.amount}`).join("|");
+
+  const [state, dispatch] = useReducer(reducer, {
+    snapshot: null,
+    loading: false,
+    error: null,
+  });
+
+  const snapshotRef = useRef<CoachingSnapshot | null>(state.snapshot);
+  snapshotRef.current = state.snapshot;
+
+  const inFlightPromiseRef = useRef<Promise<void> | null>(null);
+  const lastFetchedSignatureRef = useRef<string | null>(null);
 
   const getCachedSnapshot = useCallback((): CoachingSnapshot | null => {
     if (!user?.uid || typeof window === "undefined") return null;
@@ -177,48 +190,60 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.uid]);
 
-  const [state, dispatch] = useReducer(reducer, {
-    snapshot: null,
-    loading: false,
-    error: null,
-  });
-
   const refetch = useCallback(async () => {
     if (!user?.uid) {
       dispatch({ type: "CLEAR" });
+      lastFetchedSignatureRef.current = null;
       return;
     }
 
-    // Hydrate from cache immediately if state is empty to prevent UI flicker
+    if (inFlightPromiseRef.current) {
+      return inFlightPromiseRef.current;
+    }
+
     const cached = getCachedSnapshot();
-    if (cached && !state.snapshot) {
+    if (cached && !snapshotRef.current) {
       dispatch({ type: "SUCCESS", payload: cached });
     }
 
     dispatch({ type: "LOAD" });
-    try {
-      const snapshot = await get<CoachingSnapshot>("/insights/coaching");
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(`caayva_coaching_${user.uid}`, JSON.stringify(snapshot));
+
+    const fetchPromise = (async () => {
+      try {
+        const snapshot = await get<CoachingSnapshot>("/insights/coaching");
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem(`caayva_coaching_${user.uid}`, JSON.stringify(snapshot));
+        }
+        dispatch({ type: "SUCCESS", payload: snapshot });
+        lastFetchedSignatureRef.current = expenseSignature;
+      } catch (error) {
+        const fallback = cached ?? snapshotRef.current;
+        if (fallback) {
+          dispatch({ type: "SUCCESS", payload: fallback });
+        } else {
+          dispatch({
+            type: "ERROR",
+            payload: error instanceof Error ? error.message : "Unable to load AI coaching.",
+          });
+        }
+      } finally {
+        inFlightPromiseRef.current = null;
       }
-      dispatch({ type: "SUCCESS", payload: snapshot });
-    } catch (error) {
-      // If we have cached data, don't wipe it out on transient cold-start errors
-      const fallback = cached ?? state.snapshot;
-      if (fallback) {
-        dispatch({ type: "SUCCESS", payload: fallback });
-      } else {
-        dispatch({
-          type: "ERROR",
-          payload: error instanceof Error ? error.message : "Unable to load AI coaching.",
-        });
-      }
-    }
-  }, [user?.uid, state.snapshot, getCachedSnapshot]);
+    })();
+
+    inFlightPromiseRef.current = fetchPromise;
+    return fetchPromise;
+  }, [user?.uid, getCachedSnapshot, expenseSignature]);
 
   useEffect(() => {
-    void refetch();
-  }, [refetch, expenseSignature]);
+    if (!user?.uid) return;
+    if (expensesLoading && !snapshotRef.current && !getCachedSnapshot()) {
+      return;
+    }
+    if (lastFetchedSignatureRef.current !== expenseSignature) {
+      void refetch();
+    }
+  }, [user?.uid, expensesLoading, expenseSignature, refetch, getCachedSnapshot]);
 
   return (
     <CoachingContext.Provider value={{ ...state, refetch }}>{children}</CoachingContext.Provider>

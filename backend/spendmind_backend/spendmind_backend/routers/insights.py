@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
@@ -547,6 +548,33 @@ def nudges_current(
 
 
 @router.get(
+    "/insights/journey",
+    summary="Deterministic journey milestones",
+    description="Returns deterministic journey milestones computed directly from user history without waiting for AI LLM generation.",
+)
+@limiter.limit(f"{settings.AI_CALLS_PER_HOUR}/hour")
+def journey_milestones(
+    request: Request,
+    authenticated_user_id: str = Depends(get_current_user_id),
+):
+    user_id = authenticated_user_id
+    expenses = _user_expenses(user_id)
+    moods = _user_moods(user_id)
+    triggers = detect_triggers(_within_days(expenses, 30))
+    mindfulness = _mindfulness_score(_within_days(expenses, 30), _within_days_moods(moods, 30))
+
+    milestones = _milestones(
+        expenses=expenses,
+        moods=moods,
+        personality={},
+        triggers=triggers,
+        weekly={},
+        mindfulness=mindfulness,
+    )
+    return {"milestones": milestones}
+
+
+@router.get(
     "/insights/coaching",
     summary="Unified AI coaching snapshot",
     description="Returns the shared AI-generated source of truth for Dashboard, DNA, Weekly, Journey, and Reflection.",
@@ -580,10 +608,16 @@ def coaching_snapshot(
             })
 
         profile = _profile_from_expenses(recent_30, mood_30)
-        raw_personality = classify_personality(profile, user_profile=user_profile)
-        personality = _evolve_personality(len(expenses), raw_personality, profile)
         triggers = detect_triggers(recent_30)
-        weekly = generate_weekly_summary(recent_7 + reflection_context, user_profile=user_profile)
+
+        # Parallel concurrent execution of independent AI tasks (Personality & Weekly Summary)
+        with ThreadPoolExecutor(max_workers=2, thread_name_prefix="coaching_ai") as pool:
+            future_personality = pool.submit(classify_personality, profile, user_profile=user_profile)
+            future_weekly = pool.submit(generate_weekly_summary, recent_7 + reflection_context, user_profile=user_profile)
+            raw_personality = future_personality.result()
+            weekly = future_weekly.result()
+
+        personality = _evolve_personality(len(expenses), raw_personality, profile)
         nudge_message = predict_nudge(user_id, utc_now(), triggers)
         nudge_payload = build_nudge_payload(nudge_message, triggers)
         mindfulness = _mindfulness_score(recent_30, mood_30)
@@ -603,15 +637,19 @@ def coaching_snapshot(
                 hour_counter[h] += 1
         most_active_time = f"{hour_counter.most_common(1)[0][0]:02d}:00" if hour_counter else "evening"
 
-        spend_dna = generate_spend_dna({
-            "profile": profile,
-            "triggers": triggers,
-            "most_impulsive_hour": most_active_time,
-            "mindfulness_score": mindfulness,
-            "behavior_evolution": behavior_evolution,
-            "biggest_win": weekly.get("one_win"),
-            "user_profile": user_profile,
-        })
+        # Reuse already-computed personality — ZERO redundant LLM calls
+        spend_dna = generate_spend_dna(
+            {
+                "profile": profile,
+                "triggers": triggers,
+                "most_impulsive_hour": most_active_time,
+                "mindfulness_score": mindfulness,
+                "behavior_evolution": behavior_evolution,
+                "biggest_win": weekly.get("one_win"),
+                "user_profile": user_profile,
+            },
+            personality=raw_personality,
+        )
 
         dominant_mood = max(profile["mood_frequencies"], key=profile["mood_frequencies"].get) if profile.get("mood_frequencies") else None
         snapshot = {
