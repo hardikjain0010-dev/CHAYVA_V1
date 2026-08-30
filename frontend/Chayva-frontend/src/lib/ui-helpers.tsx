@@ -18,6 +18,7 @@ import {
   BookOpen,
   ArrowRight,
 } from "lucide-react";
+import { BRAND_NAME } from "@/lib/brand";
 
 // ---------------------------------------------------------------------------
 // Page transition
@@ -427,7 +428,7 @@ export function AIInsightReveal({
               <Sparkles className="h-4 w-4" />
             </span>
             <div>
-              <p className="caayva-eyebrow">Caayva noticed</p>
+              <p className="caayva-eyebrow">{BRAND_NAME} noticed</p>
             </div>
           </div>
 

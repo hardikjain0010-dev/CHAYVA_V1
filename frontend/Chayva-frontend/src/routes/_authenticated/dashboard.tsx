@@ -17,6 +17,7 @@ import {
   TimeWindowBadge,
   LoadingSkeleton,
 } from "@/lib/ui-helpers";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -135,7 +136,7 @@ function DashboardPage() {
               {getGreeting()} {getGreetingEmoji()}
             </h1>
             <p className="mt-1.5 text-base text-muted-foreground">
-              {isFirstUser ? "Welcome to Caayva." : "Here's what Caayva noticed."}
+              {isFirstUser ? `Welcome to ${BRAND_NAME}.` : `Here's what ${BRAND_NAME} noticed.`}
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -165,7 +166,7 @@ function DashboardPage() {
             <div className="flex items-center gap-2 min-w-0">
               <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
               <span className="truncate">
-                Caayva is reconnecting to server. Displaying cached insights.
+                {BRAND_NAME} is reconnecting to server. Displaying cached insights.
               </span>
             </div>
             <button
@@ -186,8 +187,8 @@ function DashboardPage() {
         {isFirstUser ? (
           <EmptyLearningState
             icon={Sparkles}
-            title="Caayva is ready to learn your rhythm."
-            description="Add your first expense — with a note on your mood and what triggered it. Your first few entries help Caayva understand what's routine, what's reactive, and what patterns are forming."
+            title={`${BRAND_NAME} is ready to learn your rhythm.`}
+            description={`Add your first expense — with a note on your mood and what triggered it. Your first few entries help ${BRAND_NAME} understand what's routine, what's reactive, and what patterns are forming.`}
             action={
               <Link
                 to="/add"
@@ -222,7 +223,7 @@ function DashboardPage() {
                 <span className="grid h-6 w-6 place-items-center rounded-lg bg-gradient-primary text-primary-foreground shadow-[var(--shadow-glow-sm)]">
                   <Sparkles className="h-3 w-3" />
                 </span>
-                <p className="caayva-eyebrow">Something Caayva noticed</p>
+                <p className="caayva-eyebrow">Something {BRAND_NAME} noticed</p>
               </div>
 
               {/* Primary observation — dominant typography */}
@@ -234,7 +235,7 @@ function DashboardPage() {
                 </h2>
               ) : hasNoInsight ? (
                 <h2 className="text-xl font-semibold text-foreground/80 max-w-2xl">
-                  Caayva is still learning your spending rhythm.
+                  {BRAND_NAME} is still learning your spending rhythm.
                 </h2>
               ) : null}
 
@@ -266,7 +267,7 @@ function DashboardPage() {
               {/* Learning state — not enough data yet */}
               {hasNoInsight && (
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-lg">
-                  Keep logging expenses with mood and notes. Caayva learns with every entry and will
+                  Keep logging expenses with mood and notes. {BRAND_NAME} learns with every entry and will
                   start noticing patterns in your behavior.
                 </p>
               )}
@@ -413,7 +414,7 @@ function DashboardPage() {
               <div>
                 <p className="caayva-eyebrow">Recent journal</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Latest moments Caayva is reading
+                  Latest moments {BRAND_NAME} is reading
                 </p>
               </div>
               <Link
@@ -500,7 +501,7 @@ function DashboardPage() {
                               <InsightFlow compact data={flowData} />
                             ) : (
                               <p className="text-xs text-muted-foreground italic">
-                                Caayva is still processing this expense.
+                                {BRAND_NAME} is still processing this expense.
                               </p>
                             )}
                           </div>
@@ -516,7 +517,7 @@ function DashboardPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-muted-foreground pb-2">
-          Caayva learns more with every entry you make.
+          {BRAND_NAME} learns more with every entry you make.
         </p>
       </div>
     </PageTransition>

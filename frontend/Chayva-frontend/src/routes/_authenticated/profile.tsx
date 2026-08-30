@@ -16,6 +16,7 @@ import { PageTransition, LoadingSkeleton } from "@/lib/ui-helpers";
 import { getProfile, updateProfile, type UserProfilePayload } from "@/lib/profile";
 import { useTheme } from "@/lib/theme";
 import { useUser } from "@/lib/user-context";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -107,7 +108,7 @@ function ProfilePage() {
           <p className="caayva-eyebrow">Context</p>
           <h1 className="caayva-headline mt-1 text-3xl text-foreground">Your Context</h1>
           <p className="mt-1.5 text-sm text-muted-foreground max-w-lg">
-            Help Caayva understand you better. This context shapes how it interprets your spending —
+            Help {BRAND_NAME} understand you better. This context shapes how it interprets your spending —
             it's not a survey, it's a conversation.
           </p>
         </header>
@@ -131,7 +132,7 @@ function ProfilePage() {
                     onChange={(e) => setProfile((p) => ({ ...p, display_name: e.target.value }))}
                     maxLength={60}
                     className="profile-input"
-                    placeholder="How should Caayva address you?"
+                    placeholder={`How should ${BRAND_NAME} address you?`}
                   />
                 </Field>
                 <Field label="Life stage">
@@ -166,7 +167,7 @@ function ProfilePage() {
             <ProfileSection
               icon={Clock}
               title="Life Rhythm"
-              subtitle="Context about your days helps Caayva interpret when and why you spend."
+              subtitle={`Context about your days helps ${BRAND_NAME} interpret when and why you spend.`}
               delay={0.05}
             >
               <Field label="College or work context">
@@ -239,9 +240,9 @@ function ProfilePage() {
             </ProfileSection>
 
             {/* ============================================================= */}
-            {/* SECTION: How Caayva Talks to You                               */}
+            {/* SECTION: How Arthyne Talks to You                              */}
             {/* ============================================================= */}
-            <ProfileSection icon={MessageSquare} title="How Caayva Talks to You" delay={0.15}>
+            <ProfileSection icon={MessageSquare} title={`How ${BRAND_NAME} Talks to You`} delay={0.15}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="AI tone">
                   <select
@@ -285,15 +286,15 @@ function ProfilePage() {
             </ProfileSection>
 
             {/* ============================================================= */}
-            {/* SECTION: What You've Told Caayva                              */}
+            {/* SECTION: What You've Told Arthyne                             */}
             {/* CRITICAL: explicitly labeled as user-reported, not proven fact */}
             {/* ============================================================= */}
             {(selfReportedTriggers.length > 0 || selfReportedContexts.length > 0) && (
-              <ProfileSection icon={AlertCircle} title="What You've Told Caayva" delay={0.2}>
+              <ProfileSection icon={AlertCircle} title={`What You've Told ${BRAND_NAME}`} delay={0.2}>
                 <div className="rounded-xl border border-foreground/10 bg-foreground/[0.02] px-4 py-3 mb-4">
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     <span className="font-medium text-foreground/70">Note:</span> This is what you
-                    reported during onboarding — not what Caayva has observed from your actual
+                    reported during onboarding — not what {BRAND_NAME} has observed from your actual
                     expenses. Observed patterns may differ and will take precedence in AI analysis.
                   </p>
                 </div>

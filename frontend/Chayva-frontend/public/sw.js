@@ -1,18 +1,20 @@
 /**
- * Caayva PWA Service Worker
+ * Arthyne PWA Service Worker
  * Version: 1.0.0
  *
  * Provides app shell and static asset caching while strictly bypassing
  * all private API requests and sensitive user financial data.
  */
 
-const CACHE_NAME = "caayva-cache-v1.0.0";
+const CACHE_NAME = "arthyne-cache-v1.0.0";
 
 // Static assets and shell to pre-cache on install
 const PRECACHE_ASSETS = [
   "/",
   "/manifest.json",
-  "/favicon.svg",
+  "/logo.png",
+  "/arthyne-logo.png",
+  "/favicon.png",
   "/pwa-192x192.png",
   "/pwa-512x512.png",
   "/pwa-maskable-512x512.png",
@@ -108,7 +110,7 @@ self.addEventListener("fetch", (event) => {
           const rootCached = await caches.match("/");
           if (rootCached) return rootCached;
           return new Response(
-            `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Caayva - Offline</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#FAFAFE;color:#18181B;text-align:center;padding:20px;"><div><h1 style="font-size:1.5rem;font-weight:700;">You're Offline</h1><p style="color:#71717A;font-size:0.9rem;">Please check your internet connection to access Caayva.</p></div></body></html>`,
+            `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Arthyne - Offline</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#FAFAFE;color:#18181B;text-align:center;padding:20px;"><div><h1 style="font-size:1.5rem;font-weight:700;">You're Offline</h1><p style="color:#71717A;font-size:0.9rem;">Please check your internet connection to access Arthyne.</p></div></body></html>`,
             { headers: { "Content-Type": "text/html" } },
           );
         }),

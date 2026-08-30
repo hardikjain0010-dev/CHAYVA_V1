@@ -54,12 +54,12 @@ def root_check():
 
 @app.get("/health", tags=["Health"], summary="Public health check")
 def health_check():
-    return {"status": "ok", "service": "caayva-backend", "env": settings.ENV}
+    return {"status": "ok", "service": "arthyne-backend", "env": settings.ENV}
 
 
 @app.get("/readiness", tags=["Health"], summary="Readiness check")
 def readiness_check():
-    return {"status": "ready", "service": "caayva-backend"}
+    return {"status": "ready", "service": "arthyne-backend"}
 
 
 @app.get("/health/ai", tags=["Health"], summary="Safe AI providers diagnostics")

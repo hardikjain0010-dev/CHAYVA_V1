@@ -60,7 +60,7 @@
   --popover: oklch(1 0 0 / 0.96);
   --popover-foreground: oklch(0.18 0.04 285);
 
-  /* Caayva violet identity */
+  /* Arthyne violet identity */
   --primary: oklch(0.52 0.24 300);
   --primary-foreground: oklch(0.99 0.003 300);
 
@@ -323,12 +323,27 @@
 }
 
 /* Behavioral typography */
+@utility arthyne-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
 @utility caayva-eyebrow {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--color-accent);
+}
+
+@utility arthyne-headline {
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
 }
 
 @utility caayva-headline {
@@ -338,11 +353,24 @@
   letter-spacing: -0.02em;
 }
 
+@utility arthyne-body {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-foreground);
+  opacity: 0.88;
+}
+
 @utility caayva-body {
   font-size: 1rem;
   line-height: 1.65;
   color: var(--color-foreground);
   opacity: 0.88;
+}
+
+@utility arthyne-caption {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
 }
 
 @utility caayva-caption {

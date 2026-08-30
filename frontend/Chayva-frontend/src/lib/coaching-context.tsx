@@ -193,7 +193,7 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
     const uid = userRef.current?.uid;
     if (!uid || typeof window === "undefined") return null;
     try {
-      const stored = window.sessionStorage.getItem(`caayva_coaching_${uid}`);
+      const stored = window.sessionStorage.getItem(`arthyne_coaching_${uid}`);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -240,7 +240,7 @@ export function CoachingProvider({ children }: { children: ReactNode }) {
           const snapshot = await get<CoachingSnapshot>("/insights/coaching");
           if (typeof window !== "undefined") {
             window.sessionStorage.setItem(
-              `caayva_coaching_${currentUser.uid}`,
+              `arthyne_coaching_${currentUser.uid}`,
               JSON.stringify(snapshot),
             );
           }

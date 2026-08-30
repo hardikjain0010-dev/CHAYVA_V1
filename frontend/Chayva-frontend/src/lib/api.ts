@@ -137,7 +137,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
     const msg = isOffline
       ? "You appear to be offline. Please check your internet connection."
-      : "Unable to reach Caayva server. The server may be waking up or temporarily unreachable. Please try again.";
+      : "Unable to reach Arthyne server. The server may be waking up or temporarily unreachable. Please try again.";
     throw new ApiError(msg, { isNetworkError: true });
   } finally {
     clearTimeout(timeoutId);
@@ -151,7 +151,7 @@ async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
     }
     const isColdStart = [502, 503, 504].includes(response.status);
     const defaultMsg = isColdStart
-      ? "Caayva server is waking up. Please try again in a few moments."
+      ? "Arthyne server is waking up. Please try again in a few moments."
       : `Request failed with status ${response.status}`;
     const errorMessage = isColdStart ? defaultMsg : errorMessageFromPayload(payload, defaultMsg);
     throw new ApiError(errorMessage, {

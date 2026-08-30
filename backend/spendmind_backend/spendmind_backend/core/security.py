@@ -2,68 +2,126 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 from typing import Any
 
+
 from fastapi import Header, HTTPException, status
+
 from google.auth.transport import requests
+
 from google.oauth2 import id_token
+
 from jose import JWTError, jwt
+
 from passlib.context import CryptContext
+
+
 
 from core.config import settings
 
 
+
+
+
 __all__ = [
+
     "hash_password",
+
     "verify_password",
+
     "create_access_token",
+
     "verify_access_token",
+
     "verify_google_token",
+
     "get_current_user_id",
+
 ]
 
 
+
+
+
 pwd_context = CryptContext(
-    schemes=["pbkdf2_sha256"],
-    deprecated=["auto"],
+    schemes=["bcrypt_sha256", "bcrypt"],
+    deprecated=["bcrypt"],
 )
 
 
+
+
 def hash_password(password: str) -> str:
+
     return pwd_context.hash(password)
 
 
+
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+
     return pwd_context.verify(plain_password, hashed_password)
 
 
+
+
+
 def create_access_token(data: dict[str, Any]) -> str:
+
     to_encode = data.copy()
+
     expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
     expire = datetime.now(timezone.utc) + expires_delta
+
     to_encode.update({"exp": expire})
+
     return jwt.encode(
+
         to_encode,
+
         settings.JWT_SECRET_KEY,
+
         algorithm=settings.JWT_ALGORITHM,
+
     )
+
+
+
 
 
 def verify_access_token(token: str) -> str:
     credentials_exception = HTTPException(
+
         status_code=status.HTTP_401_UNAUTHORIZED,
+
         detail="Could not validate credentials",
+
         headers={"WWW-Authenticate": "Bearer"},
+
     )
 
+
+
     try:
+
         payload = jwt.decode(
+
             token,
+
             settings.JWT_SECRET_KEY,
+
             algorithms=[settings.JWT_ALGORITHM],
+
         )
+
         user_id = payload.get("sub")
+
         if not isinstance(user_id, str) or not user_id:
+
             raise credentials_exception
+
         return user_id
+
     except JWTError as exc:
         raise credentials_exception from exc
 
@@ -110,34 +168,59 @@ def verify_google_token(credential: str) -> dict[str, Any]:
             raise ValueError("Google token issuer is invalid")
         return token_info
     except ValueError as exc:
-        if settings.ENV == "development":
+        if settings.ENV == "development" and settings.GOOGLE_CLIENT_ID == "placeholder-google-client-id":
             try:
                 from jose import jwt as jose_jwt
                 token_info = jose_jwt.get_unverified_claims(credential)
                 if token_info and isinstance(token_info, dict) and "email" in token_info:
                     return token_info
             except Exception:
+
                 pass
+
         raise HTTPException(
+
             status_code=status.HTTP_401_UNAUTHORIZED,
+
             detail="Invalid Google token",
+
         ) from exc
+
     
+
 async def get_current_user_id(authorization: str | None = Header(default=None)) -> str:
+
     if not authorization or not authorization.startswith("Bearer "):
+
         raise HTTPException(
+
             status_code=status.HTTP_401_UNAUTHORIZED,
+
             detail="Missing Authorization: Bearer <token> header",
+
             headers={"WWW-Authenticate": "Bearer"},
+
         )
+
     
+
     token = authorization.removeprefix("Bearer ").strip()
+
     if not token:
+
         raise HTTPException(
+
             status_code=status.HTTP_401_UNAUTHORIZED,
+
             detail="Missing bearer token",
+
             headers={"WWW-Authenticate": "Bearer"},
+
         )
+
     
+
     return verify_access_token(token)
+
+
 

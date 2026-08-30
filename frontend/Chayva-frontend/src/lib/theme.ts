@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-const THEME_KEY = "caayva_theme";
+const THEME_KEY = "arthyne_theme";
 
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "dark";
 
-  const stored = window.localStorage.getItem(THEME_KEY);
+  const stored = window.localStorage.getItem(THEME_KEY) ?? window.localStorage.getItem("caayva_theme");
   if (stored === "light" || stored === "dark") return stored;
 
   return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";

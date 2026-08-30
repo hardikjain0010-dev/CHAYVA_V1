@@ -16,6 +16,7 @@ import {
   EmptyLearningState,
   LoadingSkeleton,
 } from "@/lib/ui-helpers";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   component: ExpensesPage,
@@ -200,7 +201,7 @@ function ExpensesPage() {
             title={expenses.length === 0 ? "Your journal is empty." : "No matching entries."}
             description={
               expenses.length === 0
-                ? "Start logging expenses with mood and context. Caayva will start reading your behavioral patterns as you build your journal."
+                ? `Start logging expenses with mood and context. ${BRAND_NAME} will start reading your behavioral patterns as you build your journal.`
                 : "Try a different search or filter."
             }
             action={
@@ -391,7 +392,7 @@ function JournalEntry({
                 </>
               ) : (
                 <p className="text-xs italic text-muted-foreground">
-                  Caayva will analyze this entry when more context is available.
+                  {BRAND_NAME} will analyze this entry when more context is available.
                 </p>
               )}
             </div>

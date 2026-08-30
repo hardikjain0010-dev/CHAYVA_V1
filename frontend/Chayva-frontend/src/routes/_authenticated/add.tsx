@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useExpenses } from "@/lib/expense-context";
+import { BRAND_NAME } from "@/lib/brand";
 import { PageTransition, CategoryIcon, AIInsightReveal, buildInsightFlowData } from "@/lib/ui-helpers";
 
 export const Route = createFileRoute("/_authenticated/add")({
@@ -90,9 +91,9 @@ function AddExpensePage() {
       setShowInsight(true);
 
       if (insightPayload) {
-        toast.success("Expense logged. Chayva is reflecting on this moment...");
+        toast.success(`Expense logged. ${BRAND_NAME} is reflecting on this moment...`);
       } else {
-        toast.success("Expense logged. Chayva couldn't generate an insight right now.");
+        toast.success(`Expense logged. ${BRAND_NAME} couldn't generate an insight right now.`);
       }
 
       // Navigate after showing insight briefly
@@ -128,20 +129,15 @@ function AddExpensePage() {
               (savedInsight?.expense_classification as Record<string, unknown>).classification,
             ),
           },
-          (savedInsight?.behavioral_significance as Record<string, unknown> | null)?.level && {
-            label: `significance: ${String(
-              (savedInsight?.behavioral_significance as Record<string, unknown>).level,
-            )}`,
-          },
         ].filter(Boolean) as Array<{ label: string }>,
       }
     : null;
 
   return (
     <PageTransition>
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-xl pb-24 pt-4 md:pt-0">
         {/* Header */}
-        <header className="mb-8">
+        <header className="mb-6">
           <button
             onClick={() => navigate({ to: "/expenses" })}
             className="mb-5 flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
@@ -152,7 +148,7 @@ function AddExpensePage() {
           <p className="caayva-eyebrow">Capture</p>
           <h1 className="caayva-headline mt-1 text-3xl text-foreground">What did you spend on?</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Every entry helps Caayva understand the why behind your spending.
+            Every entry helps {BRAND_NAME} understand the why behind your spending.
           </p>
         </header>
 
@@ -184,7 +180,7 @@ function AddExpensePage() {
 
               {!insightData?.observation && (
                 <p className="text-center text-sm text-muted-foreground">
-                  Caayva will analyze this expense soon.
+                  {BRAND_NAME} will analyze this expense soon.
                 </p>
               )}
 
@@ -299,7 +295,7 @@ function AddExpensePage() {
                   rows={2}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="What was the context? A quick note helps Caayva understand."
+                  placeholder={`What was the context? A quick note helps ${BRAND_NAME} understand.`}
                   className="profile-input resize-none"
                 />
               </div>

@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X } from "lucide-react";
 import { usePWAInstall } from "@/lib/pwa";
-import { CaayvaLogo } from "@/components/CaayvaLogo";
+import { ArthyneLogo } from "@/components/ArthyneLogo";
+import { BRAND_NAME } from "@/lib/brand";
 
 export function PWAInstallBanner() {
   const { isInstallable, install, dismiss } = usePWAInstall();
@@ -18,9 +19,9 @@ export function PWAInstallBanner() {
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <CaayvaLogo className="h-8 w-8 shrink-0" />
+            <ArthyneLogo className="h-8 w-8 shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground leading-tight">Install Caayva</p>
+              <p className="text-xs font-semibold text-foreground leading-tight">Install {BRAND_NAME}</p>
               <p className="text-[0.7rem] text-muted-foreground truncate">
                 Add to your home screen for an app-like experience
               </p>

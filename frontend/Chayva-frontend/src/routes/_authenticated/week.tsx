@@ -5,6 +5,7 @@ import { Sparkles, TrendingUp, ArrowRight } from "lucide-react";
 import { useExpenses } from "@/lib/expense-context";
 import { useCoaching } from "@/lib/coaching-context";
 import { PageTransition, EmptyLearningState, LoadingSkeleton, BehaviorTag } from "@/lib/ui-helpers";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/week")({
   component: WeekPage,
@@ -80,7 +81,7 @@ function WeekPage() {
           <EmptyLearningState
             icon={Sparkles}
             title="Your weekly story is taking shape."
-            description="Keep logging expenses across a few days — including mood and context. Caayva will compose your first weekly behavioral narrative once there's enough signal to work with."
+            description={`Keep logging expenses across a few days — including mood and context. ${BRAND_NAME} will compose your first weekly behavioral narrative once there's enough signal to work with.`}
           />
         ) : (
           <>

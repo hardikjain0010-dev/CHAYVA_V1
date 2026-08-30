@@ -56,7 +56,7 @@ export const Route = createRootRouteWithContext<{
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       {
-        title: "Caayva — AI Behavioral Finance Companion",
+        title: "Arthyne — AI Behavioral Finance Companion",
       },
       {
         name: "description",
@@ -80,11 +80,11 @@ export const Route = createRootRouteWithContext<{
       },
       {
         name: "apple-mobile-web-app-title",
-        content: "Caayva",
+        content: "Arthyne",
       },
       {
         name: "application-name",
-        content: "Caayva",
+        content: "Arthyne",
       },
     ],
     links: [
@@ -94,8 +94,8 @@ export const Route = createRootRouteWithContext<{
       },
       {
         rel: "icon",
-        type: "image/svg+xml",
-        href: "/favicon.svg",
+        type: "image/png",
+        href: "/favicon.png",
       },
       {
         rel: "apple-touch-icon",

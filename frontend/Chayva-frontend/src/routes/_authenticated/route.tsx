@@ -21,9 +21,12 @@ export const Route = createFileRoute("/_authenticated")({
     }
 
     const isOnboarding = location.pathname === "/onboarding";
-    const skipKey = `caayva_onboarding_skip:${user.uid}`;
+    const skipKey = `arthyne_onboarding_skip:${user.uid}`;
+    const legacySkipKey = `caayva_onboarding_skip:${user.uid}`;
     const skippedForSession =
-      typeof window !== "undefined" && window.sessionStorage.getItem(skipKey) === "true";
+      typeof window !== "undefined" &&
+      (window.sessionStorage.getItem(skipKey) === "true" ||
+        window.sessionStorage.getItem(legacySkipKey) === "true");
 
     try {
       const profile = await getProfile();

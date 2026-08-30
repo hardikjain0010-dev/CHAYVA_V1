@@ -199,7 +199,7 @@ Return ONLY plain text — no JSON, no markdown."""
     if tomorrow:
         parts.append(f"Tomorrow's intention — {tomorrow} — is now part of your coaching context.")
     if mood:
-        parts.append(f"Your mood today was {mood}, which helps Caayva read the emotional layer behind your spending.")
+        parts.append(f"Your mood today was {mood}, which helps Arthyne read the emotional layer behind your spending.")
     return " ".join(parts) or "Your reflection is now shaping how your coach reads your spending patterns."
 
 

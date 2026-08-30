@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Check, MoonStar } from "lucide-react";
 import { get, post } from "@/lib/api";
 import { PageTransition, LoadingSkeleton } from "@/lib/ui-helpers";
+import { BRAND_NAME } from "@/lib/brand";
 import { useUser } from "@/lib/user-context";
 import { useCoaching } from "@/lib/coaching-context";
 
@@ -155,7 +156,7 @@ function ReflectPage() {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4"
           >
-            <p className="caayva-eyebrow mb-2">Something Caayva noticed</p>
+            <p className="caayva-eyebrow mb-2">Something {BRAND_NAME} noticed</p>
             <p className="text-sm leading-relaxed text-foreground/85">{aiSummary}</p>
             {(aiMood || aiTrigger) && (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -306,7 +307,7 @@ function ReflectPage() {
           </motion.button>
 
           <p className="text-center text-xs italic text-muted-foreground">
-            Caayva is here to help you understand, not to judge.
+            {BRAND_NAME} is here to help you understand, not to judge.
           </p>
         </section>
 

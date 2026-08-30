@@ -4,7 +4,7 @@ export function renderErrorPage() {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Caayva - Server Error</title>
+    <title>Arthyne - Server Error</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -57,7 +57,7 @@ export function renderErrorPage() {
   <body>
     <main>
       <h1>Something went wrong.</h1>
-      <p>Caayva could not render this page. Please refresh or try again in a moment.</p>
+      <p>Arthyne could not render this page. Please refresh or try again in a moment.</p>
       <a href="/">Return home</a>
     </main>
   </body>

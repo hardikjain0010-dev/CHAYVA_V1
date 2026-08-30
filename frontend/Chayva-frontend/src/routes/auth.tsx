@@ -3,7 +3,8 @@ import { useEffect, useState, useRef } from "react";
 import { z } from "zod";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
-import { CaayvaLogo } from "@/components/CaayvaLogo";
+import { ArthyneLogo } from "@/components/ArthyneLogo";
+import { BRAND_NAME } from "@/lib/brand";
 import { post, ApiError } from "@/lib/api";
 import { type AuthResponse, clearToken, extractAccessToken, setToken } from "@/lib/auth";
 import { useUser } from "@/lib/user-context";
@@ -201,8 +202,8 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center px-6">
       <div className="glass w-full max-w-md rounded-2xl p-8">
         <div className="mb-6 flex items-center gap-2.5">
-          <CaayvaLogo className="h-9 w-9" />
-          <span className="text-xl font-bold tracking-tight">Caayva</span>
+          <ArthyneLogo className="h-9 w-9" />
+          <span className="text-xl font-bold tracking-tight">{BRAND_NAME}</span>
         </div>
         <h1 className="text-2xl font-semibold">
           {mode === "signup" ? "Create your account" : "Welcome back"}
@@ -259,7 +260,7 @@ function AuthPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          {mode === "signup" ? "Already have an account?" : "New to Caayva?"}{" "}
+          {mode === "signup" ? "Already have an account?" : `New to ${BRAND_NAME}?`}{" "}
           <button
             type="button"
             onClick={() => {

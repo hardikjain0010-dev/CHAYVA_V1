@@ -10,6 +10,7 @@ import {
   BehaviorTag,
   CircularScore,
 } from "@/lib/ui-helpers";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/dna")({
   component: SpendDnaPage,
@@ -155,7 +156,7 @@ function SpendDnaPage() {
           <EmptyLearningState
             icon={Dna}
             title="Your DNA is forming."
-            description="Caayva needs a broader view of your spending — across different categories, times, and moods — before it can map your behavioral profile with confidence. Keep logging."
+            description={`${BRAND_NAME} needs a broader view of your spending — across different categories, times, and moods — before it can map your behavioral profile with confidence. Keep logging.`}
           />
         ) : (
           <>
@@ -218,7 +219,7 @@ function SpendDnaPage() {
                     <div className="mt-4">
                       {isVeryLowConfidence ? (
                         <p className="text-xs text-muted-foreground italic">
-                          Early signal — Caayva is still learning your pattern. These observations
+                          Early signal — {BRAND_NAME} is still learning your pattern. These observations
                           will strengthen with more data.
                         </p>
                       ) : isLowConfidence ? (

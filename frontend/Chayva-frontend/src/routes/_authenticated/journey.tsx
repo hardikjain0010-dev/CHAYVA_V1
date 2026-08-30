@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Flag, Sparkles, Flame, Compass, Trophy, Award } from "lucide-react";
-import { useExpenses } from "@/lib/expense-context";
+import { useExpenses, type Expense } from "@/lib/expense-context";
 import { useCoaching } from "@/lib/coaching-context";
 import { PageTransition, EmptyLearningState, LoadingSkeleton } from "@/lib/ui-helpers";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/journey")({
   component: JourneyPage,
@@ -60,7 +61,7 @@ function localMilestones(expenses: Array<{ amount: number; category: string; dat
     list.push({
       title: "First Insight",
       date: firstInsight.date,
-      description: "Chayva generated its first behavioral read.",
+      description: `${BRAND_NAME} generated its first behavioral read.`,
     });
   }
   if (sorted.length >= 5) {
@@ -146,7 +147,7 @@ function JourneyPage() {
           <EmptyLearningState
             icon={MapPin}
             title="Your journey is just beginning."
-            description="Caayva marks real behavioral milestones as you go — your first expense, a detected pattern, a completed reflection, or a noticeable shift in your spending behavior. Keep building your journal."
+            description={`${BRAND_NAME} marks real behavioral milestones as you go — your first expense, a detected pattern, a completed reflection, or a noticeable shift in your spending behavior. Keep building your journal.`}
           />
         ) : (
           // ----------------------------------------------------------------

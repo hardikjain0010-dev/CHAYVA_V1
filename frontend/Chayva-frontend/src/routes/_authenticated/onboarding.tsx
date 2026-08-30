@@ -5,13 +5,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { updateProfile, type UserProfilePayload } from "@/lib/profile";
 import { useUser } from "@/lib/user-context";
-import { CaayvaLogo } from "@/components/CaayvaLogo";
+import { ArthyneLogo } from "@/components/ArthyneLogo";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: OnboardingPage,
 });
 
-const SKIP_KEY = "caayva_onboarding_skip";
+const SKIP_KEY = "arthyne_onboarding_skip";
 
 const lifeOptions = [
   { value: "student", label: "College student" },
@@ -177,11 +178,11 @@ function OnboardingPage() {
       if (user?.uid) {
         window.sessionStorage.removeItem(`${SKIP_KEY}:${user.uid}`);
       }
-      toast.success("Your Caayva profile is ready.");
+      toast.success(`Your ${BRAND_NAME} profile is ready.`);
       setStep(TOTAL_QUESTIONS + 1);
     } catch {
       setError(
-        "Caayva could not save your profile right now. Your answers are still here, so you can retry.",
+        `${BRAND_NAME} could not save your profile right now. Your answers are still here, so you can retry.`,
       );
     } finally {
       setSaving(false);
@@ -198,7 +199,7 @@ function OnboardingPage() {
       }
       navigate({ to: "/dashboard", replace: true });
     } catch {
-      setError("Caayva could not update your profile state right now. Please try again.");
+      setError(`${BRAND_NAME} could not update your profile state right now. Please try again.`);
     } finally {
       setSaving(false);
     }
@@ -213,7 +214,7 @@ function OnboardingPage() {
           </div>
           <p className="caayva-eyebrow mb-3">Your profile is ready</p>
           <h1 className="caayva-headline text-2xl text-foreground md:text-3xl">
-            Caayva now knows a little about you.
+            {BRAND_NAME} now knows a little about you.
           </h1>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm mx-auto">
             {completionSummary(savedProfile ?? buildPayload(answers))}
@@ -226,7 +227,7 @@ function OnboardingPage() {
             onClick={() => navigate({ to: "/dashboard", replace: true })}
             className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            Enter Caayva
+            Enter {BRAND_NAME}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
@@ -334,8 +335,8 @@ function OnboardingFrame({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 w-full max-w-xl">
         {/* Brand mark */}
         <div className="mb-8 flex items-center gap-2.5 justify-center">
-          <CaayvaLogo className="h-8 w-8" />
-          <span className="text-base font-bold tracking-tight">Caayva</span>
+          <ArthyneLogo className="h-8 w-8" />
+          <span className="text-base font-bold tracking-tight">{BRAND_NAME}</span>
         </div>
         {children}
       </div>
@@ -359,10 +360,10 @@ function Welcome({
       <div className="mb-6">
         <p className="caayva-eyebrow mb-3">The beginning of a relationship</p>
         <h1 className="caayva-headline text-3xl text-foreground">
-          Let's make Caayva understand you.
+          Let's make {BRAND_NAME} understand you.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-sm">
-          A few questions help Caayva recognize your spending patterns more personally. There are no
+          A few questions help {BRAND_NAME} recognize your spending patterns more personally. There are no
           right or wrong answers — only your context.
         </p>
       </div>
@@ -435,7 +436,7 @@ function Question({
           ))}
         </OptionGrid>
         <label className="mt-5 block">
-          <span className="text-sm text-muted-foreground">Tell Caayva a little more</span>
+          <span className="text-sm text-muted-foreground">Tell {BRAND_NAME} a little more</span>
           <textarea
             value={answers.schedule_note}
             maxLength={120}
@@ -515,7 +516,7 @@ function Question({
 
   if (step === 6) {
     return (
-      <SingleQuestion title="What would you most like Caayva to help you understand?">
+      <SingleQuestion title={`What would you most like ${BRAND_NAME} to help you understand?`}>
         <OptionGrid>
           {goalOptions.map((option) => (
             <Choice
@@ -533,7 +534,7 @@ function Question({
 
   if (step === 7) {
     return (
-      <SingleQuestion title="How should Caayva talk to you?">
+      <SingleQuestion title={`How should ${BRAND_NAME} talk to you?`}>
         <div className="grid gap-3">
           {toneOptions.map((option) => (
             <Choice
@@ -551,7 +552,7 @@ function Question({
   }
 
   return (
-    <SingleQuestion title="How would you like Caayva to talk?">
+    <SingleQuestion title={`How would you like ${BRAND_NAME} to talk?`}>
       <OptionGrid>
         {languageOptions.map((option) => (
           <Choice
@@ -683,7 +684,7 @@ function completionSummary(profile: UserProfilePayload) {
 
   return parts.length
     ? `You told us ${parts.join(", ")}.`
-    : "You shared a little personal context with Caayva.";
+    : `You shared a little personal context with ${BRAND_NAME}.`;
 }
 
 function labelValues(values: string[], options: readonly { value: string; label: string }[]) {

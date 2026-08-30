@@ -1,28 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { HeartPulse, Sparkles, MoonStar, Dna, Compass, Brain } from "lucide-react";
-import { CaayvaLogo } from "@/components/CaayvaLogo";
+import { ArthyneLogo } from "@/components/ArthyneLogo";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
       {
-        title: "Caayva — Behavioral Finance Coach",
+        title: `${BRAND_NAME} — Behavioral Finance Coach`,
       },
       {
         name: "description",
         content:
-          "Understand the emotions behind your spending and build mindful financial habits with Caayva.",
+          `Understand the emotions behind your spending and build mindful financial habits with ${BRAND_NAME}.`,
       },
       {
         property: "og:title",
-        content: "Caayva — Behavioral Finance Coach",
+        content: `${BRAND_NAME} — Behavioral Finance Coach`,
       },
       {
         property: "og:description",
         content:
-          "Understand the emotions behind your spending with your AI behavioral finance coach.",
+          `Understand the emotions behind your spending with your AI behavioral finance coach ${BRAND_NAME}.`,
       },
     ],
   }),
@@ -67,8 +68,8 @@ function Landing() {
       {/* Header */}
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
         <Link to="/" className="flex items-center gap-2.5">
-          <CaayvaLogo className="h-8 w-8" />
-          <span className="text-2xl font-bold tracking-tight text-gradient">Caayva</span>
+          <ArthyneLogo className="h-8 w-8" />
+          <span className="text-2xl font-bold tracking-tight text-gradient">{BRAND_NAME}</span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -101,7 +102,7 @@ function Landing() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg text-muted-foreground">
-            Caayva is your AI behavioural finance coach. Discover why you spend, understand
+            {BRAND_NAME} is your AI behavioural finance coach. Discover why you spend, understand
             emotional triggers, and build healthier financial habits with confidence.
           </p>
 
@@ -167,8 +168,8 @@ function Landing() {
             {/* Brand column */}
             <div className="sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2.5">
-                <CaayvaLogo className="h-8 w-8" />
-                <span className="text-xl font-bold tracking-tight">Caayva</span>
+                <ArthyneLogo className="h-8 w-8" />
+                <span className="text-xl font-bold tracking-tight">{BRAND_NAME}</span>
               </div>
 
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -273,12 +274,12 @@ function Landing() {
 
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
           <div className="flex items-center gap-2">
-            <CaayvaLogo className="h-5 w-5" />
+            <ArthyneLogo className="h-5 w-5" />
             <span className="text-xs text-muted-foreground/70">
               Behavioral finance, reimagined.
             </span>
           </div>
-          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} Caayva</p>
+          <p className="text-xs text-muted-foreground/50">© {new Date().getFullYear()} {BRAND_NAME}</p>
         </div>
       </footer>
     </div>
