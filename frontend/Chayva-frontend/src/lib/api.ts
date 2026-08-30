@@ -1,7 +1,7 @@
 import { getToken, clearToken } from "./auth";
 
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
-const PRODUCTION_API_BASE_URL = "https://chayva-backend.onrender.com";
+const PRODUCTION_API_BASE_URL = "https://chayva-v1.onrender.com";
 
 export class ApiError extends Error {
   status?: number;
@@ -112,7 +112,7 @@ function errorMessageFromPayload(payload: unknown, fallback: string) {
 }
 
 async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
-  const { body, timeoutMs = 35000, ...requestInit } = init;
+  const { body, timeoutMs = 60000, ...requestInit } = init;
   const url = buildUrl(path);
 
   const controller = new AbortController();

@@ -1,6 +1,7 @@
 import { get, ApiError } from "./api";
 
-const TOKEN_KEY = "caayva_access_token";
+const TOKEN_KEY = "arthyne_access_token";
+const LEGACY_TOKEN_KEY = "caayva_access_token";
 
 export type User = {
   uid: string;
@@ -30,17 +31,19 @@ export function extractAccessToken(response: AuthResponse): string {
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_KEY);
+  return window.localStorage.getItem(TOKEN_KEY) ?? window.localStorage.getItem(LEGACY_TOKEN_KEY);
 }
 
 export function setToken(token: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TOKEN_KEY, token);
+  window.localStorage.removeItem(LEGACY_TOKEN_KEY);
 }
 
 export function clearToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(LEGACY_TOKEN_KEY);
 }
 
 export async function getCurrentUser(): Promise<User | null> {

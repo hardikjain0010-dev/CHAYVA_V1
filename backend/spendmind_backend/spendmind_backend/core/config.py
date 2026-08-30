@@ -44,6 +44,7 @@ class Settings:
             "http://localhost:3000",
             "http://127.0.0.1:3000",
             "https://chayva-v1.vercel.app",
+            "https://chayva-v11.vercel.app",
             "https://arthyne-v1.vercel.app",
             "https://arthyne.vercel.app",
         ]
