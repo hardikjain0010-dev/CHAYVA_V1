@@ -26,7 +26,7 @@ export function ArthyneLogo({
     <img
       src={src}
       alt={alt}
-      className={`inline-block object-contain select-none shrink-0 rounded-xl ${className}`}
+      className={`inline-block object-contain select-none shrink-0 ${className}`}
       style={{
         ...dimensionStyle,
         ...style,
