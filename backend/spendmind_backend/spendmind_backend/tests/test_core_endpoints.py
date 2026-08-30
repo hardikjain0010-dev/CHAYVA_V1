@@ -402,9 +402,66 @@ def test_auth_signup_and_signin_case_insensitive_with_profile_init():
     assert signin_data["user"]["email"] == signin_email
     assert "access_token" in signin_data
 
-    # 5. Signin with wrong password fails with 401
+    # 5. Signin with wrong password fails with 401 (no 500)
     wrong_pwd_resp = client.post(
         "/auth/signin",
         json={"email": signin_email, "password": "WrongPassword999"},
     )
     assert wrong_pwd_resp.status_code == 401
+
+
+def test_auth_signin_legacy_pbkdf2_and_corrupted_hashes():
+    from passlib.context import CryptContext
+    
+    # 1. Create a user with legacy PBKDF2 hash
+    pbkdf2_ctx = CryptContext(schemes=["pbkdf2_sha256"])
+    legacy_pwd = "LegacySecretPass1!"
+    legacy_hash = pbkdf2_ctx.hash(legacy_pwd)
+    
+    user_id = f"legacy-user-{uuid.uuid4().hex[:8]}"
+    email = f"legacy_{uuid.uuid4().hex[:8]}@example.com"
+    
+    db_client.add(
+        "users",
+        {
+            "uid": user_id,
+            "email": email,
+            "provider": "password",
+            "password_hash": legacy_hash,
+        },
+        doc_id=user_id,
+    )
+    
+    # Verify legacy PBKDF2 user can sign in successfully (returns 200)
+    signin_resp = client.post(
+        "/auth/signin",
+        json={"email": email, "password": legacy_pwd},
+    )
+    assert signin_resp.status_code == 200
+    assert "access_token" in signin_resp.json()
+    
+    # Verify the hash was progressively upgraded to modern bcrypt_sha256
+    updated_user = db_client.get("users", user_id)
+    assert updated_user["password_hash"].startswith("$bcrypt-sha256$")
+    
+    # 2. Test user with corrupted/malformed hash returns 401 instead of 500
+    bad_user_id = f"bad-hash-user-{uuid.uuid4().hex[:8]}"
+    bad_email = f"bad_hash_{uuid.uuid4().hex[:8]}@example.com"
+    db_client.add(
+        "users",
+        {
+            "uid": bad_user_id,
+            "email": bad_email,
+            "provider": "password",
+            "password_hash": "malformed_unknown_hash_string",
+        },
+        doc_id=bad_user_id,
+    )
+    
+    bad_resp = client.post(
+        "/auth/signin",
+        json={"email": bad_email, "password": "AnyPassword123!"},
+    )
+    assert bad_resp.status_code == 401
+    assert bad_resp.json()["message"] == "Invalid email or password"
+

@@ -13,6 +13,7 @@ from models.expense_model import (
 from core.security import (
     hash_password,
     verify_password,
+    needs_rehash,
     create_access_token,
     verify_google_token,
     get_current_user_id
@@ -103,32 +104,30 @@ def verify(payload: AuthVerifyRequest):
 @router.post("/signin", response_model=TokenOut)
 def signin(payload: AuthSigninRequest):
     email = payload.email.strip().lower()
-    print(f"[DEBUG] Signin attempt for email: {email}")
     users = db_client.query("users", email=email)
-    print(f"[DEBUG] Found users: {len(users) if users else 0}")
     if not users:
-        print(f"[DEBUG] No user found, raising 401")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
     user = users[0]
-    print(f"[DEBUG] User provider: {user.get('provider')}")
 
     if user.get("provider") != "password":
-        print(f"[DEBUG] Provider mismatch, raising 400")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please sign in with Google")
 
-    if not verify_password(payload.password, user.get("password_hash", "")):
-        print(f"[DEBUG] Password verification failed, raising 401")
+    stored_hash = user.get("password_hash")
+    if not stored_hash or not verify_password(payload.password, stored_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
     doc_id = user.get("id") or user.get("uid")
     if doc_id:
-        db_client.update("users", doc_id, {"last_login": now_iso()})
+        updates = {"last_login": now_iso()}
+        # Progressive security upgrade: automatically rehash legacy schemes (e.g. pbkdf2_sha256) to bcrypt_sha256
+        if needs_rehash(stored_hash):
+            updates["password_hash"] = hash_password(payload.password)
+        db_client.update("users", doc_id, updates)
 
     user_out = UserOut(**user)
     token = create_access_token(data={"sub": user["uid"]})
 
-    print(f"[DEBUG] Signin successful for: {email}")
     return {"access_token": token, "token_type": "bearer", "user": user_out}
 @router.post("/google", response_model=TokenOut)
 def google_signin(payload: AuthGoogleRequest):

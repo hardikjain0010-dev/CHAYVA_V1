@@ -27,6 +27,8 @@ __all__ = [
 
     "verify_password",
 
+    "needs_rehash",
+
     "create_access_token",
 
     "verify_access_token",
@@ -42,24 +44,43 @@ __all__ = [
 
 
 pwd_context = CryptContext(
-    schemes=["bcrypt_sha256", "bcrypt"],
-    deprecated=["bcrypt"],
+    schemes=["bcrypt_sha256", "bcrypt", "pbkdf2_sha256", "argon2"],
+    deprecated=["bcrypt", "pbkdf2_sha256", "argon2"],
 )
 
 
 
 
 def hash_password(password: str) -> str:
-
+    """Hash a password using the primary scheme (bcrypt_sha256)."""
     return pwd_context.hash(password)
 
 
 
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str | None) -> bool:
+    """Safely verify a password against stored hash across all supported schemes.
+    
+    Catches UnknownHashError, ValueError, TypeError to prevent 500 crashes
+    on malformed, unknown, or corrupted hashes.
+    """
+    if not plain_password or not hashed_password or not isinstance(hashed_password, str):
+        return False
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
 
-    return pwd_context.verify(plain_password, hashed_password)
+
+def needs_rehash(hashed_password: str | None) -> bool:
+    """Check if hash was generated with a deprecated scheme and should be upgraded."""
+    if not hashed_password or not isinstance(hashed_password, str):
+        return False
+    try:
+        return pwd_context.needs_update(hashed_password)
+    except Exception:
+        return False
 
 
 
