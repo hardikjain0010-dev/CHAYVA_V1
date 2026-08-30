@@ -23,6 +23,7 @@ const PRECACHE_ASSETS = [
 
 // Domains/patterns that must NEVER be cached by the service worker
 const EXCLUDED_HOSTS = [
+  "arthyne-backend.onrender.com",
   "chayva-backend.onrender.com",
   "identitytoolkit.googleapis.com",
   "securetoken.googleapis.com",

@@ -1,8 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { HeartPulse, Sparkles, MoonStar, Dna, Compass, Brain } from "lucide-react";
+import { HeartPulse, Sparkles, MoonStar, Dna, Compass, Brain, ArrowRight } from "lucide-react";
 import { ArthyneLogo } from "@/components/ArthyneLogo";
 import { BRAND_NAME } from "@/lib/brand";
+import { useUser } from "@/lib/user-context";
+import { isStandaloneMode } from "@/lib/pwa";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -63,6 +66,16 @@ const features = [
 ];
 
 function Landing() {
+  const navigate = useNavigate();
+  const { user, loading } = useUser();
+
+  // In standalone / installed PWA mode, launch directly into the application flow
+  useEffect(() => {
+    if (isStandaloneMode()) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -73,17 +86,29 @@ function Landing() {
         </Link>
 
         <div className="flex items-center gap-4">
-          <Link to="/auth" className="text-sm font-medium hover:text-primary">
-            Sign In
-          </Link>
+          {!loading && user ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-lg transition hover:scale-105"
+            >
+              <span>Open Dashboard</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth" className="text-sm font-medium hover:text-primary">
+                Sign In
+              </Link>
 
-          <Link
-            to="/auth"
-            search={{ mode: "signup" }}
-            className="rounded-lg bg-gradient-primary px-5 py-2 text-primary-foreground shadow-lg transition hover:scale-105"
-          >
-            Get Started
-          </Link>
+              <Link
+                to="/auth"
+                search={{ mode: "signup" }}
+                className="rounded-lg bg-gradient-primary px-5 py-2 text-primary-foreground shadow-lg transition hover:scale-105"
+              >
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -107,20 +132,32 @@ function Landing() {
           </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <Link
-              to="/auth"
-              search={{ mode: "signup" }}
-              className="rounded-xl bg-gradient-primary px-7 py-3 font-semibold text-primary-foreground shadow-lg transition hover:scale-105"
-            >
-              Start Your Journey
-            </Link>
+            {!loading && user ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-8 py-3.5 font-semibold text-primary-foreground shadow-lg transition hover:scale-105 text-base"
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  className="rounded-xl bg-gradient-primary px-7 py-3 font-semibold text-primary-foreground shadow-lg transition hover:scale-105"
+                >
+                  Start Your Journey
+                </Link>
 
-            <Link
-              to="/auth"
-              className="glass rounded-xl px-7 py-3 font-semibold transition hover:scale-105"
-            >
-              I Have an Account
-            </Link>
+                <Link
+                  to="/auth"
+                  className="glass rounded-xl px-7 py-3 font-semibold transition hover:scale-105"
+                >
+                  I Have an Account
+                </Link>
+              </>
+            )}
           </div>
         </motion.section>
 

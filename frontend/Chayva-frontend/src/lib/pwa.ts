@@ -117,3 +117,35 @@ export function usePWAInstall() {
     dismiss,
   };
 }
+
+/**
+ * Detects if the current web app is running in installed / standalone PWA mode.
+ */
+export function isStandaloneMode(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    window.matchMedia("(display-mode: minimal-ui)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
+/**
+ * Hook to reactively track standalone mode state.
+ */
+export function useStandaloneStatus(): boolean {
+  const [standalone, setStandalone] = useState(isStandaloneMode);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
+    const handler = () => setStandalone(isStandaloneMode());
+
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
+
+  return standalone;
+}

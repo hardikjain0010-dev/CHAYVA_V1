@@ -1,11 +1,11 @@
 {
-  "name": "Arthyne — AI Behavioral Finance Companion",
+  "name": "Arthyne",
   "short_name": "Arthyne",
-  "description": "Understand the why behind your spending.",
-  "start_url": "/",
+  "description": "Understand the why behind your money — AI Behavioral Finance Companion.",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "background_color": "#FAFAFE",
   "theme_color": "#7C3AED",
   "categories": ["finance", "lifestyle", "productivity"],
@@ -29,9 +29,15 @@
       "purpose": "maskable"
     },
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

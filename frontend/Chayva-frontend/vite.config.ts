@@ -5,7 +5,15 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { nitro } from "nitro/vite";
 
 export default defineConfig({
-  plugins: [tanstackStart(), nitro({ preset: "vercel" }), react(), tailwindcss()],
+  plugins: [
+    tanstackStart(),
+    nitro({
+      preset: "vercel",
+      publicAssets: [{ dir: "public", maxAge: 60 * 60 * 24 * 7 }],
+    }),
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     tsconfigPaths: true,
   },

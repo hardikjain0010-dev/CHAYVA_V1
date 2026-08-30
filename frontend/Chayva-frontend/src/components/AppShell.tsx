@@ -144,7 +144,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ----------------------------------------------------------------- */}
       {/* MOBILE TOP BAR (Brand + Theme toggle only — No hamburger)         */}
       {/* ----------------------------------------------------------------- */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-30 glass-strong border-b border-border/60 px-4 py-3 flex items-center justify-between">
+      <header
+        className="md:hidden fixed top-0 inset-x-0 z-30 glass-strong border-b border-border/60 px-4 py-3 flex items-center justify-between"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top, 0px))" }}
+      >
         <Link to="/dashboard" className="flex items-center gap-2.5">
           <ArthyneLogo className="h-7 w-7" />
           <span className="text-lg font-bold tracking-tight text-gradient">{BRAND_NAME}</span>

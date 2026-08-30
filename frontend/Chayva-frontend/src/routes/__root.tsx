@@ -53,14 +53,14 @@ export const Route = createRootRouteWithContext<{
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5",
       },
       {
         title: "Arthyne — AI Behavioral Finance Companion",
       },
       {
         name: "description",
-        content: "Understand the why behind your spending.",
+        content: "Understand the why behind your money — AI Behavioral Finance Companion.",
       },
       {
         name: "theme-color",
@@ -76,7 +76,7 @@ export const Route = createRootRouteWithContext<{
       },
       {
         name: "apple-mobile-web-app-status-bar-style",
-        content: "default",
+        content: "black-translucent",
       },
       {
         name: "apple-mobile-web-app-title",
@@ -85,6 +85,46 @@ export const Route = createRootRouteWithContext<{
       {
         name: "application-name",
         content: "Arthyne",
+      },
+      {
+        name: "msapplication-TileColor",
+        content: "#7C3AED",
+      },
+      {
+        property: "og:type",
+        content: "website",
+      },
+      {
+        property: "og:site_name",
+        content: "Arthyne",
+      },
+      {
+        property: "og:title",
+        content: "Arthyne — AI Behavioral Finance Companion",
+      },
+      {
+        property: "og:description",
+        content: "Understand the why behind your money — AI Behavioral Finance Companion.",
+      },
+      {
+        property: "og:image",
+        content: "/pwa-512x512.png",
+      },
+      {
+        name: "twitter:card",
+        content: "summary_large_image",
+      },
+      {
+        name: "twitter:title",
+        content: "Arthyne — AI Behavioral Finance Companion",
+      },
+      {
+        name: "twitter:description",
+        content: "Understand the why behind your money — AI Behavioral Finance Companion.",
+      },
+      {
+        name: "twitter:image",
+        content: "/pwa-512x512.png",
       },
     ],
     links: [
@@ -98,7 +138,13 @@ export const Route = createRootRouteWithContext<{
         href: "/favicon.png",
       },
       {
+        rel: "icon",
+        type: "image/x-icon",
+        href: "/favicon.ico",
+      },
+      {
         rel: "apple-touch-icon",
+        sizes: "180x180",
         href: "/apple-touch-icon.png",
       },
     ],
